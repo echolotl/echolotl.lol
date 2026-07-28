@@ -1,6 +1,10 @@
 import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
-import { toPublicUser } from "../auth/discord/service";
+import {
+  PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
+  refreshDiscordProfileIfStale,
+  toPublicUser,
+} from "../auth/discord/service";
 import {
   deleteComment,
   editComment,
@@ -17,6 +21,7 @@ import {
   notifyCommentEdited,
   notifyNewComment,
   notifyNewReply,
+  updateProfilesOfComments,
   toCommentNode,
   toCommentNodes,
   toUserComment,
@@ -28,7 +33,7 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
   .use(rateLimit({ duration: 60_000, max: 100, scoping: "scoped" }))
   .get(
     "/user/:userId",
-    ({ params, query }) => {
+    async ({ params, query }) => {
       const user = getUserByUserId(params.userId);
       if (!user) {
         return new Response("User not found", {
@@ -38,8 +43,12 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
       }
 
       const pageSize = limit(query.limit);
+      const freshUser = await refreshDiscordProfileIfStale(
+        user,
+        PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
+      );
       const payload = {
-        user: toPublicUser(user),
+        user: toPublicUser(freshUser),
         comments: getCommentsByUserId(params.userId, pageSize).map(
           toUserComment,
         ),
@@ -57,7 +66,7 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
   )
   .get(
     "/s/:slug",
-    ({ params, query }) => {
+    async ({ params, query }) => {
       const pageSize = limit(query.limit);
       const comments = getTopLevelCommentsBySlug(
         params.slug,
@@ -65,6 +74,7 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
         query.cursor,
       );
       const { items, nextCursor } = paginate(comments, pageSize);
+      await updateProfilesOfComments(items);
 
       const payload = {
         slug: params.slug,
@@ -106,7 +116,7 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
       body: commentBodySchema,
     },
   )
-  .get("/:id", ({ params }) => {
+  .get("/:id", async ({ params }) => {
     const id = Number(params.id);
     if (!Number.isInteger(id)) {
       return new Response("Invalid comment id", {
@@ -123,6 +133,7 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
       });
     }
 
+    await updateProfilesOfComments([comment]);
     const [node] = toCommentNodes([comment]);
 
     return new Response(JSON.stringify(node), {
@@ -132,7 +143,7 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
   })
   .get(
     "/:id/replies",
-    ({ params, query }) => {
+    async ({ params, query }) => {
       const id = Number(params.id);
       if (!Number.isInteger(id)) {
         return new Response("Invalid comment id", {
@@ -152,6 +163,7 @@ export const commentsRouter = new Elysia({ prefix: "/comments" })
       const pageSize = limit(query.limit);
       const replies = getCommentsByParentId(id, pageSize + 1, query.cursor);
       const { items, nextCursor } = paginate(replies, pageSize);
+      await updateProfilesOfComments(items);
 
       const payload = {
         parentId: id,

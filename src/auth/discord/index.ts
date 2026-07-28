@@ -23,7 +23,9 @@ import {
   notifyAccountCreated,
   notifyAccountDeleted,
   PROFILE_REFRESH_INTERVAL_MS,
+  PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
   refreshDiscordProfile,
+  refreshDiscordProfileIfStale,
   refreshDiscordToken,
   SESSION_TTL_MS,
   toAuthenticatedUser,
@@ -230,11 +232,11 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
     let freshUser = user;
     try {
       if (!user.tokenExpires || user.tokenExpires <= Date.now()) {
-        freshUser = await refreshDiscordToken(user);
+        freshUser = await refreshDiscordToken(freshUser);
       }
 
       if (Date.now() - user.updatedAt > PROFILE_REFRESH_INTERVAL_MS) {
-        freshUser = await refreshDiscordProfile(user);
+        freshUser = await refreshDiscordProfile(freshUser);
       }
     } catch (error) {
       Logger.error(
@@ -302,7 +304,7 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
       { status: 200, headers: { "Content-Type": "text/plain" } },
     );
   })
-  .get("/user/:userId", ({ params }) => {
+  .get("/user/:userId", async ({ params }) => {
     const user = getUserByUserId(params.userId);
     if (!user) {
       return new Response("User not found", {
@@ -311,7 +313,12 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
       });
     }
 
-    return new Response(JSON.stringify({ user: toPublicUser(user) }), {
+    const freshUser = await refreshDiscordProfileIfStale(
+      user,
+      PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
+    );
+
+    return new Response(JSON.stringify({ user: toPublicUser(freshUser) }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

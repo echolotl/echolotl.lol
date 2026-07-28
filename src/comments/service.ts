@@ -1,5 +1,10 @@
 import { getReplyCounts, getUserByUserId } from "../db";
-import { getAvatarUrl, toPublicUser } from "../auth/discord/service";
+import {
+  getAvatarUrl,
+  PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
+  refreshDiscordProfileIfStale,
+  toPublicUser,
+} from "../auth/discord/service";
 import { type User } from "../auth/discord/model";
 import { Logger } from "../util/logger";
 import { sendDiscordWebhook } from "../util/webhook";
@@ -37,6 +42,24 @@ export function toCommentNodes(comments: Comment[]): CommentNode[] {
   const counts = getReplyCounts(comments.map((comment) => comment.id));
   return comments.map((comment) =>
     toCommentNode(comment, counts.get(comment.id) ?? 0),
+  );
+}
+
+export async function updateProfilesOfComments(
+  comments: Comment[],
+): Promise<void> {
+  const userIds = [...new Set(comments.map((comment) => comment.userId))];
+
+  await Promise.all(
+    userIds.map(async (userId) => {
+      const user = getUserByUserId(userId);
+      if (user) {
+        await refreshDiscordProfileIfStale(
+          user,
+          PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
+        );
+      }
+    }),
   );
 }
 

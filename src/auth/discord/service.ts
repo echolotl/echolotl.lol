@@ -16,6 +16,7 @@ import {
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const PROFILE_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+export const PUBLIC_PROFILE_REFRESH_INTERVAL_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 
 const discordLogger = Logger.fmtPackage("DISCORD");
 
@@ -66,6 +67,25 @@ export async function fetchDiscordProfile(
   return response.json();
 }
 
+function updateUserFromDiscordProfile(
+  user: User,
+  profile: DiscordUserResponse | null,
+  extras: Partial<Pick<User, "refreshToken" | "accessToken" | "tokenExpires">> = {},
+): User {
+  return {
+    ...user,
+    ...(profile
+      ? {
+          username: profile.username,
+          displayName: profile.global_name,
+          avatarHash: profile.avatar,
+        }
+      : {}),
+    ...extras,
+    updatedAt: Date.now(),
+  };
+}
+
 export async function refreshDiscordToken(user: User): Promise<User> {
   const response = await fetch(DISCORD_TOKEN_URL, {
     method: "POST",
@@ -98,20 +118,11 @@ export async function refreshDiscordToken(user: User): Promise<User> {
     );
   }
 
-  const updatedUser: User = {
-    ...user,
-    ...(profile
-      ? {
-          username: profile.username,
-          displayName: profile.global_name,
-          avatarHash: profile.avatar,
-        }
-      : {}),
+  const updatedUser = updateUserFromDiscordProfile(user, profile, {
     refreshToken: tokenData.refresh_token,
     accessToken: tokenData.access_token,
     tokenExpires: expiresAt,
-    updatedAt: Date.now(),
-  };
+  });
 
   storeUser(updatedUser);
 
@@ -130,13 +141,7 @@ export async function refreshDiscordProfile(user: User): Promise<User> {
   try {
     const profile = await fetchDiscordProfile(user.accessToken);
 
-    const updatedUser: User = {
-      ...user,
-      username: profile.username,
-      displayName: profile.global_name,
-      avatarHash: profile.avatar,
-      updatedAt: Date.now(),
-    };
+    const updatedUser = updateUserFromDiscordProfile(user, profile);
 
     storeUser(updatedUser);
 
@@ -148,6 +153,29 @@ export async function refreshDiscordProfile(user: User): Promise<User> {
   } catch (error) {
     Logger.warning(
       `${discordLogger}Failed to refresh Discord profile for ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return user;
+  }
+}
+
+// A wrapper function around refreshDiscordProfile and refreshDiscordToken that checks if the profile is stale before refreshing it.
+export async function refreshDiscordProfileIfStale(
+  user: User,
+  refreshIntervalMs: number,
+): Promise<User> {
+  if (Date.now() - user.updatedAt <= refreshIntervalMs) {
+    return user;
+  }
+
+  try {
+    if (!user.tokenExpires || user.tokenExpires <= Date.now()) {
+      return await refreshDiscordToken(user);
+    }
+
+    return await refreshDiscordProfile(user);
+  } catch (error) {
+    Logger.warning(
+      `${discordLogger}Failed to refresh stale Discord profile for ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
     );
     return user;
   }
