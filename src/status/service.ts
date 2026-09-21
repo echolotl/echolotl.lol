@@ -1,5 +1,6 @@
 import type { Status } from "./model";
 import { getLatestStatus, insertStatus, getStatusesLimit } from "../db";
+import { sendDiscordWebhook } from "../util/webhook";
 
 export function getStatus(): Status | null {
   return getLatestStatus();
@@ -7,29 +8,19 @@ export function getStatus(): Status | null {
 
 export function setStatus(status: Omit<Status, "id" | "createdAt">): void {
   var createdStatus = insertStatus(status);
-  fetch(process.env.STATUS_UPDATE_DISCORD_WEBHOOK_URL!, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(generateStatusDiscordWebhookMessage(createdStatus)),
+  sendDiscordWebhook({
+    content: "",
+    embeds: [
+      {
+        title: "echolotl has updated their status!",
+        description: `${status.emoji ? `${status.emoji} ` : ""}${status.text}`,
+        timestamp: new Date(createdStatus.createdAt).toISOString(),
+        color: 0xf53eb8,
+      },
+    ],
   });
 }
 
 export function getStatuses(limit: number, cursor?: number): Status[] {
   return getStatusesLimit(limit, cursor);
-}
-
-export function generateStatusDiscordWebhookMessage(status: Status): {} {
-  const emojiPart = status.emoji ? `${status.emoji} ` : "";
-  return {
-    embeds: [
-      {
-        title: "echolotl has updated their status!",
-        description: `${emojiPart} ${status.text}`,
-        timestamp: new Date(status.createdAt).toISOString(),
-        color: 0xf53eb8,
-      },
-    ],
-  };
 }

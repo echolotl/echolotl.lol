@@ -45,3 +45,4 @@ package-lock.json
 # local sqlite data
 /data/*.db
 !/data/.gitkeep
+/main.db
