@@ -1,7 +1,7 @@
 import {
   upsertSession,
   destroySession as removeSession,
-  storeUser,
+  updateUser,
 } from "../../db";
 import { Logger } from "../../util/logger";
 import { sendDiscordWebhook } from "../../util/webhook";
@@ -110,12 +110,14 @@ export async function refreshDiscordToken(user: User): Promise<User> {
   const expiresAt = Date.now() + tokenData.expires_in * 1000;
 
   let profile: DiscordUserResponse | null = null;
-  try {
-    profile = await fetchDiscordProfile(tokenData.access_token);
-  } catch (error) {
-    Logger.warning(
-      `${discordLogger}Failed to refresh Discord profile for ${user.id} during token refresh: ${error instanceof Error ? error.message : String(error)}`,
-    );
+  if (user.shouldSync) {
+    try {
+      profile = await fetchDiscordProfile(tokenData.access_token);
+    } catch (error) {
+      Logger.warning(
+        `${discordLogger}Failed to refresh Discord profile for ${user.id} during token refresh: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   const updatedUser = updateUserFromDiscordProfile(user, profile, {
@@ -124,7 +126,7 @@ export async function refreshDiscordToken(user: User): Promise<User> {
     tokenExpires: expiresAt,
   });
 
-  storeUser(updatedUser);
+  updateUser(updatedUser);
 
   Logger.success(
     `${discordLogger}Successfully refreshed Discord token for ${user.id}`,
@@ -134,7 +136,7 @@ export async function refreshDiscordToken(user: User): Promise<User> {
 }
 
 export async function refreshDiscordProfile(user: User): Promise<User> {
-  if (!user.accessToken) {
+  if (!user.shouldSync || !user.accessToken) {
     return user;
   }
 
@@ -143,7 +145,7 @@ export async function refreshDiscordProfile(user: User): Promise<User> {
 
     const updatedUser = updateUserFromDiscordProfile(user, profile);
 
-    storeUser(updatedUser);
+    updateUser(updatedUser);
 
     Logger.success(
       `${discordLogger}Successfully refreshed Discord profile for ${user.id}`,

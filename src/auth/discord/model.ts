@@ -8,6 +8,7 @@ export interface User {
   displayName: string | null;
   avatarHash: string | null;
   anonymous: boolean;
+  shouldSync: boolean;
   createdAt: number;
   refreshToken: string;
   accessToken: string | null;

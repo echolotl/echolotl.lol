@@ -11,8 +11,8 @@ import {
   getUserById,
   getUserByUserId,
   sessionsByUserId,
-  setUserAnonymous,
-  storeUser,
+  upsertUser,
+  updateUser,
   userBySession,
 } from "../../db";
 import {
@@ -180,18 +180,26 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
 
       const existingUser = getUserById(user.id);
 
-      storeUser({
+      const syncProfile = existingUser?.shouldSync ?? true;
+      const updatedUser = {
         id: user.id,
         userId: existingUser?.userId ?? crypto.randomUUID(),
-        username: user.username,
-        displayName: user.global_name,
-        avatarHash: user.avatar,
+        username: syncProfile ? user.username : existingUser!.username,
+        displayName: syncProfile ? user.global_name : existingUser!.displayName,
+        avatarHash: syncProfile ? user.avatar : existingUser!.avatarHash,
         anonymous: existingUser?.anonymous ?? false,
+        shouldSync: syncProfile,
         refreshToken: tokenData.refresh_token,
         accessToken: tokenData.access_token,
         tokenExpires: expiresAt,
         updatedAt: Date.now(),
-      });
+      };
+
+      if (existingUser) {
+        updateUser(updatedUser);
+      } else {
+        upsertUser(updatedUser);
+      }
 
       if (!existingUser) {
         const storedUser = getUserById(user.id);
@@ -266,7 +274,16 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
         });
       }
 
-      const updatedUser = setUserAnonymous(user.id, body.anonymous);
+      const updatedUser = updateUser({
+        id: user.id,
+        ...(body.anonymous !== undefined ? { anonymous: body.anonymous } : {}),
+        ...(body.displayName !== undefined
+          ? { displayName: body.displayName }
+          : {}),
+        ...(body.syncProfile !== undefined
+          ? { shouldSync: body.syncProfile }
+          : {}),
+      });
       if (!updatedUser) {
         return new Response("User not found", {
           status: 404,
@@ -281,7 +298,9 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
     },
     {
       body: t.Object({
-        anonymous: t.Boolean(),
+        anonymous: t.Optional(t.Boolean()),
+        displayName: t.Optional(t.String({ minLength: 4, maxLength: 48 })),
+        syncProfile: t.Optional(t.Boolean()),
       }),
     },
   )

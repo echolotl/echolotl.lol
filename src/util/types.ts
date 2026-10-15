@@ -19,3 +19,9 @@ type KeysToSnakeCase<T> = {
 type ChangeType<Of, To, Where extends keyof Of> = {
   [K in keyof Of]: K extends Where ? To : Of[K];
 };
+
+type BooleanToNumber<T> = T extends boolean ? number : T;
+
+type DeepBooleanToNumber<T> = {
+  [K in keyof T]: BooleanToNumber<T[K]>;
+};
