@@ -74,3 +74,18 @@ export type ThumbnailAnchor =
   | "bottom-left"
   | "bottom"
   | "bottom-right";
+
+export interface BlogEntry {
+  slug: string;
+  title: string;
+  thumbnail_url?: string;
+  created_at: string;
+  modified_at: string;
+  author?: string;
+  pinned: boolean;
+  tags?: string[];
+  category: BlogCategory;
+  related_characters?: string[]; // The character's slug
+}
+
+export type BlogCategory = "general" | "devlog" | "lore" | "announcement";

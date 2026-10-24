@@ -43,6 +43,8 @@ const galleryImage = z.object({
   variants: z.array(imageVariant).optional(),
 });
 
+const blogCategories = ["general", "devlog", "lore", "announcement"] as const;
+
 export default defineContentConfig({
   collections: {
     characters: defineCollection({
@@ -115,6 +117,25 @@ export default defineContentConfig({
         nsfw: z.boolean().default(false),
         images: z.array(galleryImage).min(1, "At least one image required"),
         sketch: z.boolean().optional(),
+      }),
+    }),
+
+    blog: defineCollection({
+      source: "blog/*.md",
+      type: "page",
+      schema: z.object({
+        sitemap: defineSitemapSchema(),
+        slug: z.string(),
+        title: z.string(),
+        thumbnail_url: z.string().url().optional(),
+        created_at: z.string().datetime(),
+        modified_at: z.string().datetime(),
+        author: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        category: z.enum(blogCategories),
+        pinned: z.boolean(),
+        // Character slugs; only used by "lore" posts
+        related_characters: z.array(z.string()).optional(),
       }),
     }),
   },
