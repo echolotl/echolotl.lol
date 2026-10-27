@@ -4,9 +4,10 @@
     :style="{
       '--filter-url': `url(#post-${post.slug})`,
     }"
+    :class="post.category"
   >
     <SketchFilter :id="`post-${post.slug}`" flood-color="var(--flood-color)" />
-    <div class="blog-item" :class="post.category">
+    <div class="blog-item">
       <div class="category-label">
         <Icon
           :icon="CATEGORY_ICONS[post.category as BlogCategory]"
@@ -60,7 +61,6 @@ const props = defineProps<{
   text-decoration: none;
   color: inherit;
 
-  /* Stretched link: makes the whole card clickable without nesting anchors */
   &::after {
     content: "";
     position: absolute;
@@ -68,8 +68,7 @@ const props = defineProps<{
   }
 }
 .blog-item {
-  --color: var(--primary);
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem;
   border-radius: 8px;
   position: relative;
   isolation: isolate;
@@ -95,16 +94,6 @@ const props = defineProps<{
   }
   &:hover::before {
     opacity: 0.35;
-  }
-
-  &.lore {
-    --color: var(--purple);
-  }
-  &.devlog {
-    --color: var(--blue);
-  }
-  &.announcement {
-    --color: var(--orange);
   }
 
   .category-label {
@@ -150,11 +139,23 @@ const props = defineProps<{
   }
 }
 .blog-item-container {
+  position: relative;
+  --color: var(--primary);
   --flood-color: var(--surface);
   filter: var(--filter-url);
 
+  &.lore {
+    --color: var(--purple);
+  }
+  &.devlog {
+    --color: var(--blue);
+  }
+  &.announcement {
+    --color: var(--orange);
+  }
+
   &:hover {
-    --flood-color: var(--color);
+    --flood-color: color-mix(in srgb, var(--color) 40%, var(--solid));
   }
 }
 </style>

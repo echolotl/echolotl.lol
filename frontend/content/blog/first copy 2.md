@@ -1,11 +1,11 @@
 ---
-slug: first
+slug: first2
 title: First one
 category: general
-related_characters: 
-- king
+related_characters:
+  - king
 tags:
-- awesome
+  - awesome
 author: echolotl
 pinned: false
 created_at: 10-22-2026

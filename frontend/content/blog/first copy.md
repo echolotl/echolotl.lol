@@ -1,11 +1,11 @@
 ---
-slug: first
+slug: first4
 title: First one
 category: devlog
-related_characters: 
-- king
+related_characters:
+  - king
 tags:
-- awesome
+  - awesome
 author: echolotl
 pinned: false
 created_at: 10-22-2026
