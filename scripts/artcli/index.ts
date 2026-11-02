@@ -16,6 +16,7 @@ import { regenthumb } from "./commands/regenthumb";
 import { regenpalette } from "./commands/regenpalette";
 import { fixdata } from "./commands/fix-data";
 import { regenIPA } from "./commands/regenipa";
+import { nautilus } from "./commands/nautilus";
 
 function resetContext() {
   context.dryRun = false;
@@ -91,6 +92,9 @@ export async function runArtCLI(rawArgs: string[]) {
       break;
     case "fixdata":
       await fixdata();
+      break;
+    case "nautilus":
+      await nautilus(args);
       break;
     default:
       printUsage();

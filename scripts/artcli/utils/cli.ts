@@ -62,6 +62,11 @@ const usages: Record<"commands" | "flags", UsageEntry[]> = {
       command: "fixdata",
       description: "Formats and validates all art and character metadata.",
     },
+    {
+      command: "nautilus <preset|message <text...>>",
+      description:
+        "Stages pending art changes and commits them as Nautilus, using an auto-generated message (preset) or a custom one. Re-run with --push to retry a failed commit or push.",
+    },
   ],
   flags: [
     {

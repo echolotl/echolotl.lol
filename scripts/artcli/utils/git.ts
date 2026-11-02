@@ -6,6 +6,7 @@ import { exit } from "./cli";
 export interface GitResult {
   success: boolean;
   output: string;
+  stdout: string;
 }
 
 /**
@@ -39,8 +40,41 @@ export function runGit(args: string[]): GitResult {
   const result = spawnSync("git", [...getBotIdentityArgs(), ...args], {
     encoding: "utf-8",
   });
-  const output = (result.stdout || "") + (result.stderr || "");
-  return { success: result.status === 0, output };
+  const stdout = result.stdout || "";
+  const output = stdout + (result.stderr || "");
+  return { success: result.status === 0, output, stdout };
+}
+
+/**
+ * Removes files that are ignored by .gitignore (e.g. generated thumbnails), since `git add` rejects them.
+ * @param files Array of file paths
+ * @returns The files that can be staged
+ */
+export function filterIgnored(files: string[]): string[] {
+  if (files.length === 0) return files;
+  const result = runGit(["check-ignore", "-z", "--", ...files]);
+  const ignored = new Set(result.stdout.split("\0").filter(Boolean));
+  return files.filter((file) => !ignored.has(file));
+}
+
+/**
+ * Checks whether anything is currently staged for commit.
+ */
+export function hasStagedChanges(): boolean {
+  return !runGit(["diff", "--cached", "--quiet"]).success;
+}
+
+/**
+ * Pushes the current branch to the remote, exiting the process on failure.
+ */
+export function pushCurrentBranch(): void {
+  Logger.info("Pushing to remote...");
+  const pushResult = runGit(["push"]);
+  if (!pushResult.success) {
+    Logger.error(`git push failed:\n${pushResult.output}`);
+    exit(1);
+  }
+  Logger.success("Pushed to remote.");
 }
 
 /**
@@ -64,7 +98,7 @@ export async function pushToRemote(
   Logger.nl();
   Logger.info("Staging changes...");
 
-  const addResult = runGit(["add", ...files]);
+  const addResult = runGit(["add", "--", ...filterIgnored(files)]);
   if (!addResult.success) {
     Logger.error(`git add failed:\n${addResult.output}`);
     exit(1);
@@ -79,11 +113,5 @@ export async function pushToRemote(
 
   if (!context.shouldPush) return;
 
-  Logger.info("Pushing to remote...");
-  const pushResult = runGit(["push"]);
-  if (!pushResult.success) {
-    Logger.error(`git push failed:\n${pushResult.output}`);
-    exit(1);
-  }
-  Logger.success("Pushed to remote.");
+  pushCurrentBranch();
 }
