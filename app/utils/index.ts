@@ -1,5 +1,7 @@
+// Dates are always shown in UTC so they never depend on the viewer's time zone
 export function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -8,12 +10,14 @@ export function formatDate(date: Date) {
 
 export function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",
     hour: "numeric",
     minute: "numeric",
     second: "numeric",
+    timeZoneName: "short",
   }).format(date);
 }
 
@@ -31,6 +35,51 @@ export function formatTime(total: number) {
   const seconds = total % 60;
   parts.push(String(seconds).padStart(2, "0"));
   return parts.join(":");
+}
+
+const units: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 365 * 24 * 60 * 60 * 1000],
+  ["month", 30 * 24 * 60 * 60 * 1000],
+  ["day", 24 * 60 * 60 * 1000],
+  ["hour", 60 * 60 * 1000],
+  ["minute", 60 * 1000],
+  ["second", 1000],
+];
+
+const auto = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
+
+export function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const deltaMs = now.getTime() - date.getTime();
+  for (const [unit, ms] of units) {
+    if (Math.abs(deltaMs) >= ms) {
+      return auto.format(Math.round(deltaMs / ms), unit);
+    }
+  }
+  return auto.format(0, "second");
+}
+
+/**
+ * Formats the time between two dates without a direction suffix, e.g. "3 months".
+ * @param date The date to measure from.
+ * @param now The date to measure to. Defaults to the current time.
+ */
+export function formatTimeSpan(date: Date, now: Date = new Date()): string {
+  const deltaMs = Math.abs(now.getTime() - date.getTime());
+  for (const [unit, ms] of units) {
+    if (deltaMs >= ms) {
+      return new Intl.NumberFormat("en-US", {
+        style: "unit",
+        unit,
+        unitDisplay: "long",
+      }).format(Math.round(deltaMs / ms));
+    }
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "unit",
+    unit: "second",
+    unitDisplay: "long",
+  }).format(0);
 }
 
 export function formatWithZeros(num: number, length: number) {

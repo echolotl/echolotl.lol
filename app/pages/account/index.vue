@@ -18,7 +18,7 @@
           </h2>
           <span class="date">
             Created on
-            <b>{{ new Date(user.createdAt).toLocaleDateString() }}</b>
+            <b>{{ formatDate(new Date(user.createdAt)) }}</b>
           </span>
         </div>
       </div>

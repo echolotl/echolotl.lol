@@ -32,7 +32,12 @@
       <div v-else class="no-artwork">
         <p>No artwork found for this character yet.</p>
       </div>
-      <SplashText v-if="characterArtworks && characterArtworks.length > 0" />
+      <div
+        v-if="characterArtworks && characterArtworks.length > 0"
+        style="display: flex; justify-content: center; margin: 0.5rem 0"
+      >
+        <ActivityHeatmap :data="activityData" />
+      </div>
     </div>
     <div class="character-comments">
       <h2 class="section-title">
@@ -49,10 +54,12 @@ import CharacterBanner from "~/components/characters/CharacterBanner.vue";
 import CharacterInfobox from "~/components/characters/CharacterInfobox.vue";
 import ArtGrid from "~/components/art/ArtGrid.vue";
 import Icon from "~/components/common/Icon.vue";
+import ActivityHeatmap from "~/components/home/ActivityHeatmap.vue";
 import { useTheme } from "~/composables/useTheme";
 import SplashText from "~/components/common/SplashText.vue";
 import CommentForm from "~/components/comments/CommentForm.vue";
 import CommentSection from "~/components/comments/CommentSection.vue";
+import { computed } from "vue";
 
 const route = useRoute();
 
@@ -88,6 +95,24 @@ const { data: characterArtworks } = await useAsyncData(
     server: true,
   },
 );
+
+const activityData = computed(() => {
+  const data: Record<string, { unit: string; count: number }[]> = {};
+  if (characterArtworks.value) {
+    for (const artwork of characterArtworks.value) {
+      const date = artwork.created_at.slice(0, 10);
+      if (!data[date]) data[date] = [];
+      const unit = "artwork";
+      const existing = data[date].find((a) => a.unit === unit);
+      if (existing) {
+        existing.count++;
+      } else {
+        data[date].push({ unit, count: 1 });
+      }
+    }
+  }
+  return data;
+});
 
 const { theme } = useTheme();
 

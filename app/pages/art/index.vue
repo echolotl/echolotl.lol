@@ -1,23 +1,7 @@
 <template>
   <div class="art-page">
     <h1 class="art-title">Artchive</h1>
-    <p class="subtitle">
-      echolotl's archive of art! Currently contains
-      <b>{{
-        allArtworks?.length -
-        allArtworks?.filter((art) => !isEcholotlArtwork(art)).length
-      }}</b>
-      artworks over
-      <b>{{
-        Math.abs(
-          allArtworks?.reduce(
-            (min, art) => Math.min(min, new Date(art.created_at).getFullYear()),
-            new Date().getFullYear(),
-          ) - new Date().getFullYear(),
-        )
-      }}</b>
-      years. Click on any piece to view details.
-    </p>
+    <ActivityHeatmap :data="artActivityData" />
 
     <div v-if="allPinnedArtworks.length > 0" class="section-header">
       <h2 class="section-title">
@@ -230,6 +214,7 @@ import SplashText from "~/components/common/SplashText.vue";
 import ArtGrid from "~/components/art/ArtGrid.vue";
 import AgeGateModal from "~/components/art/AgeGateModal.vue";
 import { useAgeVerification } from "../../composables/useAgeVerification";
+import ActivityHeatmap from "~/components/home/ActivityHeatmap.vue";
 type SortBy = "created" | "added" | "alphabetical" | "whatever";
 const METADATA_FILTERS = ["sketches", "gallery", "variants"] as const;
 type MetadataFilter = (typeof METADATA_FILTERS)[number];
@@ -473,6 +458,20 @@ const allPinnedArtworks = computed(() =>
       (showNsfw.value || !artwork.nsfw),
   ),
 );
+
+const artActivityData = computed(() => {
+  const data: Record<string, { unit: string; count: number }[]> = {};
+  (allArtworks.value || []).forEach((artwork) => {
+    if (!isEcholotlArtwork(artwork)) return;
+    // UTC, matching how the art detail page displays created_at; many dates are midnight UTC
+    const date = new Date(artwork.created_at).toISOString().slice(0, 10);
+    const activities = (data[date] ??= []);
+    const art = activities.find((a) => a.unit === "artwork");
+    if (art) art.count++;
+    else activities.push({ unit: "artwork", count: 1 });
+  });
+  return data;
+});
 
 const filteredArtworks = computed(() => {
   const artworks = (allArtworks.value || []).filter((artwork) => {
