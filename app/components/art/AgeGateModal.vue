@@ -29,9 +29,9 @@
 </template>
 
 <script setup lang="ts">
-import Modal from "../common/Modal.vue";
+import Modal from "~/components/ui/Modal.vue";
 import { useAgeVerification } from "../../composables/useAgeVerification.js";
-import Icon from "../common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 
 const open = defineModel<boolean>({ required: true });
 

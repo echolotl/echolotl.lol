@@ -32,12 +32,24 @@
         ref="gameBoard"
         width="300"
         height="300"
+        role="grid"
+        :tabindex="locked ? -1 : 0"
+        :aria-label="`${editable ? 'Picross editor' : 'Picross puzzle'} board, ${game.size.width} columns by ${game.size.height} rows`"
+        aria-describedby="picross-board-help"
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
         @pointerleave="handlePointerLeave"
+        @keydown="handleBoardKeydown"
         @contextmenu.prevent
       ></canvas>
     </div>
+    <p id="picross-board-help" class="sr-only">
+      Use the arrow keys to select a tile. Press Space or Enter to apply the
+      selected input mode. Use B, M, E, or P to change modes.
+    </p>
+    <p class="sr-only" role="status" aria-live="polite">
+      {{ boardAnnouncement }}
+    </p>
     <div v-if="metadataInfo" class="metadata text-secondary">
       <span v-if="metadataInfo.title"
         >"<b>{{ metadataInfo.title }}</b
@@ -62,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import SketchFilter from "~/components/common/SketchFilter.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 import { useTheme } from "~/composables/useTheme";
 import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
 import {
@@ -698,6 +710,12 @@ let action: PicrossTileChange | null = null;
 
 /** The currently hovered tile, or null if none. */
 const hoveredTile = ref<{ x: number; y: number } | null>(null);
+const selectedTile = ref({ x: 0, y: 0 });
+const boardAnnouncement = computed(() => {
+  const { x, y } = selectedTile.value;
+  const state = props.game.board[y]?.[x] ?? "empty";
+  return `Row ${y + 1}, column ${x + 1}, ${state}. ${inputMode.value} mode selected.`;
+});
 
 // #endregion MAIN CANVAS
 
@@ -816,6 +834,7 @@ function handlePointerDown(event: PointerEvent) {
   if (event.button !== 0 && event.button !== 2) return;
   const tile = getTileAt(event);
   if (!tile) return;
+  selectedTile.value = tile;
   event.preventDefault();
   heldPointer = event.pointerId;
   stroke = [];
@@ -834,6 +853,46 @@ function handlePointerMove(event: PointerEvent) {
   setHoveredTile(event.pointerType === "touch" ? null : tile);
   if (!tile || heldPointer !== event.pointerId || !action) return;
   applyAction(tile.x, tile.y);
+}
+
+function handleBoardKeydown(event: KeyboardEvent) {
+  if (props.game.isCompleted || props.locked) return;
+  const { width, height } = props.game.size;
+  const selected = selectedTile.value;
+
+  switch (event.key) {
+    case "ArrowUp":
+      selectedTile.value = { ...selected, y: Math.max(0, selected.y - 1) };
+      break;
+    case "ArrowDown":
+      selectedTile.value = {
+        ...selected,
+        y: Math.min(height - 1, selected.y + 1),
+      };
+      break;
+    case "ArrowLeft":
+      selectedTile.value = { ...selected, x: Math.max(0, selected.x - 1) };
+      break;
+    case "ArrowRight":
+      selectedTile.value = {
+        ...selected,
+        x: Math.min(width - 1, selected.x + 1),
+      };
+      break;
+    case " ":
+    case "Enter":
+      event.preventDefault();
+      stroke = [];
+      action = resolveTile(getTile(selected.x, selected.y), 0);
+      applyAction(selected.x, selected.y);
+      action = null;
+      commitStroke();
+      return;
+    default:
+      return;
+  }
+
+  event.preventDefault();
 }
 
 /**
@@ -986,6 +1045,7 @@ watch(
     stopHold();
     clearHistory();
     hoveredTile.value = null;
+    selectedTile.value = { x: 0, y: 0 };
   },
 );
 

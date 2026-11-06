@@ -3,25 +3,32 @@
     <nav class="navbar-top">
       <div class="navbar-top__content">
         <!-- Desktop theme icon -->
-        <div
+        <button
+          type="button"
           class="navbar-top__themeicon navbar-top__themeicon--desktop"
-          @click="toggleTheme"
-          tabindex="0">
+          :aria-label="`Switch to ${props.light ? 'dark' : 'light'} theme`"
+          @click="toggleTheme">
           <Icon
             :icon="currentThemeIcon"
             width="48px"
             height="48px"
             class="icon icon--hoverable" />
-        </div>
+        </button>
 
         <!-- Mobile hamburger menu -->
-        <div class="navbar-top__hamburger" @click="toggleMobileMenu">
+        <button
+          type="button"
+          class="navbar-top__hamburger"
+          :aria-expanded="mobileMenuOpen"
+          aria-controls="primary-mobile-navigation"
+          :aria-label="mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'"
+          @click="toggleMobileMenu">
           <Icon
             :icon="mobileMenuOpen ? 'close' : 'hamburger-open'"
             width="48px"
             height="48px"
             class="icon icon--hoverable" />
-        </div>
+        </button>
 
         <div class="navbar-top__logo">
           <nuxt-link to="/" aria-label="Go to homepage">
@@ -49,7 +56,8 @@
           <nuxt-link
             v-for="(navIcon, index) in navIcons"
             :key="index"
-            :to="navIcon.to">
+            :to="navIcon.to"
+            :aria-current="route.path === navIcon.to ? 'page' : undefined">
             <Icon
               :icon="navIcon.icon"
               :alt="navIcon.alt"
@@ -67,18 +75,23 @@
 
       <!-- Mobile menu dropdown -->
       <div
+        id="primary-mobile-navigation"
+        v-show="mobileMenuOpen"
         class="navbar-top__mobile-menu"
-        :class="{ 'navbar-top__mobile-menu--open': mobileMenuOpen }">
+        aria-label="Primary">
         <div class="navbar-top__mobile-menu-content">
           <!-- Mobile theme toggle -->
-          <div class="navbar-top__mobile-item" @click="toggleTheme">
+          <button
+            type="button"
+            class="navbar-top__mobile-item"
+            @click="toggleTheme">
             <Icon
               :icon="currentThemeIcon"
               width="32px"
               height="32px"
               class="icon icon--hoverable" />
             <span>{{ props.light ? "Dark Mode" : "Light Mode" }}</span>
-          </div>
+          </button>
 
           <!-- Mobile navigation items -->
           <nuxt-link
@@ -86,6 +99,7 @@
             :key="index"
             :to="navIcon.to"
             class="navbar-top__mobile-item"
+            :aria-current="route.path === navIcon.to ? 'page' : undefined"
             @click="closeMobileMenu">
             <Icon
               :icon="navIcon.icon"
@@ -110,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "@/components/common/Icon.vue";
+import Icon from "@/components/ui/Icon.vue";
 
 interface NavIcon {
   icon: string;
@@ -205,7 +219,9 @@ onMounted(() => {
 .navbar-top__themeicon--desktop {
   position: absolute;
   left: 1rem;
-  outline: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
 
   @media (max-width: 768px) {
     display: none;
@@ -216,6 +232,9 @@ onMounted(() => {
   position: absolute;
   left: 1rem;
   display: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
 
   @media (max-width: 768px) {
     display: block;
@@ -233,7 +252,6 @@ onMounted(() => {
   display: flex;
   flex-direction: row;
   min-width: auto;
-  outline: none;
   &:hover {
     .navbar-top__logo-icon,
     .navbar-top__logo-image {
@@ -293,17 +311,10 @@ onMounted(() => {
   left: 0;
   width: 100%;
   background-color: var(--distant);
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-in-out;
   display: none;
 
   @media (max-width: 768px) {
     display: block;
-  }
-
-  &--open {
-    max-height: 400px;
   }
 }
 
@@ -321,7 +332,6 @@ onMounted(() => {
   gap: 0.75rem;
   padding: 0.75rem;
   border-radius: 8px;
-  cursor: pointer;
   text-decoration: none;
   color: var(--inverted-solid);
   transition: background-color 0.2s ease;
@@ -338,6 +348,13 @@ onMounted(() => {
   .icon {
     flex-shrink: 0;
   }
+}
+
+button.navbar-top__mobile-item {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
 }
 
 .navbar-bottom {

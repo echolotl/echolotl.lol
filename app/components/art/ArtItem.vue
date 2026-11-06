@@ -78,8 +78,8 @@
 
 <script setup lang="ts">
 import type { Art } from "~~/types";
-import SketchFilter from "../common/SketchFilter.vue";
-import Icon from "~/components/common/Icon.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
+import Icon from "~/components/ui/Icon.vue";
 import { useAgeVerification } from "../../composables/useAgeVerification.js";
 
 const props = defineProps<{

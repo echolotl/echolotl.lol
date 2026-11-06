@@ -126,7 +126,6 @@ export default defineNuxtConfig({
     },
   },
   alias: {
-    "@common": resolve(__dirname, "app/components/common"),
     "@art": resolve(__dirname, "app/components/art"),
     "@characters": resolve(__dirname, "app/components/characters"),
   },

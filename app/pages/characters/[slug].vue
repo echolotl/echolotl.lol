@@ -53,10 +53,10 @@
 import CharacterBanner from "~/components/characters/CharacterBanner.vue";
 import CharacterInfobox from "~/components/characters/CharacterInfobox.vue";
 import ArtGrid from "~/components/art/ArtGrid.vue";
-import Icon from "~/components/common/Icon.vue";
-import ActivityHeatmap from "~/components/home/ActivityHeatmap.vue";
+import Icon from "~/components/ui/Icon.vue";
+import ActivityHeatmap from "~/components/ui/ActivityHeatmap.vue";
 import { useTheme } from "~/composables/useTheme";
-import SplashText from "~/components/common/SplashText.vue";
+import SplashText from "~/components/ui/SplashText.vue";
 import CommentForm from "~/components/comments/CommentForm.vue";
 import CommentSection from "~/components/comments/CommentSection.vue";
 import { computed } from "vue";

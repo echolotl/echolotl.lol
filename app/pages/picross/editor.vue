@@ -28,17 +28,23 @@
         <div class="new-color-container">
           <div class="palette-header">
             <Icon icon="palette" width="24px" height="24px" />
-            <button @click="loadColorsFromImage" title="Load colors from image">
+            <button
+              type="button"
+              aria-label="Load colors from image"
+              @click="loadColorsFromImage"
+            >
               <Icon icon="upload" width="24px" height="24px" />
             </button>
           </div>
 
           <div class="new-color">
             <Tooltip>
-              <div
+              <button
+                type="button"
                 class="add-color-swatch"
                 :style="{ '--paint-color': newColor }"
-              ></div>
+                aria-label="Choose new color"
+              ></button>
               <template #text>
                 <div class="tooltip">
                   <ColorPicker v-model="newColor" />
@@ -48,7 +54,7 @@
             <button
               class="add-button"
               @click="addColor()"
-              title="Add to pallete"
+              aria-label="Add color to palette"
             >
               <Icon icon="small-arrow" width="20px" height="20px" />
             </button>
@@ -65,17 +71,24 @@
             @click="selectedIndex = null"
           ></button>
           <Tooltip v-for="(color, index) in palette" :key="index">
-            <div
+            <button
+              type="button"
               class="color-swatch"
               :class="{ selected: selectedIndex === index }"
               :style="{ '--paint-color': color }"
+              :aria-label="`Select palette color ${index + 1}`"
+              :aria-pressed="selectedIndex === index"
               @click="selectedIndex = index"
-            ></div>
+            ></button>
             <template #text
               ><div class="swatch-tooltip">
                 <div class="tooltip-header">
                   <span class="lotl-font">#{{ formatWithZeros(index, 2) }}</span
-                  ><button @click="deleteColor(index)">
+                  ><button
+                    type="button"
+                    :aria-label="`Delete palette color ${index + 1}`"
+                    @click="deleteColor(index)"
+                  >
                     <Icon icon="trash" width="20px" height="20px" />
                   </button>
                 </div>
@@ -170,11 +183,11 @@
 
 <script setup lang="ts">
 import PicrossGrid from "~/components/picross/PicrossGrid.vue";
-import Icon from "~/components/common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 import PicrossPage from "~/components/picross/PicrossPage.vue";
 import PicrossInputControls from "~/components/picross/PicrossInputControls.vue";
 import PicrossSizeInput from "~/components/picross/PicrossSizeInput.vue";
-import ColorPicker from "~/components/common/ColorPicker.vue";
+import ColorPicker from "~/components/ui/ColorPicker.vue";
 import {
   createPicrossGame,
   clearBoard,
@@ -185,7 +198,7 @@ import {
   type PicrossSize,
 } from "~/utils/picross";
 import { loadPicrossPuzzle, savePicrossPuzzle } from "~/utils/picross/file";
-import Tooltip from "~/components/common/Tooltip.vue";
+import Tooltip from "~/components/ui/Tooltip.vue";
 
 const sizeInput = reactive<PicrossSize>({
   width: DEFAULT_BOARD_SIZE,

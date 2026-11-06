@@ -15,6 +15,7 @@ nsfw: false
 images:
   - image_url: /art/characters/echo/halloween-2026-banner.png
     thumbnail_url: /art/characters/echo/thumbnails/halloween-2026-banner.webp
+    thumbnail_anchor: left
     alt: A bunch of my characters interacting with each other for Halloween; Echo, not dressed up, is raring to scare King, dressed up as The Lamb from Cult of the Lamb, while Phosphor, dressed up as a Tarr from Slime Rancher paints Orchy's belly with a pumpkin pattern. Kitral, wearing a witch costume, amps up Glory, who is shy and wearing an angel costume.
     id: halloween-2026-banner
 sketch: true

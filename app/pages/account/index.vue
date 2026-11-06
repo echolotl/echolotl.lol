@@ -80,9 +80,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useAuth } from "~/composables/useAuth";
-import UserAvatar from "~/components/common/UserAvatar.vue";
-import Icon from "~/components/common/Icon.vue";
-import DiscordIcon from "~/components/common/DiscordIcon.vue";
+import UserAvatar from "~/components/user/UserAvatar.vue";
+import Icon from "~/components/ui/Icon.vue";
+import DiscordIcon from "~/components/ui/DiscordIcon.vue";
 
 const {
   user,

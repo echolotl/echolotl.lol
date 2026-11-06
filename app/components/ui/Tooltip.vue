@@ -140,4 +140,10 @@ function onLeave() {
   opacity: 1;
   transform: var(--shift) scale(1);
 }
+
+.tooltip:focus-within .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+  transform: var(--shift) scale(1);
+}
 </style>

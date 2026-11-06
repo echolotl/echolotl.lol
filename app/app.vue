@@ -17,6 +17,7 @@ onMounted(() => {
 });
 
 useHead({
+  meta: [{ name: "text-scale", content: "scale" }],
   script: [
     {
       src: "/script.js",

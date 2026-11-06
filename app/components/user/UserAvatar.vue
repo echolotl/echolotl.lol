@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { computed, useId } from "vue";
 import { useAuth } from "~/composables/useAuth";
-import SketchFilter from "~/components/common/SketchFilter.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 import { type PublicUser } from "~/composables/useAuth";
 
 const props = withDefaults(

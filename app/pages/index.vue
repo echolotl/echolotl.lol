@@ -19,8 +19,13 @@
 </template>
 
 <script setup lang="ts">
-import SketchFilter from "~/components/common/SketchFilter.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 import StatusSection from "~/components/home/StatusSection.vue";
+
+useSeoMeta({
+  title: "echolotl.lol",
+  description: "echolotl's personal website, containing their art, characters, and more.",
+});
 </script>
 
 <style scoped lang="scss">

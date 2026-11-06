@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import type { Character } from "~~/types";
-import SketchFilter from "../common/SketchFilter.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 import { useTheme } from "~/composables/useTheme.js";
 
 const props = defineProps({

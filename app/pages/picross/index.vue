@@ -63,7 +63,7 @@ import {
 } from "~/utils/picross";
 import PicrossGrid from "~/components/picross/PicrossGrid.vue";
 import PicrossSizeInput from "~/components/picross/PicrossSizeInput.vue";
-import Icon from "~/components/common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 import PicrossPage from "~/components/picross/PicrossPage.vue";
 import PicrossInputControls from "~/components/picross/PicrossInputControls.vue";
 import { getHints } from "~/utils/picross";

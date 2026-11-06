@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import type { CharactersCollectionItem } from "@nuxt/content";
-import SketchFilter from "../common/SketchFilter.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 
 const scrollY = ref(0);
 

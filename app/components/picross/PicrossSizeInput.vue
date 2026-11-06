@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "~/components/common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 import { clampPicrossSize, type PicrossSize } from "~/utils/picross";
 
 const props = defineProps<{ modelValue: PicrossSize }>();

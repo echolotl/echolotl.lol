@@ -188,8 +188,8 @@
 </template>
 
 <script setup lang="ts">
-import CharacterLink from "~/components/common/CharacterLink.vue";
-import Icon from "~/components/common/Icon.vue";
+import CharacterLink from "~/components/characters/CharacterLink.vue";
+import Icon from "~/components/ui/Icon.vue";
 import type { Character } from "~~/types";
 
 const props = defineProps<{

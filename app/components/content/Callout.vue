@@ -29,8 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "../common/Icon.vue";
-import SketchFilter from "../common/SketchFilter.vue";
+import Icon from "~/components/ui/Icon.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 interface Props {
   type?: "info" | "warning" | "error" | "tip";
   title?: string;

@@ -14,13 +14,17 @@
             </div>
             <div class="actions">
               <nuxt-link to="/account" class="link">Manage</nuxt-link>•
-              <a href="#" class="link" @click.prevent="logout">Logout</a>
+              <button type="button" class="link footer-action" @click="logout">
+                Logout
+              </button>
             </div>
           </div>
         </div>
         <div v-else class="user-info logged-out">
           Not logged in.
-          <a href="#" class="link" @click.prevent="login">Login</a>
+          <button type="button" class="link footer-action" @click="login">
+            Login
+          </button>
         </div>
         <div class="license">
           <div class="license-image">
@@ -69,10 +73,10 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "~/components/common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 import { useAuth } from "~/composables/useAuth";
-import SocialIcons from "~/components/common/SocialIcons.vue";
-import UserAvatar from "~/components/common/UserAvatar.vue";
+import SocialIcons from "./SocialIcons.vue";
+import UserAvatar from "~/components/user/UserAvatar.vue";
 
 const rtc = useRuntimeConfig();
 const { logout, login, user, getDisplayName } = useAuth();
@@ -245,5 +249,12 @@ footer {
     font-size: var(--small-text);
     color: var(--text-secondary);
   }
+}
+
+.footer-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
 }
 </style>

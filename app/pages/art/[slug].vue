@@ -96,10 +96,10 @@
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import CharacterTag from "~/components/common/CharacterTag.vue";
-import Icon from "~/components/common/Icon.vue";
-import Tag from "~/components/common/Tag.vue";
-import TagList from "~/components/common/TagList.vue";
+import CharacterTag from "~/components/characters/CharacterTag.vue";
+import Icon from "~/components/ui/Icon.vue";
+import Tag from "~/components/ui/Tag.vue";
+import TagList from "~/components/ui/TagList.vue";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";

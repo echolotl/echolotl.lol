@@ -2,9 +2,7 @@
   <div
     class="gallery"
     v-if="art.images && art.images.length"
-    @keydown="onKey"
-    tabindex="0"
-    ref="galleryRoot">
+  >
     <div class="viewer-container">
       <div class="viewer">
         <div class="image-wrapper">
@@ -16,7 +14,9 @@
             :height="activeImageDimensions.height"
             class="hero"
             :data-index="currentImageIndex"
-            :data-variant="currentVariantIndex ?? 'base'" />
+            :data-variant="currentVariantIndex ?? 'base'"
+            @error="imageLoadError = 'Could not load the selected artwork image.'"
+          />
           <div v-else class="placeholder">
             <Icon icon="loading" width="3rem" height="3rem" />Loading...
           </div>
@@ -31,16 +31,20 @@
       <div class="variants__list">
         <Icon icon="layers" />
         <button
+          type="button"
           class="button--chip"
           :class="{ active: currentVariantIndex === null }"
+          :aria-pressed="currentVariantIndex === null"
           @click="currentVariantIndex = null">
           Original
         </button>
         <button
+          type="button"
           v-for="(variant, vIndex) in currentImage.variants"
           :key="vIndex"
           class="button--chip"
           :class="{ active: currentVariantIndex === vIndex }"
+          :aria-pressed="currentVariantIndex === vIndex"
           @click="selectVariant(vIndex)">
           {{ variant.label || "Alt " + (vIndex + 1) }}
         </button>
@@ -51,14 +55,18 @@
     <div v-if="hasMultiple" class="selector">
       <div class="selector__dots">
         <button
+          type="button"
           v-for="(_, index) in art.images"
           :key="index"
           class="selector-dot"
           :class="{ active: currentImageIndex === index }"
+          :aria-label="`Show image ${index + 1} of ${art.images.length}`"
+          :aria-pressed="currentImageIndex === index"
           @click="selectImage(index)"></button>
       </div>
       <div class="selector__label">
         <button
+          type="button"
           class="button--nav prev"
           @click="prevImage"
           aria-label="Previous image"
@@ -68,6 +76,7 @@
         <Icon icon="images" /> {{ currentImageIndex + 1 }} /
         {{ art.images.length }}
         <button
+          type="button"
           class="button--nav next"
           @click="nextImage"
           aria-label="Next image"
@@ -90,22 +99,28 @@
       {{ activeSource?.image_url.split("/").pop() || "Untitled Image" }}
       <Icon icon="open-in-new" />
     </a>
+    <p v-if="imageLoadError" role="alert" class="gallery-error">
+      {{ imageLoadError }}
+    </p>
+    <p class="sr-only" role="status" aria-live="polite">
+      {{ galleryStatus }}
+    </p>
   </div>
   <div v-else class="gallery-empty">No images available.</div>
 </template>
 
 <script setup lang="ts">
 import type { Art, ArtImage } from "~~/types";
-import Icon from "~/components/common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 
 const props = defineProps<{ art: Art }>();
 
 const currentImageIndex = ref(0);
 const currentVariantIndex = ref<number | null>(null);
-const galleryRoot = ref<HTMLElement | null>(null);
 const imageDimensionsCache = ref<
   Map<string, { width: number; height: number }>
 >(new Map());
+const imageLoadError = ref("");
 
 const hasMultiple = computed(() => (props.art.images?.length || 0) > 1);
 const currentImage = computed<ArtImage | undefined>(
@@ -135,6 +150,10 @@ const activeSource = computed(() => {
 const activeImageDimensions = computed(() => {
   if (!activeSource.value) return null;
   return imageDimensionsCache.value.get(activeSource.value.image_url) || null;
+});
+const galleryStatus = computed(() => {
+  if (!activeSource.value || !props.art.images?.length) return "";
+  return `Image ${currentImageIndex.value + 1} of ${props.art.images.length}: ${activeSource.value.alt}`;
 });
 
 function loadImage(url: string): Promise<{ width: number; height: number }> {
@@ -184,10 +203,12 @@ function selectImage(index: number) {
     return;
   currentImageIndex.value = index;
   currentVariantIndex.value = null; // reset variant selection
+  imageLoadError.value = "";
 }
 
 function selectVariant(vIndex: number) {
   currentVariantIndex.value = vIndex;
+  imageLoadError.value = "";
 }
 
 function prevImage() {
@@ -196,6 +217,7 @@ function prevImage() {
     (currentImageIndex.value - 1 + props.art.images.length) %
     props.art.images.length;
   currentVariantIndex.value = null;
+  imageLoadError.value = "";
 }
 
 function nextImage() {
@@ -203,33 +225,10 @@ function nextImage() {
   currentImageIndex.value =
     (currentImageIndex.value + 1) % props.art.images.length;
   currentVariantIndex.value = null;
-}
-
-function onKey(e: KeyboardEvent) {
-  switch (e.key) {
-    case "ArrowLeft":
-      prevImage();
-      break;
-    case "ArrowRight":
-      nextImage();
-      break;
-    case "Escape":
-      currentVariantIndex.value = null;
-      break;
-    default:
-      if (currentImage.value?.variants?.length) {
-        const n = parseInt(e.key, 10);
-        if (!isNaN(n) && n >= 1) {
-          if (n === 1) currentVariantIndex.value = null;
-          else if (n - 2 < currentImage.value.variants.length)
-            currentVariantIndex.value = n - 2;
-        }
-      }
-  }
+  imageLoadError.value = "";
 }
 
 onMounted(() => {
-  galleryRoot.value?.focus();
   preloadAllImages();
 });
 </script>
@@ -240,7 +239,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  outline: none;
+}
+
+.gallery-error {
+  color: var(--red);
 }
 
 .viewer {

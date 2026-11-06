@@ -41,6 +41,9 @@
           </p>
         </template>
       </div>
+      <p class="sr-only" role="status" aria-live="polite">
+        {{ wheelAnnouncement }}
+      </p>
       <div
         class="gradient-bg"
         :class="{ 'is-flashing': isBackgroundFlashing }" />
@@ -183,8 +186,9 @@
       </div>
       <div class="selector">
         <div class="section preset">
-          <h6 class="section-heading">Preset</h6>
-          <select v-model="selectedPreset" class="preset-select">
+          <h2 class="section-heading">Preset</h2>
+          <label class="sr-only" for="wheel-preset">Choose a preset</label>
+          <select id="wheel-preset" v-model="selectedPreset" class="preset-select">
             <option
               v-for="preset in Object.keys(presets)"
               :key="preset"
@@ -208,7 +212,7 @@
         </div>
         <div class="section">
           <div class="slice-heading">
-            <h6 class="section-heading">Slices</h6>
+            <h2 class="section-heading">Slices</h2>
             <button
               @click="
                 slices.push({
@@ -229,7 +233,10 @@
               v-for="(slice, index) in slices"
               :key="index"
               class="slice-item">
-              <input v-model="slice.title" />
+              <label class="sr-only" :for="`slice-title-${index}`">
+                Slice {{ index + 1 }} title
+              </label>
+              <input :id="`slice-title-${index}`" v-model="slice.title" />
               <div style="display: flex; justify-content: space-between">
                 <div
                   style="
@@ -239,16 +246,22 @@
                     width: 100%;
                   ">
                   <input
+                    :id="`slice-percent-${index}`"
                     type="number"
                     min="1"
                     max="100"
                     step="0.1"
                     placeholder="%"
                     v-model.number="slice.percent" />
+                  <label class="sr-only" :for="`slice-percent-${index}`">
+                    Slice {{ index + 1 }} percentage
+                  </label>
                   <Tooltip>
-                    <div
+                    <button
+                      type="button"
                       class="slice-color-swatch"
-                      :style="{ '--slice-editor-color': slice.color }"></div>
+                      :aria-label="`Choose color for ${slice.title || `slice ${index + 1}`}`"
+                      :style="{ '--slice-editor-color': slice.color }"></button>
                     <template #text>
                       <ColorPicker v-model="slice.color" />
                     </template>
@@ -256,13 +269,15 @@
                 </div>
                 <div>
                   <button
+                    type="button"
                     @click="
                       () => {
                         if (isSpinning) stopSpinAnimation();
                         slices.splice(index, 1);
                       }
                     "
-                    class="action-button delete">
+                    class="action-button delete"
+                    :aria-label="`Remove ${slice.title || `slice ${index + 1}`}`">
                     <Icon icon="close" />
                   </button>
                 </div>
@@ -278,10 +293,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { type Character } from "~~/types";
-import ColorPicker from "~/components/common/ColorPicker.vue";
-import Icon from "~/components/common/Icon.vue";
-import SketchFilter from "~/components/common/SketchFilter.vue";
-import Tooltip from "~/components/common/Tooltip.vue";
+import ColorPicker from "~/components/ui/ColorPicker.vue";
+import Icon from "~/components/ui/Icon.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
+import Tooltip from "~/components/ui/Tooltip.vue";
 import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
 // Types
 type Slice = {
@@ -318,6 +333,15 @@ const isSpinning = computed(() => wheelState.value === "spinning");
 const selectedPreset = ref("");
 const useWheelSketchFilter = ref(true);
 const isBackgroundFlashing = ref(false);
+const wheelAnnouncement = computed(() => {
+  if (wheelState.value === "spinning") return "The wheel is spinning.";
+  if (wheelState.value === "waiting") {
+    return selectedSlice.value
+      ? `The wheel selected ${selectedSlice.value.title}.`
+      : "The wheel has stopped.";
+  }
+  return "";
+});
 const sliceAtTop = computed(() => {
   if (wheelSlices.value.length === 0) {
     return null;
@@ -1032,6 +1056,8 @@ useSeoMeta({
     background-color: var(--slice-editor-color);
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--slice-editor-color) 33%, var(--inverted-solid));
+    border: none;
+    padding: 0;
     border-radius: 16px;
     cursor: pointer;
   }

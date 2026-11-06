@@ -60,8 +60,8 @@
 </template>
 
 <script lang="ts" setup>
-import Modal from "~/components/common/Modal.vue";
-import Icon from "../common/Icon.vue";
+import Modal from "~/components/ui/Modal.vue";
+import Icon from "~/components/ui/Icon.vue";
 import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
 
 const open = defineModel<boolean>({ required: true });

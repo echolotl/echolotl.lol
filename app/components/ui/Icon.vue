@@ -4,8 +4,9 @@
     :style="maskStyle"
     :class="{ invert: props.invert }"
     class="icon"
-    role="img"
-    :aria-label="props.alt" />
+    :role="props.alt ? 'img' : undefined"
+    :aria-hidden="props.alt ? undefined : 'true'"
+    :aria-label="props.alt || undefined" />
 </template>
 
 <script setup lang="ts">

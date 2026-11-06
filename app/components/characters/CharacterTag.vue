@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import Tag from "./Tag.vue";
+import Tag from "~/components/ui/Tag.vue";
 import CharacterLink from "./CharacterLink.vue";
 import { useTheme } from "~/composables/useTheme.js";
 

@@ -1,5 +1,6 @@
 <template>
-  <div class="activity-heatmap">
+  <div ref="root" class="activity-heatmap">
+    <div class="activity-heatmap-inner">
     <table>
       <thead>
         <tr>
@@ -63,12 +64,13 @@
         <span style="margin-left: 4px">More</span>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { formatTimeSpan } from "~/utils";
-import Tooltip from "../common/Tooltip.vue";
+import Tooltip from "~/components/ui/Tooltip.vue";
 
 // Multiple activities (e.g. art, blog posts, etc) can be tracked per date
 type Activity = {
@@ -89,18 +91,52 @@ const props = withDefaults(
   },
 );
 
-const COLUMNS = computed(() => props.weeks);
+const CELL_SIZE = 14;
+const MIN_WEEKS = 8;
+const FALLBACK_LABEL_WIDTH = 36;
+
+const root = ref<HTMLElement | null>(null);
+// Number of weeks that fit the container; null until measured (renders all weeks)
+const fittingWeeks = ref<number | null>(null);
+
+// Drops the oldest weeks on narrow screens instead of overflowing the page
+const COLUMNS = computed(() =>
+  Math.min(props.weeks, fittingWeeks.value ?? props.weeks),
+);
 const ROWS = 7;
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function updateFittingWeeks() {
+  const el = root.value;
+  if (!el) return;
+  const labelWidth =
+    el.querySelector<HTMLElement>(".day-label")?.offsetWidth ||
+    FALLBACK_LABEL_WIDTH;
+  const fit = Math.floor((el.clientWidth - labelWidth) / CELL_SIZE);
+  fittingWeeks.value = Math.max(MIN_WEEKS, fit);
+}
+
+let resizeObserver: ResizeObserver | undefined;
+onMounted(() => {
+  updateFittingWeeks();
+  if (root.value) {
+    resizeObserver = new ResizeObserver(updateFittingWeeks);
+    resizeObserver.observe(root.value);
+  }
+});
+onBeforeUnmount(() => resizeObserver?.disconnect());
+
 // All dates are handled in UTC so the grid never depends on the viewer's time zone
 const today = new Date();
-const oldestDate = new Date(
-  Date.UTC(
-    today.getUTCFullYear(),
-    today.getUTCMonth(),
-    today.getUTCDate() - (COLUMNS.value - 1) * 7 - today.getUTCDay(),
-  ),
+const oldestDate = computed(
+  () =>
+    new Date(
+      Date.UTC(
+        today.getUTCFullYear(),
+        today.getUTCMonth(),
+        today.getUTCDate() - (COLUMNS.value - 1) * 7 - today.getUTCDay(),
+      ),
+    ),
 );
 
 function dateKey(date: Date) {
@@ -221,7 +257,12 @@ function getRelativeActivity(date: string) {
 
 <style scoped>
 .activity-heatmap {
-  display: inline-block;
+  width: 100%;
+}
+.activity-heatmap-inner {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
 }
 table {
   border-collapse: separate;
@@ -285,6 +326,7 @@ thead th {
 .activity-heatmap-legend {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 4px;
   font-size: var(--very-small-text);

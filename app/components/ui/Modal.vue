@@ -5,7 +5,6 @@
         v-if="open"
         ref="overlayRef"
         class="modal-overlay"
-        popover="manual"
         @click.self="closeOnBackdrop && close()"
       >
         <SketchFilter
@@ -31,10 +30,13 @@
             :color="props.iconColor"
             width="48px"
             height="48px"
+            aria-hidden="true"
           />
           <button
             v-if="props.closeButton"
+            type="button"
             class="modal__close"
+            aria-label="Close dialog"
             @click="close()"
           >
             <Icon icon="close" width="28px" height="28px" />
@@ -49,8 +51,8 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "./Icon.vue";
-import SketchFilter from "./SketchFilter.vue";
+import Icon from "~/components/ui/Icon.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -84,6 +86,11 @@ const emit = defineEmits<{
 const filterId = ref(`modal-sketch-${useId()}`);
 const boxRef = ref<HTMLElement | null>(null);
 const overlayRef = ref<HTMLElement | null>(null);
+let opener: HTMLElement | null = null;
+let appContent: HTMLElement | null = null;
+
+const focusableSelector =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function close() {
   open.value = false;
@@ -91,7 +98,30 @@ function close() {
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if (props.closeOnEscape && event.key === "Escape") close();
+  if (props.closeOnEscape && event.key === "Escape") {
+    close();
+    return;
+  }
+
+  if (event.key !== "Tab" || !boxRef.value) return;
+  const focusable = Array.from(
+    boxRef.value.querySelectorAll<HTMLElement>(focusableSelector),
+  );
+  if (focusable.length === 0) {
+    event.preventDefault();
+    boxRef.value.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 watch(
@@ -100,14 +130,22 @@ watch(
     if (!import.meta.client) return;
     document.body.style.overflow = isOpen ? "hidden" : "";
     if (isOpen) {
+      opener =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      appContent = document.querySelector<HTMLElement>("[data-app-content]");
+      appContent?.setAttribute("inert", "");
       window.addEventListener("keydown", onKeydown);
       nextTick(() => {
-        // Top layer, so the modal also appears above open popovers
-        overlayRef.value?.showPopover?.();
         boxRef.value?.focus();
       });
     } else {
       window.removeEventListener("keydown", onKeydown);
+      appContent?.removeAttribute("inert");
+      appContent = null;
+      nextTick(() => opener?.focus());
+      opener = null;
     }
   },
   { immediate: true },
@@ -117,6 +155,7 @@ onBeforeUnmount(() => {
   if (!import.meta.client) return;
   document.body.style.overflow = "";
   window.removeEventListener("keydown", onKeydown);
+  appContent?.removeAttribute("inert");
 });
 </script>
 
@@ -160,7 +199,6 @@ onBeforeUnmount(() => {
   max-height: 100%;
   display: flex;
   border: none;
-  outline: none;
   background: var(--surface);
   color: var(--text);
   filter: var(--filter-url);

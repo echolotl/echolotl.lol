@@ -124,7 +124,11 @@
               <legend>SEARCH</legend>
               <div class="search-section">
                 <div class="search-wrapper">
+                  <label class="sr-only" for="art-title-search">
+                    Search artwork by name
+                  </label>
                   <input
+                    id="art-title-search"
                     type="text"
                     v-model="filters.title"
                     placeholder="Search by name..."
@@ -133,7 +137,11 @@
                   <Icon icon="search" style="margin-right: 0.5rem" />
                 </div>
                 <div class="search-wrapper">
+                  <label class="sr-only" for="art-tag-search">
+                    Search artwork by tag
+                  </label>
                   <input
+                    id="art-tag-search"
                     type="text"
                     v-model="tagInput"
                     placeholder="Search by tag..."
@@ -144,13 +152,16 @@
                   <Icon icon="tag" style="margin-right: 0.5rem" />
                 </div>
                 <div v-if="filters.tags.length > 0" class="tag-filter-chips">
-                  <span
+                  <button
+                    type="button"
                     v-for="tag in filters.tags"
                     :key="tag"
                     class="tag-chip"
+                    :aria-label="`Remove tag ${tag}`"
                     @click="removeTag(tag)"
-                    >{{ tag }} &times;</span
                   >
+                    {{ tag }} &times;
+                  </button>
                 </div>
               </div>
             </fieldset>
@@ -170,8 +181,9 @@
             <hr />
             <fieldset>
               <legend>SORTING</legend>
-              <label class="no-padding">
-                <select v-model="filters.sortBy">
+              <label class="no-padding" for="art-sort">
+                <span class="sr-only"> Sort artworks </span>
+                <select id="art-sort" v-model="filters.sortBy">
                   <option value="created">Created</option>
                   <option value="added">Added</option>
                   <option value="alphabetical">Alphabetical</option>
@@ -183,12 +195,10 @@
         </div>
         <div v-if="tagDropdownOpen" class="tag-suggestions-scroll">
           <ul v-if="tagSuggestions.length > 0" class="tag-suggestions">
-            <li
-              v-for="tag in tagSuggestions"
-              :key="tag"
-              @mousedown.prevent="addTag(tag)"
-            >
-              {{ tag }}
+            <li v-for="tag in tagSuggestions" :key="tag">
+              <button type="button" @click="addTag(tag)">
+                Add tag {{ tag }}
+              </button>
             </li>
           </ul>
           <div
@@ -209,12 +219,12 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "~/components/common/Icon.vue";
-import SplashText from "~/components/common/SplashText.vue";
+import Icon from "~/components/ui/Icon.vue";
+import SplashText from "~/components/ui/SplashText.vue";
 import ArtGrid from "~/components/art/ArtGrid.vue";
 import AgeGateModal from "~/components/art/AgeGateModal.vue";
 import { useAgeVerification } from "../../composables/useAgeVerification";
-import ActivityHeatmap from "~/components/home/ActivityHeatmap.vue";
+import ActivityHeatmap from "~/components/ui/ActivityHeatmap.vue";
 type SortBy = "created" | "added" | "alphabetical" | "whatever";
 const METADATA_FILTERS = ["sketches", "gallery", "variants"] as const;
 type MetadataFilter = (typeof METADATA_FILTERS)[number];

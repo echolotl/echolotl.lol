@@ -1,14 +1,17 @@
 <template>
-  <div :class="{ 'light-theme': theme }">
+  <div data-app-content :class="{ 'light-theme': theme }">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <Navbar :light="theme" @toggle-theme="toggleTheme" />
-    <slot />
-    <Footer></Footer>
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
   </div>
 </template>
 
 <script setup lang="ts">
-import Navbar from "~/components/common/Navbar.vue";
-import Footer from "~/components/common/Footer.vue";
+import Navbar from "~/components/layout/Navbar.vue";
+import Footer from "~/components/layout/Footer.vue";
 import { useTheme } from "~/composables/useTheme";
 
 const { theme, toggleTheme, initializeTheme, cleanupTheme } = useTheme();

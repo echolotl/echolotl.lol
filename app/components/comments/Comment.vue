@@ -37,7 +37,7 @@
           <button
             type="button"
             class="comment-action-button"
-            title="Edit comment"
+            aria-label="Edit comment"
             :disabled="deleting"
             @click="startEditing"
           >
@@ -46,7 +46,7 @@
           <button
             type="button"
             class="comment-action-button"
-            title="Delete comment"
+            aria-label="Delete comment"
             :disabled="deleting"
             @click="handleDelete"
           >
@@ -56,20 +56,21 @@
         </template>
       </div>
     </div>
-    <div v-if="commentError" class="comment-error">{{ commentError }}</div>
+    <div v-if="commentError" class="comment-error" role="alert">
+      {{ commentError }}
+    </div>
     <div class="comment-content" v-if="!props.comment.deletedAt && !isEditing">
       <p v-html="parsedBody"></p>
     </div>
     <div class="comment-edit" v-else-if="isEditing">
-      <span
+      <label class="sr-only" :for="`edit-comment-${props.comment.id}`">
+        Edit comment
+      </label>
+      <textarea
+        :id="`edit-comment-${props.comment.id}`"
         class="textarea"
-        role="textbox"
-        contenteditable
-        @input="onEditInput"
-        @paste="onEditPaste"
-        @drop="onEditDrop"
-        ref="editSpan"
-      ></span>
+        v-model="editText"
+      ></textarea>
       <div class="comment-edit-actions">
         <button
           type="button"
@@ -100,17 +101,18 @@
         }}
       </button>
     </div>
-    <div v-if="repliesError" class="comment-error">{{ repliesError }}</div>
+    <div v-if="repliesError" class="comment-error" role="alert">
+      {{ repliesError }}
+    </div>
     <div v-if="showReplyForm" class="comment-reply-form">
-      <span
+      <label class="sr-only" :for="`reply-comment-${props.comment.id}`">
+        Write a reply
+      </label>
+      <textarea
+        :id="`reply-comment-${props.comment.id}`"
         class="textarea"
-        role="textbox"
-        contenteditable
-        @input="onReplyInput"
-        @paste="onReplyPaste"
-        @drop="onReplyDrop"
-        ref="replySpan"
-      ></span>
+        v-model="replyText"
+      ></textarea>
       <div class="comment-edit-actions">
         <button
           type="button"
@@ -158,8 +160,8 @@ import remarkRehype from "remark-rehype";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeStringify from "rehype-stringify";
-import UserAvatar from "~/components/common/UserAvatar.vue";
-import Icon from "~/components/common/Icon.vue";
+import UserAvatar from "~/components/user/UserAvatar.vue";
+import Icon from "~/components/ui/Icon.vue";
 import { useAuth } from "~/composables/useAuth";
 const { user, isLoggedIn, login, getDisplayName } = useAuth();
 import {
@@ -188,11 +190,9 @@ const deleting = ref(false);
 const saving = ref(false);
 const isEditing = ref(false);
 const editText = ref("");
-const editSpan = ref<HTMLElement | null>(null);
 const repliesVisible = ref(false);
 const showReplyForm = ref(false);
 const replyText = ref("");
-const replySpan = ref<HTMLElement | null>(null);
 const submittingReply = ref(false);
 const replyCount = computed(
   () => replies.value.length || props.comment.replyCount,
@@ -213,30 +213,11 @@ const handleDelete = async () => {
 const startEditing = async () => {
   editText.value = props.comment.body;
   isEditing.value = true;
-  await nextTick();
-  if (editSpan.value) {
-    editSpan.value.innerText = props.comment.body;
-  }
 };
 
 const cancelEdit = () => {
   isEditing.value = false;
   editText.value = "";
-};
-
-const onEditInput = (event: InputEvent) => {
-  const target = event.target as HTMLElement;
-  editText.value = target.innerText.trim();
-};
-const onEditPaste = (event: ClipboardEvent) => {
-  event.preventDefault();
-  const text = event.clipboardData?.getData("text/plain") ?? "";
-  insertPlainText(text);
-};
-const onEditDrop = (event: DragEvent) => {
-  event.preventDefault();
-  const text = event.dataTransfer?.getData("text/plain") ?? "";
-  insertPlainText(text);
 };
 
 const saveEdit = async () => {
@@ -277,30 +258,12 @@ const cancelReply = () => {
   replyText.value = "";
 };
 
-const onReplyInput = (event: InputEvent) => {
-  const target = event.target as HTMLElement;
-  replyText.value = target.innerText.trim();
-};
-const onReplyPaste = (event: ClipboardEvent) => {
-  event.preventDefault();
-  const text = event.clipboardData?.getData("text/plain") ?? "";
-  insertPlainText(text);
-};
-const onReplyDrop = (event: DragEvent) => {
-  event.preventDefault();
-  const text = event.dataTransfer?.getData("text/plain") ?? "";
-  insertPlainText(text);
-};
-
 const submitReply = async () => {
   if (!(replyText.value.length > 0)) return;
   submittingReply.value = true;
   try {
     await postReply(replyText.value);
     replyText.value = "";
-    if (replySpan.value) {
-      replySpan.value.innerText = "";
-    }
     showReplyForm.value = false;
     repliesVisible.value = true;
   } catch (err) {
@@ -399,10 +362,6 @@ const parsedBody = computed(() => {
   color: var(--text);
   font-family: var(--base-font);
   font-size: var(--base-text);
-  &:active,
-  &:focus {
-    outline: none;
-  }
 }
 .comment-edit-actions {
   display: flex;
@@ -466,10 +425,6 @@ const parsedBody = computed(() => {
   color: var(--text);
   font-family: var(--base-font);
   font-size: var(--base-text);
-  &:active,
-  &:focus {
-    outline: none;
-  }
 }
 .comment-replies {
   margin-top: 0.75rem;

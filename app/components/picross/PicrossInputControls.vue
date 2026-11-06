@@ -5,6 +5,8 @@
       :key="mode"
       :class="{ active: grid?.inputMode === mode }"
       :disabled="disabled"
+      :aria-label="`${mode.charAt(0).toUpperCase()}${mode.slice(1)} mode`"
+      :aria-pressed="grid?.inputMode === mode"
       @click="grid?.setInputMode(mode)"
       class="round"
     >
@@ -32,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "~/components/common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 import type PicrossGrid from "~/components/picross/PicrossGrid.vue";
 import { getInputModes, type InputMode } from "~/utils/picross";
 

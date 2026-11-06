@@ -92,7 +92,7 @@
 import PicrossPage from "~/components/picross/PicrossPage.vue";
 import PicrossInputControls from "~/components/picross/PicrossInputControls.vue";
 import PicrossGrid from "~/components/picross/PicrossGrid.vue";
-import Icon from "~/components/common/Icon.vue";
+import Icon from "~/components/ui/Icon.vue";
 import { SlotText } from "slot-text/vue";
 import "slot-text/style.css";
 import {

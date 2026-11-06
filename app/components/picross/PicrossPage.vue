@@ -19,9 +19,9 @@
         <Icon icon="art" width="20px" height="20px" /> Editor
       </NuxtLink>
       •
-      <div class="link" @click="showHowToPlay = true">
+      <button type="button" class="link how-to-play" @click="showHowToPlay = true">
         <Icon icon="help" width="20px" height="20px" />How To Play
-      </div>
+      </button>
     </div>
 
     <div class="game">
@@ -34,8 +34,8 @@
 
 <script setup lang="ts">
 import HowToPlayModal from "~/components/picross/HowToPlayModal.vue";
-import Icon from "~/components/common/Icon.vue";
-import SketchFilter from "~/components/common/SketchFilter.vue";
+import Icon from "~/components/ui/Icon.vue";
+import SketchFilter from "~/components/ui/SketchFilter.vue";
 
 withDefaults(
   defineProps<{
@@ -125,6 +125,13 @@ const showHowToPlay = ref(false);
 
   .link.active {
     font-weight: bold;
+  }
+
+  .how-to-play {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
   }
 }
 

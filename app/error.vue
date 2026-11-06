@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { NuxtError } from "#app";
-import Icon from "./components/common/Icon.vue";
+import Icon from "./components/ui/Icon.vue";
 
 defineProps({
   error: {
@@ -39,11 +39,11 @@ const goBack = () => {
             :alt="`Error ${error?.status}`"
             width="300"
             height="200" />
-          <span
+          <h1
             class="lotl-font"
             style="font-size: 2rem; color: var(--primary); margin-top: 0.5rem">
             {{ error?.message || "An unexpected error occurred." }}
-          </span>
+          </h1>
         </div>
         <button @click="goBack" class="clear-error-button">
           <Icon icon="back-arrow" style="margin-right: 0.5rem" />BACK

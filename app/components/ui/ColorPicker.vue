@@ -10,11 +10,19 @@
       class="color-chooser-overlay"
       :width="WHEEL_SIZE + 2 * WHEEL_OFFSET"
       :height="WHEEL_SIZE + 2 * WHEEL_OFFSET"
+      tabindex="0"
+      role="slider"
+      aria-label="Color hue and saturation"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(color.s * 100)"
       @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
       @pointerup="handlePointerUp"
       @pointercancel="handlePointerUp"
-      :class="{ dragging }"
+      @keydown="handleWheelKeydown"
+      @blur="usingPointer = false"
+      :class="{ dragging, 'pointer-focus': usingPointer }"
     >
       <circle
         class="wheel-hit-area"
@@ -44,10 +52,13 @@
       aria-valuemax="100"
       :aria-valuenow="Math.round(color.v * 100)"
       aria-orientation="horizontal"
+      :class="{ 'pointer-focus': usingPointer }"
+      @blur="usingPointer = false"
       @pointerdown="handleSliderPointerDown"
       @pointermove="handleSliderPointerMove"
       @pointerup="handleSliderPointerUp"
       @pointercancel="handleSliderPointerUp"
+      @keydown="handleBrightnessKeydown"
     >
       <div class="track" :style="{ background: trackGradient }"></div>
       <div
@@ -60,6 +71,7 @@
       type="text"
       maxlength="7"
       spellcheck="false"
+      aria-label="Color hex value"
       :value="draft"
       @input="handleHexInput"
       @blur="handleHexBlur"
@@ -106,6 +118,9 @@ const trackGradient = computed(() => {
   return `linear-gradient(to right, #000 0%, ${bright} 100%)`;
 });
 
+// Focus outlines are for keyboard use only; hidden while interacting by pointer
+const usingPointer = ref(false);
+
 let heldPointerId: number | null = null;
 // Keeps the custom cursor while dragging outside the wheel
 const dragging = ref(false);
@@ -119,18 +134,23 @@ let editing = false;
 
 const HEX_PATTERN = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
+// Inverse of getColorFromPosition; hue 240 (blue) is at the bottom of the wheel
+function getPositionFromColor({ h, s }: { h: number; s: number }) {
+  const radius = WHEEL_SIZE / 2;
+  const angle = ((h - 150) * Math.PI) / 180;
+  return {
+    x: radius + Math.cos(angle) * s * radius,
+    y: radius + Math.sin(angle) * s * radius,
+  };
+}
+
 function setColorFromHex(hex: string) {
   const hsv = rgbToHsv(hexToRgb(hex));
   // Black and grays have no meaningful hue/saturation, so keep the current ones
   const h = hsv.s === 0 || hsv.v === 0 ? color.value.h : hsv.h;
   const s = hsv.v === 0 ? color.value.s : hsv.s;
   color.value = { h, s, v: hsv.v };
-  const radius = WHEEL_SIZE / 2;
-  const angle = ((h - 150) * Math.PI) / 180;
-  colorChooserPosition.value = {
-    x: radius + Math.cos(angle) * s * radius,
-    y: radius + Math.sin(angle) * s * radius,
-  };
+  colorChooserPosition.value = getPositionFromColor({ h, s });
 }
 
 function handleHexInput(event: Event) {
@@ -219,6 +239,7 @@ function updateFromPointer(event: PointerEvent) {
 }
 
 function handlePointerDown(event: PointerEvent) {
+  usingPointer.value = true;
   heldPointerId = event.pointerId;
   dragging.value = true;
   (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
@@ -240,6 +261,59 @@ function setBrightness(value: number) {
   color.value = { ...color.value, v: Math.min(Math.max(value, 0), 1) };
 }
 
+function handleWheelKeydown(event: KeyboardEvent) {
+  usingPointer.value = false;
+  const step = event.shiftKey ? 10 : 2;
+  switch (event.key) {
+    case "ArrowUp":
+      color.value = {
+        ...color.value,
+        s: Math.min(1, color.value.s + step / 100),
+      };
+      break;
+    case "ArrowDown":
+      color.value = {
+        ...color.value,
+        s: Math.max(0, color.value.s - step / 100),
+      };
+      break;
+    case "ArrowLeft":
+      color.value = { ...color.value, h: (color.value.h - step + 360) % 360 };
+      break;
+    case "ArrowRight":
+      color.value = { ...color.value, h: (color.value.h + step) % 360 };
+      break;
+    default:
+      return;
+  }
+  colorChooserPosition.value = getPositionFromColor(color.value);
+  event.preventDefault();
+}
+
+function handleBrightnessKeydown(event: KeyboardEvent) {
+  usingPointer.value = false;
+  const step = event.shiftKey ? 0.1 : 0.01;
+  switch (event.key) {
+    case "ArrowLeft":
+    case "ArrowDown":
+      setBrightness(color.value.v - step);
+      break;
+    case "ArrowRight":
+    case "ArrowUp":
+      setBrightness(color.value.v + step);
+      break;
+    case "Home":
+      setBrightness(0);
+      break;
+    case "End":
+      setBrightness(1);
+      break;
+    default:
+      return;
+  }
+  event.preventDefault();
+}
+
 function updateBrightnessFromPointer(event: PointerEvent) {
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
   // Right end of the slider is full brightness
@@ -247,6 +321,7 @@ function updateBrightnessFromPointer(event: PointerEvent) {
 }
 
 function handleSliderPointerDown(event: PointerEvent) {
+  usingPointer.value = true;
   heldSliderPointerId = event.pointerId;
   (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   updateBrightnessFromPointer(event);
@@ -283,6 +358,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: flex-start;
   max-width: 175px;
+  padding: 8px;
 }
 .color-picker canvas {
   display: block;
@@ -290,8 +366,8 @@ onBeforeUnmount(() => {
 }
 .color-chooser-overlay {
   position: absolute;
-  top: -10px;
-  left: -10px;
+  top: -2px;
+  left: -2px;
   touch-action: none;
 }
 .color-chooser-overlay .wheel-hit-area,
@@ -332,6 +408,11 @@ onBeforeUnmount(() => {
   pointer-events: none;
   transition: none;
   transition: border-color 0.2s ease;
+}
+
+.color-picker [role="slider"]:focus:not(:focus-visible),
+.color-picker [role="slider"].pointer-focus:focus {
+  outline: none;
 }
 
 .color-input {
