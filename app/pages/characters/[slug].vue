@@ -18,8 +18,7 @@
       <h2 class="section-title">
         <Icon
           icon="art_brush"
-          width="36px"
-          height="36px"
+          size="36px"
           style="color: var(--theme-color)"
         />
         <span class="lotl-font" style="font-size: 1.2em">Artwork</span>
@@ -28,6 +27,7 @@
         v-if="characterArtworks && characterArtworks.length > 0"
         :artworks="characterArtworks"
         show-metadata
+        :outline-color="themeColor"
       />
       <div v-else class="no-artwork">
         <p>No artwork found for this character yet.</p>

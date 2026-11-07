@@ -1,6 +1,5 @@
 <template>
   <div class="main-page">
-    <SketchFilter id="sketch-filter-main" flood-color="var(--distant)" />
     <div class="main-content">
       <h1 class="heading">
         <span class="lotl-font" style="font-size: 2.1rem"
@@ -19,7 +18,6 @@
 </template>
 
 <script setup lang="ts">
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 import StatusSection from "~/components/home/StatusSection.vue";
 
 useSeoMeta({

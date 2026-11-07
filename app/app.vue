@@ -4,11 +4,15 @@
       <NuxtRouteAnnouncer />
       <NuxtPage />
     </NuxtLayout>
+    <ClientOnly>
+      <SketchFilterHost />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useAuth } from "~/composables/useAuth";
+import SketchFilterHost from "~/components/ui/SketchFilterHost.vue";
 
 const { fetchUser } = useAuth();
 

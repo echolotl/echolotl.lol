@@ -1,6 +1,6 @@
 <template>
   <div class="size-inputs" style="color: var(--text-secondary)">
-    <Icon icon="size" width="24px" height="20px" />
+    <Icon icon="size" size="24px" />
     <input
       v-model.number="draft.width"
       type="number"

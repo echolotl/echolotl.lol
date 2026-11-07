@@ -294,3 +294,17 @@ export function randomColor(
   const hue = Math.random() * 360;
   return hslToRgb({ h: hue, s: saturation, l: luminance });
 }
+
+/**
+ * Normalize a hex color string.
+ * Expands shorthand hex codes (e.g., #abc) to full form (e.g., #aabbcc).
+ * @param color - The hex color string.
+ * @returns The normalized hex color string.
+ */
+export function normalizeHex(color: string) {
+  const c = color.trim().toLowerCase().replace(/\s+/g, " ");
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(c);
+  return short
+    ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`
+    : c;
+}

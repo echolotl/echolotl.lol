@@ -6,6 +6,7 @@
       :artwork="artwork"
       :show-metadata="showMetadata"
       :show-character-badge="showCharacterBadge"
+      :outline-color="outlineColor"
       @age-gate="openAgeGate(artwork.slug)"
     />
     <AgeGateModal
@@ -32,6 +33,7 @@ defineProps<{
   artworks: Art[];
   showMetadata?: boolean;
   showCharacterBadge?: boolean;
+  outlineColor?: string;
 }>();
 
 const { init } = useAgeVerification();

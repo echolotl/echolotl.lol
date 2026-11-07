@@ -2,9 +2,8 @@
   <div
     style="position: relative; display: flex; justify-content: center"
     class="art-item-container"
-    :style="{ '--filter-url': `url(#${filterId})` }"
+    :style="{ '--filter-url': filterUrl }"
   >
-    <SketchFilter :id="filterId" />
     <nuxt-link
       :to="`/art/${artwork.slug}`"
       class="art-item"
@@ -78,7 +77,6 @@
 
 <script setup lang="ts">
 import type { Art } from "~~/types";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 import Icon from "~/components/ui/Icon.vue";
 import { useAgeVerification } from "../../composables/useAgeVerification.js";
 
@@ -86,6 +84,8 @@ const props = defineProps<{
   artwork: Art;
   showMetadata?: boolean;
   showCharacterBadge?: boolean;
+  /** Concrete color for the hover border; defaults to the primary color. */
+  outlineColor?: string;
 }>();
 
 const emit = defineEmits<{ (e: "age-gate"): void }>();
@@ -98,11 +98,9 @@ function onClick(event: MouseEvent) {
   event.preventDefault();
   emit("age-gate");
 }
-const filterId = ref(`outline-${props.artwork.slug}`);
-
-onMounted(() => {
-  filterId.value = `outline-${props.artwork.slug}-${Math.random().toString(36).slice(2)}`;
-});
+const { url: filterUrl } = useSketchFilter(() => ({
+  color: props.outlineColor,
+}));
 
 const hasVariants = computed(() => {
   return (props.artwork.images?.[0]?.variants?.length || 0) > 0;

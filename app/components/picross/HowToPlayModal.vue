@@ -46,7 +46,7 @@
           Try to start with rows or columns that have the largest numbers!
         </li>
         <li>
-          Remember to mark (<Icon icon="close" width="18px" height="18px" />)
+          Remember to mark (<Icon icon="close" size="18px" />)
           what you think are empty pixels.
         </li>
         <li>

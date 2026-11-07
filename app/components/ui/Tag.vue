@@ -1,7 +1,17 @@
 <template>
-  <span
-    :class="['tag', `tag--${variant}`, { 'tag--clickable': clickable }]"
+  <NuxtLink v-if="to" :to="to" :class="tagClasses" :style="customStyles">
+    <Icon v-if="icon" :icon="icon" :color="iconColor" />
+    <slot></slot>
+  </NuxtLink>
+  <button
+    v-else-if="clickable"
+    type="button"
+    :class="tagClasses"
     :style="customStyles">
+    <Icon v-if="icon" :icon="icon" :color="iconColor" />
+    <slot></slot>
+  </button>
+  <span v-else :class="tagClasses" :style="customStyles">
     <Icon v-if="icon" :icon="icon" :color="iconColor" />
     <slot></slot>
   </span>
@@ -16,6 +26,7 @@ interface Props {
   iconColor?: string;
   clickable?: boolean;
   customColor?: string;
+  to?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -23,13 +34,16 @@ const props = withDefaults(defineProps<Props>(), {
   clickable: false,
 });
 
+const tagClasses = computed(() => [
+  "tag",
+  `tag--${props.variant}`,
+  { "tag--interactive": props.clickable || Boolean(props.to) },
+]);
+
 const customStyles = computed(() => {
-  if (props.customColor && props.variant === "character") {
+  if (props.customColor) {
     return {
-      "--border": `color-mix(in oklab, ${props.customColor} 20%, var(--distant) 80%)`,
-      borderColor: `color-mix(in oklab, ${props.customColor} 20%, var(--distant) 80%)`,
-      color: props.customColor,
-      backgroundColor: `color-mix(in oklab, ${props.customColor} 20%, var(--background) 80%)`,
+      "--tag-color": props.customColor,
     };
   }
   return {};
@@ -38,23 +52,27 @@ const customStyles = computed(() => {
 
 <style scoped lang="scss">
 @use "~/assets/styles/partials/_variables" as *;
-@use "~/assets/styles/partials/_mixins" as *;
 
 .tag {
-  border: 1px solid var(--distant);
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-secondary);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  --tag-color: var(--text-secondary);
+  align-items: center;
+  background: color-mix(in oklab, var(--tag-color) 8%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--tag-color) 32%, var(--distant));
+  border-radius: 999px;
+  color: var(--tag-color);
+  display: inline-flex;
   font-size: var(--small-text);
   font-family: $body-font;
   font-weight: 400;
-  display: inline-flex;
-  align-items: center;
   gap: 0.25rem;
+  line-height: 1;
+  padding: 0.35rem 0.65rem;
+  text-decoration: none;
   transition:
+    background-color 0.2s ease,
     color 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    transform 0.2s ease;
 
   &--default {
     text-transform: uppercase;
@@ -65,9 +83,20 @@ const customStyles = computed(() => {
     text-decoration: none;
   }
 
-  &--clickable {
+  &--interactive {
     cursor: pointer;
-    @include hover-bg-fade(var(--border));
+
+    &:is(:hover, :focus-visible) {
+      background: color-mix(in oklab, var(--tag-color) 18%, var(--background));
+      border-color: var(--tag-color);
+      color: var(--tag-color);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--tag-color);
+      outline-offset: 2px;
+    }
   }
 }
 </style>

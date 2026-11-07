@@ -19,7 +19,7 @@
           class="filled round"
         >
           Post Comment</button
-        ><Icon v-if="submitting" icon="loading" width="40px" height="40px" />
+        ><Icon v-if="submitting" icon="loading" size="40px" />
         <span
           id="comment-help"
           style="

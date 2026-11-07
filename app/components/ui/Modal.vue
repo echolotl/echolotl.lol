@@ -7,12 +7,6 @@
         class="modal-overlay"
         @click.self="closeOnBackdrop && close()"
       >
-        <SketchFilter
-          :id="filterId"
-          :std-deviation="1.5"
-          :intercept="-6"
-          :flood-color="outlineColor"
-        />
         <div
           ref="boxRef"
           class="modal"
@@ -21,15 +15,14 @@
           aria-modal="true"
           :aria-label="ariaLabel"
           tabindex="-1"
-          :style="{ '--filter-url': `url(#${filterId})`, maxWidth }"
+          :style="{ '--filter-url': filterUrl, maxWidth }"
         >
           <Icon
             v-if="props.icon"
             :icon="props.icon"
             class="modal__icon"
             :color="props.iconColor"
-            width="48px"
-            height="48px"
+            size="48px"
             aria-hidden="true"
           />
           <button
@@ -39,7 +32,7 @@
             aria-label="Close dialog"
             @click="close()"
           >
-            <Icon icon="close" width="28px" height="28px" />
+            <Icon icon="close" size="28px" />
           </button>
           <div class="modal__content">
             <slot />
@@ -52,7 +45,6 @@
 
 <script setup lang="ts">
 import Icon from "~/components/ui/Icon.vue";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -83,7 +75,11 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const filterId = ref(`modal-sketch-${useId()}`);
+const { url: filterUrl } = useSketchFilter(() => ({
+  color: props.outlineColor,
+  stdDeviation: 1.5,
+  intercept: -6,
+}));
 const boxRef = ref<HTMLElement | null>(null);
 const overlayRef = ref<HTMLElement | null>(null);
 let opener: HTMLElement | null = null;

@@ -1,17 +1,17 @@
 <template>
-  <CharacterLink :slug="slug" class="character-tag">
-    <Tag variant="character" :clickable="true" :custom-color="themeColor">
-      <span v-if="character?.name" class="lotl-font">
-        {{ character.name }}
-      </span>
-      <slot v-else></slot>
-    </Tag>
-  </CharacterLink>
+  <Tag
+    variant="character"
+    :to="`/characters/${slug}`"
+    :custom-color="themeColor">
+    <span v-if="character?.name" class="character-tag__name lotl-font">
+      {{ character.name }}
+    </span>
+    <slot v-else></slot>
+  </Tag>
 </template>
 
 <script setup lang="ts">
 import Tag from "~/components/ui/Tag.vue";
-import CharacterLink from "./CharacterLink.vue";
 import { useTheme } from "~/composables/useTheme.js";
 
 interface Props {
@@ -46,9 +46,7 @@ const themeColor = computed(() => {
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/_mixins" as *;
-
-.character-tag {
-  text-decoration: none;
+.character-tag__name {
+  transform: translateY(2px);
 }
 </style>

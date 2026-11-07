@@ -8,8 +8,7 @@
         <Icon
           icon="pin"
           style="color: var(--text)"
-          width="30px"
-          height="30px"
+          size="30px"
         />
         <span class="lotl-font" style="font-size: 1.2em">Pinned</span>
       </h2>
@@ -136,32 +135,76 @@
                   />
                   <Icon icon="search" style="margin-right: 0.5rem" />
                 </div>
-                <div class="search-wrapper">
-                  <label class="sr-only" for="art-tag-search">
-                    Search artwork by tag
-                  </label>
-                  <input
-                    id="art-tag-search"
-                    type="text"
-                    v-model="tagInput"
-                    placeholder="Search by tag..."
-                    @focus="tagDropdownOpen = true"
-                    @blur="onTagInputBlur"
-                    autocomplete="off"
-                  />
-                  <Icon icon="tag" style="margin-right: 0.5rem" />
+                <div class="tag-combobox">
+                  <div class="search-wrapper">
+                    <label class="sr-only" for="art-tag-search">
+                      Search artwork by tag
+                    </label>
+                    <input
+                      id="art-tag-search"
+                      type="text"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-controls="art-tag-suggestions"
+                      :aria-expanded="tagDropdownOpen"
+                      :aria-activedescendant="
+                        activeTagIndex >= 0
+                          ? `art-tag-option-${activeTagIndex}`
+                          : undefined
+                      "
+                      v-model="tagInput"
+                      placeholder="Add tag..."
+                      @focus="tagDropdownOpen = true"
+                      @input="onTagInput"
+                      @blur="onTagInputBlur"
+                      @keydown="onTagKeydown"
+                      autocomplete="off"
+                    />
+                    <Icon icon="tag" style="margin-right: 0.5rem" />
+                  </div>
+                  <ul
+                    v-if="tagDropdownOpen && tagSuggestions.length > 0"
+                    id="art-tag-suggestions"
+                    class="tag-suggestions"
+                    role="listbox"
+                    aria-label="Tag suggestions"
+                  >
+                    <li
+                      v-for="(tag, index) in tagSuggestions"
+                      :id="`art-tag-option-${index}`"
+                      :key="tag"
+                      role="option"
+                      :aria-selected="index === activeTagIndex"
+                      :class="{ active: index === activeTagIndex }"
+                      @mousedown.prevent
+                      @click="addTag(tag)"
+                      @mousemove="activeTagIndex = index"
+                    >
+                      {{ tag }}
+                    </li>
+                  </ul>
+                  <div
+                    v-else-if="tagDropdownOpen && tagInput.trim() !== ''"
+                    class="tag-suggestions tag-suggestions--empty"
+                  >
+                    No matching tags found.
+                  </div>
                 </div>
                 <div v-if="filters.tags.length > 0" class="tag-filter-chips">
-                  <button
-                    type="button"
+                  <Tag
                     v-for="tag in filters.tags"
                     :key="tag"
-                    class="tag-chip"
+                    clickable
                     :aria-label="`Remove tag ${tag}`"
                     @click="removeTag(tag)"
                   >
-                    {{ tag }} &times;
-                  </button>
+                    {{ tag }}
+                    <Icon
+                      icon="close"
+                      size="1em"
+                      style="margin-left: 0.1rem"
+                    />
+                  </Tag>
                 </div>
               </div>
             </fieldset>
@@ -193,22 +236,6 @@
             </fieldset>
           </div>
         </div>
-        <div v-if="tagDropdownOpen" class="tag-suggestions-scroll">
-          <ul v-if="tagSuggestions.length > 0" class="tag-suggestions">
-            <li v-for="tag in tagSuggestions" :key="tag">
-              <button type="button" @click="addTag(tag)">
-                Add tag {{ tag }}
-              </button>
-            </li>
-          </ul>
-          <div
-            v-else
-            v-if="tagInput.trim() !== ''"
-            style="color: var(--text-secondary); font-size: var(--small-text)"
-          >
-            No matching tags found.
-          </div>
-        </div>
       </div>
     </div>
 
@@ -220,6 +247,7 @@
 
 <script setup lang="ts">
 import Icon from "~/components/ui/Icon.vue";
+import Tag from "~/components/ui/Tag.vue";
 import SplashText from "~/components/ui/SplashText.vue";
 import ArtGrid from "~/components/art/ArtGrid.vue";
 import AgeGateModal from "~/components/art/AgeGateModal.vue";
@@ -395,19 +423,62 @@ const tagSuggestions = computed(() => {
   );
 });
 
+const activeTagIndex = ref(-1);
+
 function addTag(tag: string) {
   if (!filters.value.tags.includes(tag)) {
     filters.value.tags.push(tag);
   }
   tagInput.value = "";
+  activeTagIndex.value = -1;
 }
 
 function removeTag(tag: string) {
   filters.value.tags = filters.value.tags.filter((t) => t !== tag);
 }
 
+function onTagInput() {
+  tagDropdownOpen.value = true;
+  activeTagIndex.value = tagSuggestions.value.length > 0 ? 0 : -1;
+}
+
 function onTagInputBlur() {
   tagDropdownOpen.value = false;
+  activeTagIndex.value = -1;
+}
+
+function onTagKeydown(event: KeyboardEvent) {
+  const count = tagSuggestions.value.length;
+  switch (event.key) {
+    case "ArrowDown":
+      event.preventDefault();
+      tagDropdownOpen.value = true;
+      if (count > 0) activeTagIndex.value = (activeTagIndex.value + 1) % count;
+      break;
+    case "ArrowUp":
+      event.preventDefault();
+      tagDropdownOpen.value = true;
+      if (count > 0)
+        activeTagIndex.value = (activeTagIndex.value - 1 + count) % count;
+      break;
+    case "Enter": {
+      event.preventDefault();
+      const tag = tagSuggestions.value[activeTagIndex.value];
+      if (tag) addTag(tag);
+      break;
+    }
+    case "Backspace":
+      if (tagInput.value === "" && filters.value.tags.length > 0) {
+        removeTag(filters.value.tags[filters.value.tags.length - 1]!);
+      }
+      break;
+    case "Escape":
+      if (tagDropdownOpen.value) {
+        event.stopPropagation();
+        tagDropdownOpen.value = false;
+      }
+      break;
+  }
 }
 
 const FILTER_NAMES: Record<keyof Omit<Filters, "tags" | "sortBy">, string> = {
@@ -630,6 +701,7 @@ useSeoMeta({
   border: none;
   padding: 0;
   background: none;
+  overflow: visible;
   flex-direction: column;
   > div {
     border: 1px solid var(--distant);
@@ -768,26 +840,15 @@ useSeoMeta({
       }
     }
 
+    .tag-combobox {
+      position: relative;
+    }
+
     .tag-filter-chips {
       display: flex;
       flex-wrap: wrap;
       gap: 0.25rem;
-    }
-
-    .tag-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      background: var(--primary);
-      color: var(--background);
-      border-radius: 4px;
-      padding: 0.1rem 0.4rem;
-      font-size: var(--small-text);
-      cursor: pointer;
-
-      &:hover {
-        opacity: 0.8;
-      }
+      margin-top: 0.25rem;
     }
   }
 
@@ -803,31 +864,41 @@ useSeoMeta({
   }
 }
 
-.tag-suggestions-scroll {
-  max-height: 100px;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  scroll-padding: 0.3rem;
-}
-
 .tag-suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  box-sizing: border-box;
   margin: 0;
-  padding: 0;
+  padding: 0.25rem;
   list-style: none;
+  max-height: 10rem;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--distant);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  font-size: var(--small-text);
 
   li {
     padding: 0.25rem 0.5rem;
-    font-size: var(--small-text);
     color: var(--text);
     cursor: pointer;
     text-align: left;
     border-radius: 4px;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
 
-    &:hover {
-      background: var(--foreground);
+    &.active {
+      background: var(--primary);
+      color: var(--background);
     }
+  }
+
+  &--empty {
+    color: var(--text-secondary);
+    text-align: left;
+    padding: 0.5rem;
   }
 }
 

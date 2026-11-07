@@ -15,7 +15,7 @@
         :add-modes="['paint']"
       />
       <button @click="handleClear" class="round">
-        <Icon icon="trash" width="20px" height="20px" />
+        <Icon icon="trash" size="20px" />
         Clear
       </button>
       <PicrossSizeInput
@@ -27,13 +27,13 @@
       <div class="palette">
         <div class="new-color-container">
           <div class="palette-header">
-            <Icon icon="palette" width="24px" height="24px" />
+            <Icon icon="palette" size="24px" />
             <button
               type="button"
               aria-label="Load colors from image"
               @click="loadColorsFromImage"
             >
-              <Icon icon="upload" width="24px" height="24px" />
+              <Icon icon="upload" size="24px" />
             </button>
           </div>
 
@@ -56,7 +56,7 @@
               @click="addColor()"
               aria-label="Add color to palette"
             >
-              <Icon icon="small-arrow" width="20px" height="20px" />
+              <Icon icon="small-arrow" size="20px" />
             </button>
           </div>
         </div>
@@ -89,7 +89,7 @@
                     :aria-label="`Delete palette color ${index + 1}`"
                     @click="deleteColor(index)"
                   >
-                    <Icon icon="trash" width="20px" height="20px" />
+                    <Icon icon="trash" size="20px" />
                   </button>
                 </div>
                 <ColorPicker v-model="palette[index]" />
@@ -111,18 +111,18 @@
         "
         style="color: var(--green)"
       >
-        <Icon icon="check" width="20px" height="20px" />
+        <Icon icon="check" size="20px" />
         Solvable
       </div>
       <div
         v-else-if="solveResult && solveResult.solutionCount > 1"
         style="color: var(--orange)"
       >
-        <Icon icon="warning" width="20px" height="20px" />
+        <Icon icon="warning" size="20px" />
         Multiple solutions
       </div>
       <div v-else style="color: var(--red)">
-        <Icon icon="danger" width="20px" height="20px" />
+        <Icon icon="danger" size="20px" />
         Unsolvable...
       </div>
     </div>
@@ -160,11 +160,11 @@
         </div>
         <div class="file-actions">
           <button @click="handleSave" class="round">
-            <Icon icon="download" width="20px" height="20px" />
+            <Icon icon="download" size="20px" />
             Save
           </button>
           <button @click="fileInput?.click()" class="round">
-            <Icon icon="upload" width="20px" height="20px" />
+            <Icon icon="upload" size="20px" />
             Load
           </button>
           <input

@@ -7,7 +7,7 @@
       class="link tumblr-link"
       aria-label="Go to echolotl's Tumblr"
     >
-      <Icon icon="socials/tumblr" :height="iconSize" :width="iconSize" />
+      <Icon icon="socials/tumblr" :size="iconSize" />
     </a>
     <div class="twitter">
       <a
@@ -18,7 +18,7 @@
         class="link"
         aria-label="Go to echolotl's X (formerly Twitter)"
       >
-        <Icon icon="socials/x" :height="iconSize" :width="iconSize" />
+        <Icon icon="socials/x" :size="iconSize" />
       </a>
       <a
         v-else
@@ -28,7 +28,7 @@
         class="link twitter-link"
         aria-label="Go to echolotl's Twitter"
       >
-        <Icon icon="socials/twitter" :height="iconSize" :width="iconSize" />
+        <Icon icon="socials/twitter" :size="iconSize" />
       </a>
     </div>
     <a
@@ -38,7 +38,7 @@
       class="link newgrounds-link"
       aria-label="Go to echolotl's Newgrounds"
     >
-      <Icon icon="socials/newgrounds" :height="iconSize" :width="iconSize" />
+      <Icon icon="socials/newgrounds" :size="iconSize" />
     </a>
     <a
       href="https://bsky.app/profile/echolotl.lol"
@@ -47,7 +47,7 @@
       class="link bluesky-link"
       aria-label="Go to echolotl's Bluesky"
     >
-      <Icon icon="socials/bluesky" :height="iconSize" :width="iconSize" />
+      <Icon icon="socials/bluesky" :size="iconSize" />
     </a>
     <a
       href="https://github.com/echolotl"
@@ -56,7 +56,7 @@
       class="link github-link"
       aria-label="Go to echolotl's GitHub"
     >
-      <Icon icon="socials/github" :height="iconSize" :width="iconSize" />
+      <Icon icon="socials/github" :size="iconSize" />
     </a>
     <div class="discord-container">
       <button
@@ -65,7 +65,7 @@
         @click="copyDiscordToClipboard"
         aria-label="Copy echolotl's Discord username"
       >
-        <Icon icon="socials/discord" :height="iconSize" :width="iconSize" />
+        <Icon icon="socials/discord" :size="iconSize" />
       </button>
       <span
         v-if="showCopiedText"
@@ -83,7 +83,7 @@
       class="link youtube-link"
       aria-label="Go to echolotl's YouTube channel"
     >
-      <Icon icon="socials/youtube" :height="iconSize" :width="iconSize" />
+      <Icon icon="socials/youtube" :size="iconSize" />
     </a>
     <a
       href="https://www.instagram.com/echolotl_/"
@@ -92,7 +92,7 @@
       class="link instagram-link"
       aria-label="Go to echolotl's Instagram"
     >
-      <Icon icon="socials/instagram" :height="iconSize" :width="iconSize" />
+      <Icon icon="socials/instagram" :size="iconSize" />
     </a>
   </div>
 </template>

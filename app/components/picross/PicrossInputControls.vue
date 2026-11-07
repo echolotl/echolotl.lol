@@ -10,7 +10,7 @@
       @click="grid?.setInputMode(mode)"
       class="round"
     >
-      <Icon :icon="definition.icon" width="20px" height="20px" />
+      <Icon :icon="definition.icon" size="20px" />
     </button>
   </div>
   <div class="input-modes">
@@ -20,7 +20,7 @@
       class="round"
       aria-label="Undo"
     >
-      <Icon icon="undo" width="20px" height="20px" />
+      <Icon icon="undo" size="20px" />
     </button>
     <button
       :disabled="!grid?.canRedo"
@@ -28,7 +28,7 @@
       class="round"
       aria-label="Redo"
     >
-      <Icon icon="redo" width="20px" height="20px" />
+      <Icon icon="redo" size="20px" />
     </button>
   </div>
 </template>

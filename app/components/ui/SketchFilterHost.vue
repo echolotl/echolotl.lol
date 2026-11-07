@@ -1,10 +1,13 @@
 <template>
   <svg
     xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
     style="position: absolute; width: 0; height: 0; overflow: hidden">
     <defs>
       <filter
-        :id="id"
+        v-for="f in filters"
+        :id="f.id"
+        :key="f.id"
         color-interpolation-filters="sRGB"
         x="-15%"
         y="-15%"
@@ -15,16 +18,16 @@
           baseFrequency="0.1"
           numOctaves="5"
           result="noise"
-          :seed="resolvedSeed" />
+          :seed="f.seed" />
         <feGaussianBlur
           in="SourceAlpha"
-          :stdDeviation="stdDeviation"
+          :stdDeviation="f.stdDeviation"
           result="blurred" />
         <feComponentTransfer in="blurred" result="expanded">
-          <feFuncA type="linear" slope="500" :intercept="intercept" />
+          <feFuncA type="linear" slope="500" :intercept="f.intercept" />
         </feComponentTransfer>
         <feFlood
-          :style="{ floodColor, transition: 'flood-color 0.3s ease' }"
+          :style="{ floodColor: f.color, transition: 'flood-color 0.3s ease' }"
           result="color" />
         <feComposite in="color" in2="expanded" operator="in" result="border" />
         <feDisplacementMap
@@ -44,26 +47,10 @@
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(
-  defineProps<{
-    id: string;
-    seed?: number;
-    floodColor?: string;
-    stdDeviation?: number;
-    intercept?: number;
-  }>(),
-  {
-    floodColor: "var(--theme-color, var(--primary))",
-    stdDeviation: 2,
-    intercept: -5,
-  },
+import type { SketchFilterDef } from "~/composables/useSketchFilter";
+
+const filters = useState<Record<string, SketchFilterDef>>(
+  "sketch-filters",
+  () => ({}),
 );
-
-const resolvedSeed = ref(props.seed ?? 1);
-
-onMounted(() => {
-  if (props.seed === undefined) {
-    resolvedSeed.value = Math.floor(Math.random() * 20000);
-  }
-});
 </script>

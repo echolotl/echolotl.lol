@@ -1,26 +1,25 @@
 <template>
   <div class="picross-page" :style="{ '--picross-accent': accent }">
-    <SketchFilter id="picross-sketch-filter" flood-color="var(--background)" />
-    <div class="picross-header-container">
+    <div class="picross-header-container" :style="{ filter: filterUrl }">
       <h1 class="picross-header">Nautilus' Picross</h1>
     </div>
     <span v-if="subtitle" class="header-games lotl-font">{{ subtitle }}</span>
 
     <div class="header-links">
       <NuxtLink to="/picross" class="link" exact-active-class="active">
-        <Icon icon="moves" width="20px" height="20px" /> Free Play
+        <Icon icon="moves" size="20px" /> Free Play
       </NuxtLink>
       •
       <NuxtLink to="/picross/daily" class="link" exact-active-class="active">
-        <Icon icon="date" width="20px" height="20px" /> Daily
+        <Icon icon="date" size="20px" /> Daily
       </NuxtLink>
       •
       <NuxtLink to="/picross/editor" class="link" exact-active-class="active">
-        <Icon icon="art" width="20px" height="20px" /> Editor
+        <Icon icon="art" size="20px" /> Editor
       </NuxtLink>
       •
       <button type="button" class="link how-to-play" @click="showHowToPlay = true">
-        <Icon icon="help" width="20px" height="20px" />How To Play
+        <Icon icon="help" size="20px" />How To Play
       </button>
     </div>
 
@@ -35,7 +34,8 @@
 <script setup lang="ts">
 import HowToPlayModal from "~/components/picross/HowToPlayModal.vue";
 import Icon from "~/components/ui/Icon.vue";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
+
+const { url: filterUrl } = useSketchFilter({ color: "var(--background)" });
 
 withDefaults(
   defineProps<{
@@ -79,7 +79,6 @@ const showHowToPlay = ref(false);
 .picross-header-container {
   position: relative;
   width: 100%;
-  filter: url(#picross-sketch-filter);
   view-transition-name: picross-title;
 }
 

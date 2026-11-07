@@ -1,21 +1,19 @@
 <template>
-  <SketchFilter :id="filterId" flood-color="var(--distant)" />
   <img
     class="user-avatar"
     :src="src"
     :style="{
       width: `${size}px`,
       height: `${size}px`,
-      filter: `url(#${filterId})`,
+      filter: filterUrl,
     }"
     :alt="`${displayName || 'User'} Avatar`"
   />
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from "vue";
+import { computed } from "vue";
 import { useAuth } from "~/composables/useAuth";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 import { type PublicUser } from "~/composables/useAuth";
 
 const props = withDefaults(
@@ -34,7 +32,7 @@ const props = withDefaults(
 
 const { getAvatarUrl, getDisplayName, user: authUser, publicUser } = useAuth();
 
-const filterId = `user-avatar-sketch-filter-${useId()}`;
+const { url: filterUrl } = useSketchFilter({ color: "var(--distant)" });
 const src = computed(() => {
   if (props.default) return "/images/defaultavatar.webp";
   if (props.user) return getAvatarUrl(props.user);

@@ -7,7 +7,7 @@
       </div>
     </div>
     <p v-else class="lotl-font loading" role="status">
-      <Icon icon="loading" width="20px" height="20px" />
+      <Icon icon="loading" size="20px" />
       Loading puzzle...
     </p>
     <p
@@ -18,37 +18,36 @@
       <span v-if="game.isCompleted && !gaveUp">
         <Icon
           icon="crown"
-          width="16px"
-          height="16px"
+          size="16px"
           :style="{ color: 'var(--orange)' }"
         ></Icon>
       </span>
       <span>
-        <Icon icon="time" width="16px" height="16px" />
+        <Icon icon="time" size="16px" />
         <SlotText :text="timeDisplay" :options="{ skipUnchanged: true }" />
       </span>
       <span>
-        <Icon icon="moves" width="16px" height="16px" />
+        <Icon icon="moves" size="16px" />
         <SlotText
           :text="String(game?.moves ?? 0)"
           :options="{ skipUnchanged: true }"
         />
       </span>
       <span>
-        <Icon icon="tip" width="16px" height="16px" />
+        <Icon icon="tip" size="16px" />
         <SlotText
           :text="String(game?.hintsUsed ?? 0)"
           :options="{ skipUnchanged: true }"
         />
       </span>
       <span>
-        <Icon icon="size" width="16px" height="16px" />
+        <Icon icon="size" size="16px" />
         {{ game?.size.width ?? 0 }}x{{ game?.size.height ?? 0 }}
       </span>
     </p>
     <div v-if="game?.isCompleted" class="game-actions">
       <button @click="copyWin" class="round filled">
-        <Icon icon="copy" width="16px" height="16px" />
+        <Icon icon="copy" size="16px" />
         Copy Result
       </button>
     </div>
@@ -67,12 +66,12 @@
         :disabled="!game || game.isCompleted"
       />
       <button @click="game && clearBoard(game)" class="round">
-        <Icon icon="trash" width="20px" height="20px" />
+        <Icon icon="trash" size="20px" />
         Clear
       </button>
       <button @click="giveUp" class="round filled red">Give Up</button>
       <button @click="useHint" class="round">
-        <Icon icon="tip" width="20px" height="20px" />
+        <Icon icon="tip" size="20px" />
         Hint
       </button>
     </div>

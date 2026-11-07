@@ -2,11 +2,11 @@
   <PicrossPage subtitle="Free Play" accent="var(--primary)">
     <PicrossGrid v-if="game" ref="grid" :game="game" />
     <p v-else class="lotl-font loading" role="status">
-      <Icon icon="loading" width="20px" height="20px" />
+      <Icon icon="loading" size="20px" />
       Loading puzzle...
     </p>
     <p v-if="game?.isCompleted" class="solved-message" role="status">
-      <Icon icon="crown" width="20px" height="20px" />
+      <Icon icon="crown" size="20px" />
       {{
         WIN_SPLASH_TEXTS[Math.floor(Math.random() * WIN_SPLASH_TEXTS.length)]
       }}
@@ -14,7 +14,7 @@
     <div class="game-actions">
       <PicrossInputControls :grid="grid" />
       <button @click="handleClear" class="round">
-        <Icon icon="trash" width="20px" height="20px" />
+        <Icon icon="trash" size="20px" />
         Clear
       </button>
       <button
@@ -29,7 +29,7 @@
         @click="() => fillRandomTile(game!)"
         class="round"
       >
-        <Icon icon="tip" width="20px" height="20px" />
+        <Icon icon="tip" size="20px" />
         Hint
       </button>
     </div>
@@ -37,7 +37,7 @@
       <PicrossSizeInput v-model="sizeInput" />
       <button @click="regeneratePuzzle" class="round filled">Regenerate</button>
       <button @click="fileInput?.click()" class="round">
-        <Icon icon="upload" width="20px" height="20px" />
+        <Icon icon="upload" size="20px" />
         Load
       </button>
       <input

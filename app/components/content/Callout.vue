@@ -2,17 +2,11 @@
   <div :class="['callout']" :style="{ '--callout-color': color }">
     <div
       class="callout__icon"
-      :style="{ '--filter-url': `url(#callout-icon-shadow-${id})` }">
-      <SketchFilter
-        :id="`callout-icon-shadow-${id}`"
-        :std-deviation="1.5"
-        :intercept="-3"
-        flood-color="var(--background)" />
+      :style="{ '--filter-url': filterUrl }">
       <Icon
         :icon="iconName"
         style="color: var(--callout-color)"
-        height="32px"
-        width="32px" />
+        size="32px" />
     </div>
     <div class="callout__content">
       <h4
@@ -30,7 +24,6 @@
 
 <script setup lang="ts">
 import Icon from "~/components/ui/Icon.vue";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 interface Props {
   type?: "info" | "warning" | "error" | "tip";
   title?: string;
@@ -38,7 +31,11 @@ interface Props {
   color?: string;
 }
 
-var id = Math.random().toString(36).slice(2);
+const { url: filterUrl } = useSketchFilter({
+  color: "var(--background)",
+  stdDeviation: 1.5,
+  intercept: -3,
+});
 
 const props = withDefaults(defineProps<Props>(), {
   type: "info",

@@ -2,9 +2,8 @@
   <div
     :to="`/characters/${props.character.slug}`"
     class="character-card"
-    :style="{ '--filter-url': `url(#${filterId})` }"
+    :style="{ '--filter-url': filterUrl }"
   >
-    <SketchFilter :id="filterId" :std-deviation="1.5" :intercept="-6" />
     <NuxtLink
       :to="`/characters/${props.character.slug}`"
       class="character-card__image"
@@ -28,7 +27,6 @@
 
 <script setup lang="ts">
 import type { Character } from "~~/types";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 import { useTheme } from "~/composables/useTheme.js";
 
 const props = defineProps({
@@ -36,12 +34,6 @@ const props = defineProps({
     type: Object as () => Character,
     required: true,
   },
-});
-
-const filterId = ref(`outline-${props.character.slug}`);
-
-onMounted(() => {
-  filterId.value = `outline-${props.character.slug}-${Math.random().toString(36).slice(2)}`;
 });
 
 const { theme } = useTheme();
@@ -54,6 +46,12 @@ const characterColor = computed(() => {
   }
   return props.character.theme_color || "#000000";
 });
+
+const { url: filterUrl } = useSketchFilter(() => ({
+  color: characterColor.value,
+  stdDeviation: 1.5,
+  intercept: -6,
+}));
 
 const characterImage = `url(/images/characters/${props.character.slug}/icon.webp)`;
 const characterHoverImage = `url(/images/characters/${props.character.slug}/hover.webp)`;

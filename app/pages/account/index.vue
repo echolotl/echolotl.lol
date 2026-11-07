@@ -29,7 +29,7 @@
           type="button"
           @click="logoutAndRedirect"
         >
-          <Icon icon="logout" width="24px" height="24px" />
+          <Icon icon="logout" size="24px" />
           Log Out
         </button>
 
@@ -40,7 +40,7 @@
           @click="handleDeleteAccount"
           class="filled red round"
         >
-          <Icon icon="trash" width="24px" height="24px" />
+          <Icon icon="trash" size="24px" />
           {{ deletingAccount ? "Deleting..." : "Delete Account" }}
         </button>
       </div>

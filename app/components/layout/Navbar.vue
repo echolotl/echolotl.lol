@@ -10,8 +10,7 @@
           @click="toggleTheme">
           <Icon
             :icon="currentThemeIcon"
-            width="48px"
-            height="48px"
+            size="48px"
             class="icon icon--hoverable" />
         </button>
 
@@ -25,8 +24,7 @@
           @click="toggleMobileMenu">
           <Icon
             :icon="mobileMenuOpen ? 'close' : 'hamburger-open'"
-            width="48px"
-            height="48px"
+            size="48px"
             class="icon icon--hoverable" />
         </button>
 
@@ -34,8 +32,7 @@
           <nuxt-link to="/" aria-label="Go to homepage">
             <Icon
               icon="echolotl"
-              width="48px"
-              height="48px"
+              size="48px"
               class="navbar-top__logo-icon navbar-top__logo-icon--desktop"
               color="var(--inverted-solid)"
               :style="{
@@ -61,8 +58,7 @@
             <Icon
               :icon="navIcon.icon"
               :alt="navIcon.alt"
-              width="48px"
-              height="48px"
+              size="48px"
               class="icon icon--hoverable"
               :style="
                 route.path === navIcon.to
@@ -87,8 +83,7 @@
             @click="toggleTheme">
             <Icon
               :icon="currentThemeIcon"
-              width="32px"
-              height="32px"
+              size="32px"
               class="icon icon--hoverable" />
             <span>{{ props.light ? "Dark Mode" : "Light Mode" }}</span>
           </button>
@@ -104,8 +99,7 @@
             <Icon
               :icon="navIcon.icon"
               :alt="navIcon.alt"
-              width="32px"
-              height="32px"
+              size="32px"
               class="icon icon--hoverable"
               :style="{
                 background:

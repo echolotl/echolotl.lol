@@ -1,10 +1,5 @@
 <template>
   <div class="character-banner" :class="bannerVariant">
-    <SketchFilter
-      id="sketch-banner-title"
-      :seed="64"
-      flood-color="var(--background)" />
-
     <div class="character-banner__content">
       <div class="character-banner__texture-layer">
         <div
@@ -27,7 +22,10 @@
             maskImage: `url(/images/characters/${character.slug}/banner.png)`,
           }" />
       </div>
-      <div class="character-banner__title">
+      <div
+        class="character-banner__title"
+        :style="{ filter: filterUrl }"
+      >
         <h1 class="character-banner__title-image">
           {{ character.name }}
         </h1>
@@ -38,7 +36,11 @@
 
 <script setup lang="ts">
 import type { CharactersCollectionItem } from "@nuxt/content";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
+
+const { url: filterUrl } = useSketchFilter({
+  color: "var(--background)",
+  seed: 64,
+});
 
 const scrollY = ref(0);
 
@@ -283,7 +285,6 @@ const bannerVariant = computed(() => {
     mask-position: center;
     image-rendering: crisp-edges;
   }
-  filter: url(#sketch-banner-title);
 
   @include smooth-transition(background-color, 0.2s);
   @media (max-width: 768px) {

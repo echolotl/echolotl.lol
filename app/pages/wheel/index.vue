@@ -2,15 +2,21 @@
   <div class="wheel-page" :style="{ '--slice-color': sliceAtTop?.color }">
     <div class="content">
       <div class="heading">
-        <template v-if="wheelState === 'idling'"></template>
+        <template v-if="wheelState === 'idling'">
+          <div class="heading-placeholder" aria-hidden="true">
+            <h1>&nbsp;</h1>
+            <p>&nbsp;</p>
+          </div>
+        </template>
         <template v-else-if="wheelState === 'spinning'">
-          <h1>Spinning!</h1>
+          <h1>&nbsp;</h1>
           <p
             style="
               color: var(--text-secondary);
               margin-top: 0.5rem;
               font-size: var(--small-text);
-            ">
+            "
+          >
             {{ spinningSplashText }}
           </p>
         </template>
@@ -27,7 +33,8 @@
               color: var(--text-secondary);
               margin-top: 0.5rem;
               font-size: var(--small-text);
-            ">
+            "
+          >
             A
             <b
               >1 in
@@ -46,12 +53,9 @@
       </p>
       <div
         class="gradient-bg"
-        :class="{ 'is-flashing': isBackgroundFlashing }" />
+        :class="{ 'is-flashing': isBackgroundFlashing }"
+      />
       <div class="wheel-container">
-        <SketchFilter
-          id="wheel-sketch"
-          flood-color="var(--background)"
-          :seed="80085" />
         <svg viewBox="0 0 400 400" width="800" height="800">
           <circle
             v-if="useWheelSketchFilter"
@@ -61,7 +65,8 @@
             stroke="var(--background)"
             fill="none"
             stroke-width="4"
-            filter="url(#wheel-sketch)" />
+            :filter="wheelFilterUrl"
+          />
           <circle
             v-else
             cx="200"
@@ -69,10 +74,12 @@
             r="180"
             stroke="var(--background)"
             fill="none"
-            stroke-width="16" />
+            stroke-width="16"
+          />
           <g
             class="wheel-spin-layer"
-            :style="{ transform: `rotate(${wheelRotation}deg)` }">
+            :style="{ transform: `rotate(${wheelRotation}deg)` }"
+          >
             <template v-if="wheelSlices.length >= 1">
               <circle
                 cx="200"
@@ -80,15 +87,18 @@
                 r="180"
                 fill="none"
                 stroke="var(--surface)"
-                stroke-width="3" />
+                stroke-width="3"
+              />
               <template
                 v-for="(slice, index) in wheelRenderSlices"
-                :key="index">
+                :key="index"
+              >
                 <!-- Full circle if one slice !-->
                 <g v-if="slice.isFullCircle">
                   <circle cx="200" cy="200" r="180" :fill="slice.color" />
                   <g
-                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`">
+                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`"
+                  >
                     <text
                       :x="175"
                       y="
@@ -98,7 +108,8 @@
                       dominant-baseline="middle"
                       :fill="slice.textColor"
                       font-size="16"
-                      font-family="Lotl">
+                      font-family="Lotl"
+                    >
                       {{ slice.title }}
                     </text>
                   </g>
@@ -107,7 +118,8 @@
                 <g v-else>
                   <path :d="slice.slicePath" :fill="slice.color" />
                   <g
-                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`">
+                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`"
+                  >
                     <text
                       :x="175"
                       y="
@@ -117,7 +129,8 @@
                       dominant-baseline="middle"
                       :fill="slice.textColor"
                       font-size="16"
-                      font-family="Lotl">
+                      font-family="Lotl"
+                    >
                       {{ slice.title }}
                     </text>
                   </g>
@@ -130,7 +143,8 @@
                 fill="none"
                 stroke="var(--distant)"
                 stroke-width="3"
-                vector-effect="non-scaling-stroke" />
+                vector-effect="non-scaling-stroke"
+              />
             </template>
             <template v-else>
               <circle
@@ -141,7 +155,8 @@
                 fill="none"
                 stroke-dasharray="16 8"
                 stroke-linecap="round"
-                stroke-width="3" />
+                stroke-width="3"
+              />
             </template>
           </g>
 
@@ -152,35 +167,39 @@
               r="12"
               fill="var(--surface)"
               stroke="rgba(from var(--surface) r g b / 0.5)"
-              stroke-width="5" />
+              stroke-width="5"
+            />
           </g>
         </svg>
       </div>
       <div class="spin-actions">
         <template v-if="wheelState === 'waiting'">
-          <button class="wheel-button" @click="confirmResult">OK</button>
+          <button class="wheel-button round" @click="confirmResult">OK</button>
           <button
-            class="wheel-button filled"
+            class="wheel-button filled round"
             @click="spinToSlice"
-            :disabled="wheelSlices.length === 0">
+            :disabled="wheelSlices.length === 0"
+          >
             Spin Again
           </button>
         </template>
         <template v-else-if="wheelState === 'spinning'">
-          <button class="wheel-button" @click="stopSpin">Stop</button>
-          <button class="wheel-button" @click="skipSpin">Skip</button>
+          <button class="wheel-button round filled red" @click="stopSpin">
+            Stop
+          </button>
+          <button class="wheel-button round" @click="skipSpin">Skip</button>
         </template>
         <button
           v-else
-          class="wheel-button filled"
+          class="wheel-button filled round"
           @click="spinToSlice"
           :disabled="wheelSlices.length === 0"
           style="
             width: 200px;
             justify-content: center;
-            font-weight: bold;
             text-transform: uppercase;
-          ">
+          "
+        >
           Spin
         </button>
       </div>
@@ -188,25 +207,33 @@
         <div class="section preset">
           <h2 class="section-heading">Preset</h2>
           <label class="sr-only" for="wheel-preset">Choose a preset</label>
-          <select id="wheel-preset" v-model="selectedPreset" class="preset-select">
+          <select
+            id="wheel-preset"
+            v-model="selectedPreset"
+            class="preset-select"
+          >
             <option
               v-for="preset in Object.keys(presets)"
               :key="preset"
-              :value="preset">
+              :value="preset"
+            >
               {{ preset }}
             </option>
           </select>
           <button
             @click="loadPreset(selectedPreset)"
             :disabled="isSpinning || !selectedPreset"
-            class="wheel-button filled"
+            class="wheel-button"
             style="
               width: 100%;
               margin-top: 0.5rem;
+              padding: 0.25rem;
+              gap: 0.25rem;
               justify-content: center;
-              font-weight: bold;
               text-transform: uppercase;
-            ">
+            "
+          >
+            <Icon icon="download" size="24px" />
             Load Preset
           </button>
         </div>
@@ -224,15 +251,17 @@
               "
               class="action-button add-slice"
               aria-label="Add slice"
-              title="Add slice">
-              <Icon icon="add" width="16px" height="16px" />
+              title="Add slice"
+            >
+              <Icon icon="add" size="16px" />
             </button>
           </div>
           <div class="slice-editor">
             <div
               v-for="(slice, index) in slices"
               :key="index"
-              class="slice-item">
+              class="slice-item"
+            >
               <label class="sr-only" :for="`slice-title-${index}`">
                 Slice {{ index + 1 }} title
               </label>
@@ -244,7 +273,8 @@
                     gap: 0.5rem;
                     align-items: center;
                     width: 100%;
-                  ">
+                  "
+                >
                   <input
                     :id="`slice-percent-${index}`"
                     type="number"
@@ -252,7 +282,8 @@
                     max="100"
                     step="0.1"
                     placeholder="%"
-                    v-model.number="slice.percent" />
+                    v-model.number="slice.percent"
+                  />
                   <label class="sr-only" :for="`slice-percent-${index}`">
                     Slice {{ index + 1 }} percentage
                   </label>
@@ -261,7 +292,8 @@
                       type="button"
                       class="slice-color-swatch"
                       :aria-label="`Choose color for ${slice.title || `slice ${index + 1}`}`"
-                      :style="{ '--slice-editor-color': slice.color }"></button>
+                      :style="{ '--slice-editor-color': slice.color }"
+                    ></button>
                     <template #text>
                       <ColorPicker v-model="slice.color" />
                     </template>
@@ -277,7 +309,8 @@
                       }
                     "
                     class="action-button delete"
-                    :aria-label="`Remove ${slice.title || `slice ${index + 1}`}`">
+                    :aria-label="`Remove ${slice.title || `slice ${index + 1}`}`"
+                  >
                     <Icon icon="close" />
                   </button>
                 </div>
@@ -295,7 +328,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { type Character } from "~~/types";
 import ColorPicker from "~/components/ui/ColorPicker.vue";
 import Icon from "~/components/ui/Icon.vue";
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 import Tooltip from "~/components/ui/Tooltip.vue";
 import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
 // Types
@@ -332,6 +364,10 @@ const wheelState = ref<WheelState>("idling");
 const isSpinning = computed(() => wheelState.value === "spinning");
 const selectedPreset = ref("");
 const useWheelSketchFilter = ref(true);
+const { url: wheelFilterUrl } = useSketchFilter({
+  color: "var(--background)",
+  seed: 80085,
+});
 const isBackgroundFlashing = ref(false);
 const wheelAnnouncement = computed(() => {
   if (wheelState.value === "spinning") return "The wheel is spinning.";
@@ -1126,21 +1162,33 @@ select {
   }
 }
 .spin-actions {
-  display: flex;
-  gap: 0.5rem;
-  max-width: 400px;
-  margin: 0 auto;
   margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+
+  > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 8px;
+  }
 }
+
 .selected-slice {
   margin: 0.75rem 0 0;
   color: var(--text-secondary);
   font-size: var(--small-text);
 }
-.wheel-button {
-  border-radius: 8px;
-  text-shadow: 0 1px 0 rgba(from black r g b / 0.5);
+
+.heading-placeholder {
+  visibility: hidden;
+  p {
+    margin-top: 0.5rem;
+    font-size: var(--small-text);
+  }
 }
 
 .heading {
@@ -1148,7 +1196,8 @@ select {
   h1 {
     font-size: 3rem;
     margin: 0;
-    filter: url(#wheel-sketch);
+    paint-order: stroke fill;
+    -webkit-text-stroke: 8px var(--distant);
   }
 }
 

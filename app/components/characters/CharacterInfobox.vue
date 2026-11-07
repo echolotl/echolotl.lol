@@ -20,7 +20,7 @@
           class="character-infobox__audio-button"
           :title="`Play ${character.name}'s pronunciation`"
           @click="playPronunciation">
-          <Icon icon="sound" width="16px" height="16px" alt="" />
+          <Icon icon="sound" size="16px" alt="" />
         </button>
       </span>
     </div>
@@ -45,7 +45,7 @@
           </figcaption>
         </figure>
         <div v-else>
-          <Icon icon="loading" width="48px" height="48px" />
+          <Icon icon="loading" size="48px" />
         </div>
       </div>
       <hr />
@@ -54,8 +54,7 @@
         class="character-color-palette-container">
         <Icon
           :icon="paletteIcon"
-          width="24px"
-          height="24px"
+          size="24px"
           @mouseenter="isPaletteIconHovered = true"
           @mouseleave="isPaletteIconHovered = false"
           @click="openPaletteImage"
@@ -188,7 +187,6 @@
 </template>
 
 <script setup lang="ts">
-import CharacterLink from "~/components/characters/CharacterLink.vue";
 import Icon from "~/components/ui/Icon.vue";
 import type { Character } from "~~/types";
 

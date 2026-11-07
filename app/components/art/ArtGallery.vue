@@ -18,7 +18,7 @@
             @error="imageLoadError = 'Could not load the selected artwork image.'"
           />
           <div v-else class="placeholder">
-            <Icon icon="loading" width="3rem" height="3rem" />Loading...
+            <Icon icon="loading" size="3rem" />Loading...
           </div>
         </div>
       </div>

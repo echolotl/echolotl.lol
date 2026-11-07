@@ -1,10 +1,10 @@
 <template>
   <template v-if="status">
-    <div class="status-think-bubble">
+    <div class="status-think-bubble" :style="{ filter: filterUrl }">
       <div
         v-if="status === 'loading'"
         style="display: flex; align-items: center; gap: 0.25rem">
-        <Icon icon="loading" width="32px" height="32px" />
+        <Icon icon="loading" size="32px" />
         Thinking of a status...
       </div>
       <div v-else-if="status === 'error'" style="color: var(--red)">
@@ -21,8 +21,7 @@
         <span class="emoji"
           ><Icon
             icon="music-note"
-            width="54px"
-            height="54px"
+            size="54px"
             style="color: var(--primary)"
         /></span>
         <span>
@@ -66,6 +65,8 @@
 import Icon from "~/components/ui/Icon.vue";
 import { SlotText } from "slot-text/vue";
 import "slot-text/style.css";
+
+const { url: filterUrl } = useSketchFilter({ color: "var(--distant)" });
 
 const dateFormat = new Intl.RelativeTimeFormat("en", { style: "short" });
 const curDurationMsSpotify = ref(0);
@@ -308,7 +309,6 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   border: 1px solid var(--distant);
   box-shadow: inset 0 2px 12px var(--distant);
-  filter: url(#sketch-filter-main);
 
   &::after {
     content: "";

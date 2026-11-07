@@ -1,6 +1,5 @@
 <template>
   <div class="picross-layout" :style="{ marginTop: `${columnHintsHeight}px` }">
-    <SketchFilter id="picross-sketch" flood-color="var(--surface)" />
     <canvas
       v-if="!locked"
       ref="columnHintsCanvas"
@@ -16,7 +15,11 @@
       :aria-label="`Row hints: ${game.hints.rows.map((h) => h.join(' ')).join(', ')}`"
     ></canvas>
     <div class="game-board">
-      <div class="board-backdrop" aria-hidden="true"></div>
+      <div
+        class="board-backdrop"
+        aria-hidden="true"
+        :style="{ '--filter-url': filterUrl }"
+      ></div>
       <div
         v-if="hoveredTile && !game.isCompleted && !locked"
         class="hover-tile"
@@ -74,7 +77,6 @@
 </template>
 
 <script setup lang="ts">
-import SketchFilter from "~/components/ui/SketchFilter.vue";
 import { useTheme } from "~/composables/useTheme";
 import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
 import {
@@ -124,6 +126,7 @@ const props = defineProps<{
 }>();
 
 const { theme } = useTheme();
+const { url: filterUrl } = useSketchFilter({ color: "var(--surface)" });
 
 /**
  * A computed property that formats the metadata information for display.
@@ -1117,7 +1120,7 @@ watch(() => props.locked, drawHints, { flush: "post" });
   inset: 0;
   background-color: var(--surface);
   border-radius: 8px;
-  filter: url(#picross-sketch) drop-shadow(0 0 6px rgba(0, 0, 0, 0.2));
+  filter: var(--filter-url) drop-shadow(0 0 6px rgba(0, 0, 0, 0.2));
   pointer-events: none;
 }
 .hover-tile {

@@ -31,7 +31,7 @@
           class="comment-reply-button"
           @click="toggleReplyForm"
         >
-          Reply <Icon icon="comment" width="18px" height="18px" />
+          Reply <Icon icon="comment" size="18px" />
         </button>
         <template v-if="props.comment.author?.userId == user?.userId">
           <button
@@ -41,7 +41,7 @@
             :disabled="deleting"
             @click="startEditing"
           >
-            <Icon icon="pencil" width="18px" height="18px" />
+            <Icon icon="pencil" size="18px" />
           </button>
           <button
             type="button"
@@ -50,8 +50,8 @@
             :disabled="deleting"
             @click="handleDelete"
           >
-            <Icon v-if="deleting" icon="loading" width="18px" height="18px" />
-            <Icon v-else icon="trash" width="18px" height="18px" />
+            <Icon v-if="deleting" icon="loading" size="18px" />
+                        <Icon v-else icon="trash" size="18px" />
           </button>
         </template>
       </div>
@@ -82,7 +82,7 @@
         <button type="button" :disabled="saving" @click="cancelEdit">
           Cancel
         </button>
-        <Icon v-if="saving" icon="loading" width="24px" height="24px" />
+        <Icon v-if="saving" icon="loading" size="24px" />
       </div>
     </div>
     <div
@@ -128,8 +128,7 @@
         <Icon
           v-if="submittingReply"
           icon="loading"
-          width="24px"
-          height="24px"
+          size="24px"
         />
       </div>
     </div>
