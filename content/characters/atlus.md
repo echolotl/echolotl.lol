@@ -1,12 +1,12 @@
 ---
-slug: atlas
-name: Atlas
+slug: atlus
+name: Atlus
 species: Bee/???
 height: 6' 4"
 created_at: "2026-11-04T00:00:00.000Z"
 modified_at: "2026-11-04T00:00:00.000Z"
 pronouns: he/it/bee
-ipa: ætlɪs
+ipa: ætlʌs
 category: Other
 short_description: buzz buzz buzz
 theme_color: "#d46f50"

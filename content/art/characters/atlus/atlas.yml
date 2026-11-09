@@ -1,0 +1,17 @@
+slug: atlus
+created_at: "2026-11-05T06:00:00.000Z"
+modified_at: "2026-11-09T01:15:44.410Z"
+character: atlus
+title: Atlus
+description: hi buzz buzz
+pinned: false
+nsfw: false
+images:
+  - image_url: /art/characters/atlus/atlas.png
+    thumbnail_url: /art/characters/atlus/thumbnails/atlas.webp
+    id: atlus
+    variants:
+      - image_url: /art/characters/atlus/atlas__clothed.png
+        thumbnail_url: /art/characters/atlus/thumbnails/atlas__clothed.webp
+        label: Clothed
+sketch: false
