@@ -1,19 +1,19 @@
 ---
-slug: irene
-name: Irene
+slug: atlas
+name: Atlas
 species: Bee/???
 height: 6' 4"
 created_at: "2026-11-04T00:00:00.000Z"
 modified_at: "2026-11-04T00:00:00.000Z"
 pronouns: he/it/bee
-ipa: aɪːrin
+ipa: ætlɪs
 category: Other
-short_description: buzz buzz ball
+short_description: buzz buzz buzz
 theme_color: "#d46f50"
 sitemap:
   changefreq: monthly
   priority: 0.5
-  lastmod: 2026-09-27T00:00:00.000Z
+  lastmod: 2026-11-04T00:00:00.000Z
 ---
 
 <Callout type="info">
