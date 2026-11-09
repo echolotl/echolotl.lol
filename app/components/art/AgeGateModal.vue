@@ -9,18 +9,18 @@
     @close="emit('deny')"
   >
     <div class="age-gate">
-      <h2 class="age-gate__title lotl-font">Hang on...</h2>
-      <p class="age-gate__text">
+      <h2 class="title lotl-font">Hang on...</h2>
+      <p class="text">
         This content is NSFW and intended for adults only. Are you 18 or older
         <i class="text-secondary"
           >(or equivalent in whatever region you are in)</i
         >?
       </p>
-      <label class="age-gate__remember">
+      <label class="remember">
         <input v-model="dontAskAgain" type="checkbox" />
         Don't ask again
       </label>
-      <div class="age-gate__actions">
+      <div class="actions">
         <button class="filled orange" @click="onYes"><b>Yes</b></button>
         <button class="round" @click="onNo">No</button>
       </div>
@@ -61,15 +61,15 @@ function onNo() {
   flex-direction: column;
   gap: 12px;
 
-  &__title {
+  & .title {
     margin: 0;
   }
 
-  &__text {
+  & .text {
     margin: 0;
   }
 
-  &__remember {
+  & .remember {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -77,7 +77,7 @@ function onNo() {
     user-select: none;
   }
 
-  &__actions {
+  & .actions {
     display: flex;
     justify-content: flex-end;
     gap: 8px;

@@ -10,7 +10,7 @@
         <div
           ref="boxRef"
           class="modal"
-          :class="{ 'modal--icon': props.icon }"
+          :class="{ icon: props.icon }"
           role="dialog"
           aria-modal="true"
           :aria-label="ariaLabel"
@@ -20,7 +20,7 @@
           <Icon
             v-if="props.icon"
             :icon="props.icon"
-            class="modal__icon"
+            class="icon"
             :color="props.iconColor"
             size="48px"
             aria-hidden="true"
@@ -28,13 +28,13 @@
           <button
             v-if="props.closeButton"
             type="button"
-            class="modal__close"
+            class="close"
             aria-label="Close dialog"
             @click="close()"
           >
             <Icon icon="close" size="28px" />
           </button>
-          <div class="modal__content">
+          <div class="content">
             <slot />
           </div>
         </div>
@@ -176,7 +176,7 @@ onBeforeUnmount(() => {
 }
 
 .modal {
-  &__close {
+  & .close {
     position: absolute;
     top: -16px;
     right: -16px;
@@ -200,13 +200,13 @@ onBeforeUnmount(() => {
   filter: var(--filter-url);
   border-radius: 16px;
 
-  &__content {
+  & .content {
     flex: 1;
     min-width: 0;
     padding: 24px;
     overflow-y: auto;
   }
-  &__icon {
+  & .icon {
     position: absolute;
     top: 8px;
     left: -32px;
@@ -215,13 +215,13 @@ onBeforeUnmount(() => {
   // On narrow screens there's no room beside the box, so the icon
   // sits centered over its top edge
   @media (max-width: 768px) {
-    &__icon {
+    & .icon {
       top: -24px;
       right: 24px;
       left: auto;
     }
 
-    &--icon &__content {
+    &.icon .content {
       padding-top: 16px;
     }
   }

@@ -1,12 +1,12 @@
 <template>
   <div class="character-infobox">
-    <div class="character-infobox__label">
+    <div class="label">
       <span
-        class="lotl-font character-infobox__name"
+        class="lotl-font name"
         style="font-size: 1.4em; text-transform: uppercase"
         >{{ character.name.toUpperCase() }}</span
       >
-      <span class="character-infobox__pronunciation">
+      <span class="pronunciation">
         <span
           style="
             font-size: var(--very-small-text);
@@ -17,16 +17,16 @@
         <button
           v-if="character.ipa"
           type="button"
-          class="character-infobox__audio-button"
+          class="audio-button"
           :title="`Play ${character.name}'s pronunciation`"
           @click="playPronunciation">
           <Icon icon="sound" size="16px" alt="" />
         </button>
       </span>
     </div>
-    <div class="character-infobox__details">
+    <div class="details">
       <hr v-if="character.image" />
-      <div v-if="character.image" class="character-infobox__header">
+      <div v-if="character.image" class="header">
         <figure
           style="text-align: center; margin: 0"
           v-if="characterImage[0] == false">
@@ -75,10 +75,10 @@
             @mouseleave="hoveredColor = null"></div>
         </div>
       </div>
-      <table class="character-infobox__table">
+      <table class="table">
         <tbody>
           <tr>
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Species</span>
             </td>
             <td>
@@ -87,7 +87,7 @@
           </tr>
 
           <tr>
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Pronouns</span>
             </td>
             <td>
@@ -96,14 +96,14 @@
           </tr>
 
           <tr>
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Age</span>
             </td>
             <td>{{ character.age || "Unknown" }}</td>
           </tr>
 
           <tr>
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Height</span>
             </td>
             <td>
@@ -113,7 +113,7 @@
           </tr>
 
           <tr v-if="character.likes && character.likes.length > 0">
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Likes</span>
             </td>
             <td>
@@ -126,7 +126,7 @@
           </tr>
 
           <tr v-if="character.dislikes && character.dislikes.length > 0">
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Dislikes</span>
             </td>
             <td>
@@ -139,7 +139,7 @@
           </tr>
 
           <tr v-if="character.friends && character.friends.length > 0">
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Friends</span>
             </td>
             <td>
@@ -156,7 +156,7 @@
           </tr>
 
           <tr v-if="character.enemies && character.enemies.length > 0">
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Enemies</span>
             </td>
             <td>
@@ -173,7 +173,7 @@
           </tr>
 
           <tr>
-            <td class="character-infobox__item-label">
+            <td class="item-label">
               <span>Creation Date</span>
             </td>
             <td>
@@ -299,7 +299,7 @@ function copyColorToClipboard(color: string): void {
   }
 }
 
-.character-infobox__label {
+.label {
   @include color-text-stroke(var(--background), 4px);
   color: var(--theme-color);
   font-size: var(--base-text);
@@ -313,12 +313,12 @@ function copyColorToClipboard(color: string): void {
   position: relative;
 }
 
-.character-infobox__name {
+.name {
   max-width: 100%;
   overflow-wrap: anywhere;
 }
 
-.character-infobox__pronunciation {
+.pronunciation {
   position: absolute;
   bottom: 115%;
   left: 0.75rem;
@@ -328,7 +328,7 @@ function copyColorToClipboard(color: string): void {
   white-space: nowrap;
 }
 
-.character-infobox__audio-button {
+.audio-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -344,7 +344,7 @@ function copyColorToClipboard(color: string): void {
   }
 }
 
-.character-infobox__item-label {
+.item-label {
   font-weight: bold;
   font-size: var(--small-text);
   box-sizing: border-box;
@@ -360,7 +360,7 @@ function copyColorToClipboard(color: string): void {
   }
 }
 
-.character-infobox__details {
+.details {
   position: relative;
   padding: 10px;
   font-size: var(--small-text);
@@ -387,7 +387,7 @@ function copyColorToClipboard(color: string): void {
   }
 }
 
-.character-infobox__title {
+.title {
   color: var(--theme-color);
   font-size: var(--large-text);
   margin-bottom: 10px;
@@ -396,7 +396,7 @@ function copyColorToClipboard(color: string): void {
   text-align: center;
 }
 
-.character-infobox__header {
+.header {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -445,7 +445,7 @@ function copyColorToClipboard(color: string): void {
   }
 }
 
-.character-infobox__table {
+.table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -467,7 +467,7 @@ function copyColorToClipboard(color: string): void {
   }
 }
 
-.character-infobox__clan-icon {
+.clan-icon {
   width: 24px;
   height: 24px;
 }

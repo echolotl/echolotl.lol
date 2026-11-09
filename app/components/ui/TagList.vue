@@ -1,7 +1,7 @@
 <template>
   <div v-if="shouldShow" class="tag-list">
     <Icon v-if="icon" :icon="icon" color="var(--text-secondary)" />
-    <div class="tag-list__items flex-row-wrap">
+    <div class="items flex-row-wrap">
       <slot></slot>
     </div>
   </div>

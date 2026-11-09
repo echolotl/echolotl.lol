@@ -28,11 +28,11 @@
     <div
       v-if="currentImage?.variants && currentImage.variants.length"
       class="variants">
-      <div class="variants__list">
+      <div class="list">
         <Icon icon="layers" />
         <button
           type="button"
-          class="button--chip"
+          class="chip"
           :class="{ active: currentVariantIndex === null }"
           :aria-pressed="currentVariantIndex === null"
           @click="currentVariantIndex = null">
@@ -42,7 +42,7 @@
           type="button"
           v-for="(variant, vIndex) in currentImage.variants"
           :key="vIndex"
-          class="button--chip"
+          class="chip"
           :class="{ active: currentVariantIndex === vIndex }"
           :aria-pressed="currentVariantIndex === vIndex"
           @click="selectVariant(vIndex)">
@@ -53,7 +53,7 @@
 
     <!-- Selector for multiple images -->
     <div v-if="hasMultiple" class="selector">
-      <div class="selector__dots">
+      <div class="dots">
         <button
           type="button"
           v-for="(_, index) in art.images"
@@ -64,10 +64,10 @@
           :aria-pressed="currentImageIndex === index"
           @click="selectImage(index)"></button>
       </div>
-      <div class="selector__label">
+      <div class="label">
         <button
           type="button"
-          class="button--nav prev"
+          class="nav prev"
           @click="prevImage"
           aria-label="Previous image"
           style="border-radius: 100%">
@@ -77,7 +77,7 @@
         {{ art.images.length }}
         <button
           type="button"
-          class="button--nav next"
+          class="nav next"
           @click="nextImage"
           aria-label="Next image"
           style="border-radius: 100%">
@@ -86,7 +86,7 @@
       </div>
     </div>
     <a
-      class="selector__label link"
+      class="label link"
       style="
         justify-content: center;
         cursor: pointer;
@@ -311,14 +311,14 @@ onMounted(() => {
   gap: 0.5rem;
   flex-wrap: wrap;
   align-items: center;
-  &__label {
+  & .label {
     font-size: var(--base-text);
     color: var(--text-secondary);
     display: flex;
     gap: 0.35rem;
     align-items: center;
   }
-  &__dots {
+  & .dots {
     display: flex;
     gap: 0.2rem;
     align-items: center;
@@ -348,7 +348,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  .variants__list {
+  .list {
     align-items: center;
     display: flex;
     gap: 0.4rem;

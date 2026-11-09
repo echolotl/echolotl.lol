@@ -2,24 +2,27 @@
   <div
     :to="`/characters/${props.character.slug}`"
     class="character-card"
+    :class="{ interacted: hasInteracted }"
     :style="{ '--filter-url': filterUrl }"
+    @mouseenter="hasInteracted = true"
+    @focusin="hasInteracted = true"
   >
     <NuxtLink
       :to="`/characters/${props.character.slug}`"
-      class="character-card__image"
+      class="image"
     >
-      <div class="character-card__image-bg"></div>
+      <div class="image-bg"></div>
 
       <div
-        class="character-card__image-icon"
+        class="image-icon"
         :style="{ backgroundImage: characterImage }"
       ></div>
       <div
-        class="character-card__image-icon-hover"
+        class="image-icon-hover"
         :style="{ backgroundImage: characterHoverImage }"
       ></div>
     </NuxtLink>
-    <span class="character-card__name lotl-font" style="font-size: 1.5rem">{{
+    <span class="name lotl-font" style="font-size: 1.5rem">{{
       props.character.name
     }}</span>
   </div>
@@ -36,6 +39,7 @@ const props = defineProps({
   },
 });
 
+const hasInteracted = ref(false);
 const { theme } = useTheme();
 
 const characterColor = computed(() => {
@@ -73,7 +77,7 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
   text-decoration: none;
   transition: transform 0.3s ease;
 
-  &__image {
+  & .image {
     position: relative;
     width: 200px;
     height: 200px;
@@ -83,7 +87,7 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
     }
   }
 
-  &__image-frame {
+  & .image-frame {
     position: absolute;
     top: 0;
     left: 0;
@@ -97,7 +101,7 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
     z-index: 2;
   }
 
-  &__image-icon {
+  & .image-icon {
     position: absolute;
     top: 0;
     left: 0;
@@ -114,7 +118,7 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
     mask-position: center;
   }
 
-  &__image-bg {
+  & .image-bg {
     position: absolute;
     top: 0;
     left: 0;
@@ -127,7 +131,7 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
     mask-position: center;
   }
 
-  &__image-icon-hover {
+  & .image-icon-hover {
     position: absolute;
     top: 0;
     left: 0;
@@ -141,7 +145,7 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
     z-index: 3;
   }
 
-  &__name {
+  & .name {
     position: absolute;
     color: transparent;
     bottom: 0;
@@ -157,34 +161,34 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
   &:hover,
   &:focus-within {
     z-index: 10;
-    .character-card__image {
+    .image {
       filter: var(--filter-url);
     }
-    .character-card__image-bg {
+    .image-bg {
       background: var(--theme-color);
       transform: rotate(v-bind(randomRotation));
       transition: transform 0.3s;
     }
 
-    .character-card__image-icon-hover {
+    .image-icon-hover {
       opacity: 1;
       animation: bounceScale 0.3s ease;
     }
-    .character-card__image-icon {
+    .image-icon {
       opacity: 0;
     }
 
-    .character-card__name {
+    .name {
       @include color-text-stroke(var(--background), 6px);
       opacity: 1;
       color: var(--theme-color);
     }
-    .character-card__image-frame {
+    .image-frame {
       animation: frameShrinkShake 0.3s ease forwards;
     }
   }
-  &:not(:hover) {
-    .character-card__image-icon {
+  &.interacted:not(:hover):not(:focus-within) {
+    .image-icon {
       animation: bounceScaleMask 0.3s ease forwards;
     }
   }

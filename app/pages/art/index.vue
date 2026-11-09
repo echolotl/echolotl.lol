@@ -185,7 +185,7 @@
                   </ul>
                   <div
                     v-else-if="tagDropdownOpen && tagInput.trim() !== ''"
-                    class="tag-suggestions tag-suggestions--empty"
+                    class="tag-suggestions empty"
                   >
                     No matching tags found.
                   </div>
@@ -895,7 +895,7 @@ useSeoMeta({
     }
   }
 
-  &--empty {
+  &.empty {
     color: var(--text-secondary);
     text-align: left;
     padding: 0.5rem;

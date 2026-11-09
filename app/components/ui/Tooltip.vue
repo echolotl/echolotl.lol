@@ -1,10 +1,14 @@
 <template>
   <div
     class="tooltip"
+    :class="[
+      props.direction ?? 'bottom',
+      {
+        'display-only': props.displayOnly,
+        instant,
+      },
+    ]"
     :style="{ anchorName }"
-    :data-direction="props.direction"
-    :data-display-only="props.displayOnly || undefined"
-    :data-instant="instant || undefined"
     @mouseenter="onEnter"
     @mouseleave="onLeave"
   >
@@ -71,17 +75,15 @@ function onLeave() {
 }
 
 /* ignore pointer events so only the trigger keeps the tooltip open */
-.tooltip[data-display-only] .tooltiptext {
+.tooltip.display-only .tooltiptext {
   pointer-events: none;
 }
 
-.tooltip[data-instant] .tooltiptext {
+.tooltip.instant .tooltiptext {
   transition: none;
 }
 
-/* bottom (default) */
-.tooltip:not([data-direction]) .tooltiptext,
-.tooltip[data-direction="bottom"] .tooltiptext {
+.tooltip.bottom .tooltiptext {
   top: anchor(bottom);
   left: anchor(center);
   margin-top: 2px;
@@ -94,7 +96,7 @@ function onLeave() {
   }
 }
 
-.tooltip[data-direction="top"] .tooltiptext {
+.tooltip.top .tooltiptext {
   bottom: anchor(top);
   left: anchor(center);
   margin-bottom: 2px;
@@ -107,7 +109,7 @@ function onLeave() {
   }
 }
 
-.tooltip[data-direction="left"] .tooltiptext {
+.tooltip.left .tooltiptext {
   --shift: translateY(-50%);
   top: anchor(center);
   right: anchor(left);
@@ -121,7 +123,7 @@ function onLeave() {
   }
 }
 
-.tooltip[data-direction="right"] .tooltiptext {
+.tooltip.right .tooltiptext {
   --shift: translateY(-50%);
   top: anchor(center);
   left: anchor(right);

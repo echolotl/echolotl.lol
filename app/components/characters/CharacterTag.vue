@@ -3,7 +3,7 @@
     variant="character"
     :to="`/characters/${slug}`"
     :custom-color="themeColor">
-    <span v-if="character?.name" class="character-tag__name lotl-font">
+    <span v-if="character?.name" class="name lotl-font">
       {{ character.name }}
     </span>
     <slot v-else></slot>
@@ -46,7 +46,7 @@ const themeColor = computed(() => {
 </script>
 
 <style scoped lang="scss">
-.character-tag__name {
+.name {
   transform: translateY(2px);
 }
 </style>

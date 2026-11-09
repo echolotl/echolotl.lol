@@ -36,8 +36,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const tagClasses = computed(() => [
   "tag",
-  `tag--${props.variant}`,
-  { "tag--interactive": props.clickable || Boolean(props.to) },
+  props.variant,
+  { interactive: props.clickable || Boolean(props.to) },
 ]);
 
 const customStyles = computed(() => {
@@ -74,16 +74,16 @@ const customStyles = computed(() => {
     border-color 0.2s ease,
     transform 0.2s ease;
 
-  &--default {
+  &.default {
     text-transform: uppercase;
   }
 
-  &--character {
+  &.character {
     text-transform: none;
     text-decoration: none;
   }
 
-  &--interactive {
+  &.interactive {
     cursor: pointer;
 
     &:is(:hover, :focus-visible) {

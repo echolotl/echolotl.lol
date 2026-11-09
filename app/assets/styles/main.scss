@@ -115,14 +115,14 @@ button {
   }
 
   // Button variants
-  &.button--icon {
+  &.icon {
     padding: 0.5rem;
     border: none;
     background: transparent;
     min-width: auto;
   }
 
-  &.button--chip {
+  &.chip {
     padding: 0.35rem 0.75rem;
     font-size: var(--small-text);
     border-radius: 999px;
@@ -139,7 +139,7 @@ button {
     }
   }
 
-  &.button--nav {
+  &.nav {
     padding: 0.5rem;
     border: none;
 

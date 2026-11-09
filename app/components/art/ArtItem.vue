@@ -7,64 +7,67 @@
     <nuxt-link
       :to="`/art/${artwork.slug}`"
       class="art-item"
+      :class="{ interacted: hasInteracted }"
       :aria-label="`View Artwork: ${artwork.title}`"
       @click="onClick"
+      @mouseenter="hasInteracted = true"
+      @focusin="hasInteracted = true"
     >
       <div
-        class="art-item__image"
-        :class="{ 'art-item__image--blurred': artwork.nsfw }"
+        class="image"
+        :class="{ blurred: artwork.nsfw }"
         :style="{
           '--art-bg': `url(${artwork.images[0]?.thumbnail_url})`,
           backgroundImage: artwork.nsfw ? 'none' : 'var(--art-bg)',
         }"
         :title="artwork.title"
       >
-        <div v-if="showMetadata" class="art-item__metadata">
+        <div v-if="showMetadata" class="metadata">
           <div
             v-if="artwork.character && showCharacterBadge"
-            class="art-item__metadata-icon"
+            class="metadata-icon"
             title="Character"
           >
             <Icon icon="character" />
           </div>
           <div
             v-if="artwork.pinned"
-            class="art-item__metadata-icon"
+            class="metadata-icon"
             title="Pinned"
           >
             <Icon icon="pin" />
           </div>
           <div
             v-if="artwork.sketch"
-            class="art-item__metadata-icon"
+            class="metadata-icon"
             title="Sketch"
           >
             <Icon icon="sketch" />
           </div>
           <div
             v-if="hasVariants"
-            class="art-item__metadata-icon"
+            class="metadata-icon"
             title="Has Variants"
           >
             <Icon icon="layers" />
           </div>
           <div
             v-if="hasMultipleImages"
-            class="art-item__metadata-icon"
+            class="metadata-icon"
             title="Multiple Images"
           >
             <Icon icon="images" />
           </div>
           <div
             v-if="!isEcholotlArtwork(props.artwork)"
-            class="art-item__metadata-icon"
+            class="metadata-icon"
             title="Non-echolotl Artwork"
           >
             <Icon icon="other" />
           </div>
           <div
             v-if="artwork.nsfw"
-            class="art-item__metadata-icon"
+            class="metadata-icon"
             title="NSFW Content"
           >
             <Icon icon="r18" />
@@ -90,6 +93,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ (e: "age-gate"): void }>();
 
+const hasInteracted = ref(false);
 const { verified } = useAgeVerification();
 const locked = computed(() => !!props.artwork.nsfw && !verified.value);
 
@@ -129,7 +133,7 @@ const hasMultipleImages = computed(() => {
   will-change: transform filter;
   outline: none;
 
-  &__image {
+  & .image {
     width: 100%;
     height: 100%;
     position: relative;
@@ -146,7 +150,7 @@ const hasMultipleImages = computed(() => {
     transition: background-size 0.3s ease-out;
 
     // Blur only the artwork layer so the metadata badges stay sharp
-    &--blurred::before {
+    &.blurred::before {
       content: "";
       position: absolute;
       inset: -20px;
@@ -166,10 +170,10 @@ const hasMultipleImages = computed(() => {
   &:focus-within {
     transform: scale(1.1);
 
-    .art-item__image {
+    .image {
       background-size: 100%;
     }
-    .art-item__metadata {
+    .metadata {
       color: var(--background);
       &::before {
         background: var(--theme-color, var(--primary));
@@ -177,9 +181,9 @@ const hasMultipleImages = computed(() => {
     }
   }
 
-  &:not(:hover):not(:focus-within) {
+  &.interacted:not(:hover):not(:focus-within) {
     animation: bounceInScale 0.3s;
-    .art-item__image {
+    .image {
       animation: bounceInBackground 0.3s;
     }
   }
@@ -190,7 +194,7 @@ const hasMultipleImages = computed(() => {
     filter: var(--filter-url);
   }
 }
-.art-item__metadata {
+.metadata {
   position: absolute;
   display: flex;
   color: var(--theme-color, var(--primary));

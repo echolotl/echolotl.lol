@@ -1,32 +1,32 @@
 <template>
   <div class="character-banner" :class="bannerVariant">
-    <div class="character-banner__content">
-      <div class="character-banner__texture-layer">
+    <div class="content">
+      <div class="texture-layer">
         <div
-          class="character-banner__texture"
+          class="texture"
           :style="{
             maskImage: `url(/images/characters/${character.slug}/texture.png)`,
             maskPosition: `0 ${scrollY}px`,
           }" />
       </div>
-      <div class="character-banner__underlay" />
-      <div class="character-banner__images">
+      <div class="underlay" />
+      <div class="images">
         <div
-          class="character-banner__image"
+          class="image"
           :style="{
             maskImage: `url(/images/characters/${character.slug}/banner.png)`,
           }" />
         <div
-          class="character-banner__image left"
+          class="image left"
           :style="{
             maskImage: `url(/images/characters/${character.slug}/banner.png)`,
           }" />
       </div>
       <div
-        class="character-banner__title"
+        class="title"
         :style="{ filter: filterUrl }"
       >
-        <h1 class="character-banner__title-image">
+        <h1 class="title-image">
           {{ character.name }}
         </h1>
       </div>
@@ -66,15 +66,15 @@ const titleImage = `url(/images/characters/${props.character.slug}/title.png)`;
 const bannerVariant = computed(() => {
   switch (props.character.slug) {
     case "nautilus":
-      return "character-banner--nautilus";
+      return "nautilus";
     case "nae":
-      return "character-banner--nae";
+      return "nae";
     case "quiver":
-      return "character-banner--quiver";
+      return "quiver";
     case "sesame":
-      return "character-banner--sesame";
+      return "sesame";
     case "unyruu":
-      return "character-banner--unyruu";
+      return "unyruu";
     default:
       return null;
   }
@@ -93,7 +93,7 @@ const bannerVariant = computed(() => {
   }
 }
 
-.character-banner__content {
+.content {
   position: relative;
   width: 100%;
   height: 100%;
@@ -106,7 +106,7 @@ const bannerVariant = computed(() => {
   }
 }
 
-.character-banner__texture {
+.texture {
   display: block;
   position: absolute;
   top: 0;
@@ -122,13 +122,13 @@ const bannerVariant = computed(() => {
   @include theme-transition;
 }
 
-.character-banner__texture-layer {
+.texture-layer {
   position: absolute;
   inset: 0;
   z-index: -1;
 }
 
-.character-banner__image {
+.image {
   display: block;
   position: absolute;
   top: 0;
@@ -150,7 +150,7 @@ const bannerVariant = computed(() => {
     }
   }
 }
-.character-banner__underlay {
+.underlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -160,7 +160,7 @@ const bannerVariant = computed(() => {
   @include gradient-fade-bottom(var(--theme-color));
   @include theme-transition;
 }
-.character-banner__underlay::after {
+.underlay::after {
   content: "";
   position: absolute;
   top: 0;
@@ -172,7 +172,7 @@ const bannerVariant = computed(() => {
   mask-image: linear-gradient(to top, black, transparent);
   @include theme-transition;
 }
-.character-banner--nautilus .character-banner__underlay {
+.nautilus .underlay {
   background: repeating-linear-gradient(
     to right,
     var(--theme-color) 0%,
@@ -184,7 +184,7 @@ const bannerVariant = computed(() => {
   opacity: 1;
   mask-image: linear-gradient(to bottom, black, transparent);
 }
-.character-banner--nautilus .character-banner__texture {
+.nautilus .texture {
   background: repeating-linear-gradient(
     to right,
     var(--theme-color) 0%,
@@ -195,7 +195,7 @@ const bannerVariant = computed(() => {
   animation: nautilus-gradient-scroll 12s linear infinite reverse;
 }
 
-.character-banner--nautilus .character-banner__texture-layer {
+.nautilus .texture-layer {
   @include mask-gradient(to bottom, black, 0%, transparent, 100%);
 }
 
@@ -206,13 +206,13 @@ const bannerVariant = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .character-banner--nautilus .character-banner__underlay,
-  .character-banner--nautilus .character-banner__texture {
+  .nautilus .underlay,
+  .nautilus .texture {
     animation: none;
   }
 }
 
-.character-banner--nae .character-banner__underlay {
+.nae .underlay {
   background: repeating-conic-gradient(
     at 50% 0%,
     var(--theme-color) 0% 8.25%,
@@ -222,7 +222,7 @@ const bannerVariant = computed(() => {
   opacity: 1;
   mask-image: linear-gradient(to bottom, black, transparent);
 }
-.character-banner--nae .character-banner__texture {
+.nae .texture {
   background: repeating-conic-gradient(
     at 50% 0%,
     var(--theme-color) 0% 8.25%,
@@ -232,37 +232,37 @@ const bannerVariant = computed(() => {
   mask-size: 100px 100px;
 }
 
-.character-banner--nae .character-banner__texture-layer {
+.nae .texture-layer {
   @include mask-gradient(to bottom, black, 0%, transparent, 100%);
 }
 
-.character-banner--sesame .character-banner__underlay {
+.sesame .underlay {
   background: linear-gradient(to bottom, var(--theme-color), #ff6600);
   opacity: 1;
   mask-image: linear-gradient(to bottom, black, transparent);
 }
-.character-banner--sesame .character-banner__texture {
+.sesame .texture {
   background: linear-gradient(to right, var(--theme-color), #ff6600);
 }
 
-.character-banner--sesame .character-banner__texture-layer {
+.sesame .texture-layer {
   @include mask-gradient(to bottom, black, 0%, transparent, 100%);
 }
 
-.character-banner--unyruu .character-banner__underlay {
+.unyruu .underlay {
   background: linear-gradient(to bottom, #f8c0ff, var(--theme-color) 50%);
   opacity: 1;
   mask-image: linear-gradient(to bottom, black, transparent);
 }
-.character-banner--unyruu .character-banner__texture {
+.unyruu .texture {
   background: linear-gradient(to top, #f8c0ff, var(--theme-color) 75%);
 }
 
-.character-banner--unyruu .character-banner__texture-layer {
+.unyruu .texture-layer {
   @include mask-gradient(to bottom, black, 0%, transparent, 100%);
 }
 
-.character-banner__images {
+.images {
   @include mask-gradient(to top, transparent, 0%, black, 70%);
   position: absolute;
   top: 0;
@@ -271,7 +271,7 @@ const bannerVariant = computed(() => {
   height: 100%;
   backdrop-filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
 }
-.character-banner__title {
+.title {
   &-image {
     background-color: color-mix(
       in oklch,

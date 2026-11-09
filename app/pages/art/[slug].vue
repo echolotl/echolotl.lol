@@ -15,7 +15,7 @@
             v-if="art.tags && art.tags.length > 0"
             icon="tag"
             :items="art.tags"
-            class="art-meta__tag-list"
+            class="tag-list"
           >
             <Tag
               v-for="tag in art.tags"
@@ -42,26 +42,26 @@
               :slug="character"
             />
           </TagList>
-          <div v-if="art.created_at" class="art-meta__section">
+          <div v-if="art.created_at" class="section">
             <Icon icon="date" color="var(--text-secondary)" />
-            <span class="art-meta__date">{{
+            <span class="date">{{
               new Date(art.created_at).toLocaleDateString(undefined, {
                 timeZone: "UTC",
               })
             }}</span>
           </div>
-          <div v-if="art.artist" class="art-meta__section">
+          <div v-if="art.artist" class="section">
             <Icon icon="other" color="var(--text-secondary)" />
             <a
               v-if="art.artist.link"
-              class="art-meta__date"
+              class="date"
               :href="art.artist.link"
               target="_blank"
               rel="noopener noreferrer"
             >
               by {{ art.artist.name }}
             </a>
-            <span v-else class="art-meta__date">by {{ art.artist.name }}</span>
+            <span v-else class="date">by {{ art.artist.name }}</span>
           </div>
         </div>
         <div class="right">
@@ -262,17 +262,17 @@ useSeoMeta({
   }
 }
 
-.art-meta__section {
+.section {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.art-meta__tag-list {
+.tag-list {
   display: inline-flex;
 }
 
-.art-meta__date {
+.date {
   color: var(--text-secondary);
   font-size: var(--small-text);
 }

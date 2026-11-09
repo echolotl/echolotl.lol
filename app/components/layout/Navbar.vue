@@ -1,23 +1,23 @@
 <template>
   <header class="navbar">
     <nav class="navbar-top">
-      <div class="navbar-top__content">
+      <div class="content">
         <!-- Desktop theme icon -->
         <button
           type="button"
-          class="navbar-top__themeicon navbar-top__themeicon--desktop"
+          class="themeicon desktop"
           :aria-label="`Switch to ${props.light ? 'dark' : 'light'} theme`"
           @click="toggleTheme">
           <Icon
             :icon="currentThemeIcon"
             size="48px"
-            class="icon icon--hoverable" />
+            class="icon hoverable" />
         </button>
 
         <!-- Mobile hamburger menu -->
         <button
           type="button"
-          class="navbar-top__hamburger"
+          class="hamburger"
           :aria-expanded="mobileMenuOpen"
           aria-controls="primary-mobile-navigation"
           :aria-label="mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'"
@@ -25,22 +25,22 @@
           <Icon
             :icon="mobileMenuOpen ? 'close' : 'hamburger-open'"
             size="48px"
-            class="icon icon--hoverable" />
+            class="icon hoverable" />
         </button>
 
-        <div class="navbar-top__logo">
+        <div class="logo">
           <nuxt-link to="/" aria-label="Go to homepage">
             <Icon
               icon="echolotl"
               size="48px"
-              class="navbar-top__logo-icon navbar-top__logo-icon--desktop"
+              class="logo-icon desktop"
               color="var(--inverted-solid)"
               :style="{
                 background:
                   route.path === '/' ? 'var(--primary)' : 'var(--text)',
               }" />
             <div
-              class="navbar-top__logo-image"
+              class="logo-image"
               :style="{
                 background:
                   route.path === '/' ? 'var(--primary)' : 'var(--text)',
@@ -49,7 +49,7 @@
         </div>
 
         <!-- Desktop navigation icons -->
-        <div class="navbar-top__nav-icons navbar-top__nav-icons--desktop">
+        <div class="nav-icons desktop">
           <nuxt-link
             v-for="(navIcon, index) in navIcons"
             :key="index"
@@ -59,7 +59,7 @@
               :icon="navIcon.icon"
               :alt="navIcon.alt"
               size="48px"
-              class="icon icon--hoverable"
+              class="icon hoverable"
               :style="
                 route.path === navIcon.to
                   ? `background: var(--primary);`
@@ -73,18 +73,18 @@
       <div
         id="primary-mobile-navigation"
         v-show="mobileMenuOpen"
-        class="navbar-top__mobile-menu"
+        class="mobile-menu"
         aria-label="Primary">
-        <div class="navbar-top__mobile-menu-content">
+        <div class="mobile-menu-content">
           <!-- Mobile theme toggle -->
           <button
             type="button"
-            class="navbar-top__mobile-item"
+            class="mobile-item"
             @click="toggleTheme">
             <Icon
               :icon="currentThemeIcon"
               size="32px"
-              class="icon icon--hoverable" />
+              class="icon hoverable" />
             <span>{{ props.light ? "Dark Mode" : "Light Mode" }}</span>
           </button>
 
@@ -93,14 +93,14 @@
             v-for="(navIcon, index) in navIcons"
             :key="index"
             :to="navIcon.to"
-            class="navbar-top__mobile-item"
+            class="mobile-item"
             :aria-current="route.path === navIcon.to ? 'page' : undefined"
             @click="closeMobileMenu">
             <Icon
               :icon="navIcon.icon"
               :alt="navIcon.alt"
               size="32px"
-              class="icon icon--hoverable"
+              class="icon hoverable"
               :style="{
                 background:
                   route.path === navIcon.to
@@ -194,7 +194,7 @@ onMounted(() => {
   background-color: var(--distant);
 }
 
-.navbar-top__content {
+.content {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -210,7 +210,7 @@ onMounted(() => {
   }
 }
 
-.navbar-top__themeicon--desktop {
+.desktop.themeicon {
   position: absolute;
   left: 1rem;
   padding: 0;
@@ -222,7 +222,7 @@ onMounted(() => {
   }
 }
 
-.navbar-top__hamburger {
+.hamburger {
   position: absolute;
   left: 1rem;
   display: none;
@@ -237,18 +237,18 @@ onMounted(() => {
   }
 }
 
-.navbar-top__logo:hover * .navbar-top__logo-icon,
-.navbar-top__logo:focus-visible * .navbar-top__logo-icon {
+.logo:hover * .logo-icon,
+.logo:focus-visible * .logo-icon {
   animation: jumpAndFlip 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.navbar-top__logo a {
+.logo a {
   display: flex;
   flex-direction: row;
   min-width: auto;
   &:hover {
-    .navbar-top__logo-icon,
-    .navbar-top__logo-image {
+    .logo-icon,
+    .logo-image {
       background: var(--primary) !important;
     }
   }
@@ -262,17 +262,17 @@ onMounted(() => {
   }
 }
 
-.navbar-top__logo-icon {
+.logo-icon {
   margin-right: 0.5rem;
 }
 
-.navbar-top__logo-icon--desktop {
+.desktop.logo-icon {
   @media (max-width: 768px) {
     display: none !important;
   }
 }
 
-.navbar-top__logo-image {
+.logo-image {
   width: 300px;
   height: 48px;
   mask-image: url("~/assets/images/logo.png");
@@ -287,7 +287,7 @@ onMounted(() => {
   }
 }
 
-.navbar-top__nav-icons--desktop {
+.desktop.nav-icons {
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -299,7 +299,7 @@ onMounted(() => {
   }
 }
 
-.navbar-top__mobile-menu {
+.mobile-menu {
   position: absolute;
   top: 50;
   left: 0;
@@ -312,7 +312,7 @@ onMounted(() => {
   }
 }
 
-.navbar-top__mobile-menu-content {
+.mobile-menu-content {
   padding: 1rem;
   padding-top: calc(1rem + 60px);
   display: flex;
@@ -320,7 +320,7 @@ onMounted(() => {
   gap: 0.75rem;
 }
 
-.navbar-top__mobile-item {
+.mobile-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -344,7 +344,7 @@ onMounted(() => {
   }
 }
 
-button.navbar-top__mobile-item {
+button.mobile-item {
   border: 0;
   background: transparent;
   font: inherit;
@@ -363,7 +363,7 @@ button.navbar-top__mobile-item {
   cursor: pointer;
   color: var(--inverted-solid);
 
-  &--hoverable {
+  &.hoverable {
     @include hover-scale(1.1);
     &:hover {
       background: var(--primary) !important;

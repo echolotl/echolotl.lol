@@ -1,12 +1,12 @@
 <template>
   <div class="prose-code">
-    <div class="prose-code__header">
+    <div class="header">
       <span class="language">{{ language || "plaintext" }}</span>
       <span class="filename"
         ><b>{{ filename }}</b></span
       >
     </div>
-    <div class="prose-code__content">
+    <div class="content">
       <pre :class="$props.class"><slot /></pre>
     </div>
   </div>
@@ -52,14 +52,14 @@ defineProps({
   white-space: pre;
   background: rgba(0, 0, 0, 0.05);
 }
-.prose-code__header {
+.header {
   display: flex;
   justify-content: space-between;
   font-size: var(--small-text);
   background-color: var(--distant);
   padding: 4px;
 }
-.prose-code__content {
+.content {
   padding: 0 8px;
 }
 </style>

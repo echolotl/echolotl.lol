@@ -1,21 +1,21 @@
 <template>
   <div :class="['callout']" :style="{ '--callout-color': color }">
     <div
-      class="callout__icon"
+      class="icon"
       :style="{ '--filter-url': filterUrl }">
       <Icon
         :icon="iconName"
         style="color: var(--callout-color)"
         size="32px" />
     </div>
-    <div class="callout__content">
+    <div class="content">
       <h4
         v-if="title"
-        class="callout__title lotl-font"
+        class="title lotl-font"
         style="color: var(--callout-color)">
         {{ title }}
       </h4>
-      <div class="callout__body">
+      <div class="body">
         <slot />
       </div>
     </div>
@@ -107,24 +107,24 @@ const color = computed(() => {
   }
 }
 
-.callout__icon {
+.icon {
   position: absolute;
   left: -24px;
   top: 8px;
   filter: var(--filter-url);
 }
 
-.callout__title {
+.title {
   margin: 0 0 8px 0 !important;
   font-size: 1.2em !important;
   color: var(--text);
 }
 
-.callout__content {
+.content {
   flex: 1;
 }
 
-.callout__body {
+.body {
   color: var(--text);
 
   > :deep(p) {
