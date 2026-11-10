@@ -1,45 +1,40 @@
 <template>
   <Teleport to="body">
-    <Transition name="modal">
+    <dialog
+      ref="dialogRef"
+      class="modal-overlay"
+      :aria-label="ariaLabel"
+      @click.self="closeOnBackdrop && close()"
+      @cancel="onCancel"
+      @close="onDialogClose"
+    >
       <div
-        v-if="open"
-        ref="overlayRef"
-        class="modal-overlay"
-        @click.self="closeOnBackdrop && close()"
+        class="modal"
+        :class="{ icon: props.icon }"
+        :style="{ '--filter-url': filterUrl, maxWidth }"
       >
-        <div
-          ref="boxRef"
-          class="modal"
-          :class="{ icon: props.icon }"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="ariaLabel"
-          tabindex="-1"
-          :style="{ '--filter-url': filterUrl, maxWidth }"
+        <Icon
+          v-if="props.icon"
+          :icon="props.icon"
+          class="icon"
+          :color="props.iconColor"
+          size="48px"
+          aria-hidden="true"
+        />
+        <button
+          v-if="props.closeButton"
+          type="button"
+          class="close"
+          aria-label="Close dialog"
+          @click="close()"
         >
-          <Icon
-            v-if="props.icon"
-            :icon="props.icon"
-            class="icon"
-            :color="props.iconColor"
-            size="48px"
-            aria-hidden="true"
-          />
-          <button
-            v-if="props.closeButton"
-            type="button"
-            class="close"
-            aria-label="Close dialog"
-            @click="close()"
-          >
-            <Icon icon="close" size="28px" />
-          </button>
-          <div class="content">
-            <slot />
-          </div>
+          <Icon icon="close" size="28px" />
+        </button>
+        <div class="content">
+          <slot />
         </div>
       </div>
-    </Transition>
+    </dialog>
   </Teleport>
 </template>
 
@@ -80,83 +75,67 @@ const { url: filterUrl } = useSketchFilter(() => ({
   stdDeviation: 1.5,
   intercept: -6,
 }));
-const boxRef = ref<HTMLElement | null>(null);
-const overlayRef = ref<HTMLElement | null>(null);
-let opener: HTMLElement | null = null;
-let appContent: HTMLElement | null = null;
-
-const focusableSelector =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const dialogRef = ref<HTMLDialogElement | null>(null);
+let shouldEmitClose = false;
 
 function close() {
-  open.value = false;
-  emit("close");
+  if (!dialogRef.value?.open) return;
+  shouldEmitClose = true;
+  dialogRef.value.close();
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (props.closeOnEscape && event.key === "Escape") {
-    close();
-    return;
+function onCancel(event: Event) {
+  if (!props.closeOnEscape) {
+    event.preventDefault();
+  } else {
+    shouldEmitClose = true;
   }
+}
 
-  if (event.key !== "Tab" || !boxRef.value) return;
-  const focusable = Array.from(
-    boxRef.value.querySelectorAll<HTMLElement>(focusableSelector),
-  );
-  if (focusable.length === 0) {
-    event.preventDefault();
-    boxRef.value.focus();
-    return;
-  }
-
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
+function onDialogClose() {
+  open.value = false;
+  if (shouldEmitClose) {
+    emit("close");
+    shouldEmitClose = false;
   }
 }
 
 watch(
   open,
   (isOpen) => {
-    if (!import.meta.client) return;
-    document.body.style.overflow = isOpen ? "hidden" : "";
     if (isOpen) {
-      opener =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      appContent = document.querySelector<HTMLElement>("[data-app-content]");
-      appContent?.setAttribute("inert", "");
-      window.addEventListener("keydown", onKeydown);
       nextTick(() => {
-        boxRef.value?.focus();
+        if (dialogRef.value && !dialogRef.value.open) {
+          dialogRef.value.showModal();
+        }
       });
-    } else {
-      window.removeEventListener("keydown", onKeydown);
-      appContent?.removeAttribute("inert");
-      appContent = null;
-      nextTick(() => opener?.focus());
-      opener = null;
+    } else if (dialogRef.value?.open) {
+      dialogRef.value.close();
     }
   },
   { immediate: true },
 );
-
-onBeforeUnmount(() => {
-  if (!import.meta.client) return;
-  document.body.style.overflow = "";
-  window.removeEventListener("keydown", onKeydown);
-  appContent?.removeAttribute("inert");
-});
 </script>
 
 <style scoped lang="scss">
 .modal-overlay {
+  &:not([open]) {
+    display: none;
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  &[open] {
+    display: flex;
+    opacity: 1;
+    transform: none;
+
+    @starting-style {
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+    }
+  }
+
   position: fixed;
   inset: 0;
   width: 100%;
@@ -167,12 +146,43 @@ onBeforeUnmount(() => {
   border: none;
   box-sizing: border-box;
   overflow: visible;
-  z-index: 1000;
-  display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgb(0 0 0 / 60%);
+  background: transparent;
+  color: inherit;
+  overscroll-behavior: contain;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
+
+  &::backdrop {
+    overflow: hidden;
+    background: transparent;
+    overscroll-behavior: contain;
+    transition-property: background-color, display, overlay;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+    transition-behavior: allow-discrete;
+  }
+
+  &[open]::backdrop {
+    background: rgb(0 0 0 / 60%);
+
+    @starting-style {
+      background: transparent;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0.1s;
+
+    &,
+    &:not([open]) {
+      transform: none;
+    }
+  }
 }
 
 .modal {
@@ -224,24 +234,6 @@ onBeforeUnmount(() => {
     &.icon .content {
       padding-top: 16px;
     }
-  }
-}
-
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-
-  .modal {
-    transition: transform 0.2s ease;
-  }
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-
-  .modal {
-    transform: translateY(12px) scale(0.97);
   }
 }
 </style>

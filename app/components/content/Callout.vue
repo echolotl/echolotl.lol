@@ -1,18 +1,14 @@
 <template>
   <div :class="['callout']" :style="{ '--callout-color': color }">
-    <div
-      class="icon"
-      :style="{ '--filter-url': filterUrl }">
-      <Icon
-        :icon="iconName"
-        style="color: var(--callout-color)"
-        size="32px" />
+    <div class="icon" :style="{ '--filter-url': filterUrl }">
+      <Icon :icon="iconName" style="color: var(--callout-color)" size="32px" />
     </div>
     <div class="content">
       <h4
         v-if="title"
         class="title lotl-font"
-        style="color: var(--callout-color)">
+        style="color: var(--callout-color)"
+      >
         {{ title }}
       </h4>
       <div class="body">
@@ -109,8 +105,8 @@ const color = computed(() => {
 
 .icon {
   position: absolute;
-  left: -24px;
-  top: 8px;
+  left: -12px;
+  top: 4px;
   filter: var(--filter-url);
 }
 

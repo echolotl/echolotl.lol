@@ -46,8 +46,6 @@
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.3",
-    "arpabet-and-ipa-convertor-ts": "^1.0.3",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.89.0"
   }
