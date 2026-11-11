@@ -1,0 +1,344 @@
+import { Elysia, t } from "elysia";
+import { rateLimit } from "elysia-rate-limit";
+import { Logger } from "../../util/logger";
+import {
+  DiscordUserResponse,
+  type DiscordTokenResponse,
+  MIN_DISCORD_ACCOUNT_AGE_MS,
+} from "./model";
+import {
+  deleteUser,
+  getUserById,
+  getUserByUserId,
+  sessionsByUserId,
+  upsertUser,
+  updateUser,
+  userBySession,
+} from "../../db";
+import {
+  createSession,
+  destroySession,
+  fetchDiscordProfile,
+  getDiscordAccountCreatedAt,
+  notifyAccountCreated,
+  notifyAccountDeleted,
+  PROFILE_REFRESH_INTERVAL_MS,
+  PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
+  refreshDiscordProfile,
+  refreshDiscordProfileIfStale,
+  refreshDiscordToken,
+  SESSION_TTL_MS,
+  toAuthenticatedUser,
+  toPublicUser,
+} from "./service";
+import { FRONTEND_URL } from "../../constants";
+
+function getDiscordOAuthEnv(): {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+} {
+  const clientId = process.env.DISCORD_CLIENT_ID;
+  const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+  const redirectUri = process.env.DISCORD_REDIRECT_URI;
+
+  if (!clientId || !clientSecret || !redirectUri) {
+    throw new Error(
+      "Missing Discord OAuth env vars. Required: DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI.",
+    );
+  }
+
+  return { clientId, clientSecret, redirectUri };
+}
+
+export const discordRouter = new Elysia({ prefix: "/discord" })
+  .use(rateLimit({ duration: 60_000, max: 20, scoping: "scoped" }))
+  .get("/", ({ cookie: { oauth_state }, redirect, set }) => {
+    let oauth;
+    try {
+      oauth = getDiscordOAuthEnv();
+    } catch (error) {
+      set.status = 500;
+      Logger.error(`Discord OAuth config error: ${error}`);
+      return new Response(
+        JSON.stringify({
+          error: "Discord OAuth is not configured on the server.",
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const state = crypto.randomUUID();
+    oauth_state.set({
+      value: state,
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 600,
+    });
+
+    const params = new URLSearchParams({
+      client_id: oauth.clientId,
+      redirect_uri: oauth.redirectUri,
+      response_type: "code",
+      scope: "identify",
+      state,
+    });
+
+    return redirect(`https://discord.com/api/oauth2/authorize?${params}`);
+  })
+  .get(
+    "/authenticate",
+    async ({ query, cookie: { oauth_state, session }, redirect, set }) => {
+      let oauth;
+      try {
+        oauth = getDiscordOAuthEnv();
+      } catch (error) {
+        set.status = 500;
+        Logger.error(`Discord OAuth config error: ${error}`);
+        return new Response(
+          JSON.stringify({
+            error: "Discord OAuth is not configured on the server.",
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      const { code, state } = query;
+
+      if (!state || state != oauth_state.value) {
+        set.status = 400;
+        return new Response(
+          JSON.stringify({ error: "Invalid state provided." }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+      oauth_state.remove();
+
+      if (!code) {
+        set.status = 400;
+        return new Response(
+          JSON.stringify({ error: "Missing authorization code." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: oauth.clientId,
+          client_secret: oauth.clientSecret,
+          grant_type: "authorization_code",
+          code: code as string,
+          redirect_uri: oauth.redirectUri,
+        }),
+      });
+      if (!tokenRes.ok) {
+        set.status = 502;
+        return new Response(
+          JSON.stringify({ error: "Failed to exchange code with Discord" }),
+          { status: 502, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      const tokenData: DiscordTokenResponse = await tokenRes.json();
+      const expiresAt = Date.now() + tokenData.expires_in * 1000;
+
+      let user: DiscordUserResponse;
+      try {
+        user = await fetchDiscordProfile(tokenData.access_token);
+      } catch (error) {
+        set.status = 502;
+        Logger.error(
+          `Failed to fetch user info from Discord: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return new Response(
+          JSON.stringify({ error: "Failed to fetch user info from Discord" }),
+          { status: 502, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      Logger.dim(`Discord login: ${user.username} (${user.id})`);
+
+      const accountCreatedAt = getDiscordAccountCreatedAt(user.id);
+      const accountAgeMs = Date.now() - accountCreatedAt;
+      if (accountAgeMs < MIN_DISCORD_ACCOUNT_AGE_MS) {
+        set.status = 403;
+        return new Response(
+          JSON.stringify({
+            error:
+              "Your Discord account does not meet the minimum age requirement to sign in.",
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      const existingUser = getUserById(user.id);
+
+      const syncProfile = existingUser?.shouldSync ?? true;
+      const updatedUser = {
+        id: user.id,
+        userId: existingUser?.userId ?? crypto.randomUUID(),
+        username: syncProfile ? user.username : existingUser!.username,
+        displayName: syncProfile ? user.global_name : existingUser!.displayName,
+        avatarHash: syncProfile ? user.avatar : existingUser!.avatarHash,
+        anonymous: existingUser?.anonymous ?? false,
+        shouldSync: syncProfile,
+        refreshToken: tokenData.refresh_token,
+        accessToken: tokenData.access_token,
+        tokenExpires: expiresAt,
+        updatedAt: Date.now(),
+      };
+
+      if (existingUser) {
+        updateUser(updatedUser);
+      } else {
+        upsertUser(updatedUser);
+      }
+
+      if (!existingUser) {
+        const storedUser = getUserById(user.id);
+        if (storedUser) {
+          await notifyAccountCreated(storedUser);
+        }
+      }
+
+      const sessionToken = await createSession(user.id);
+      session.set({
+        value: sessionToken,
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: SESSION_TTL_MS / 1000,
+      });
+
+      return redirect(FRONTEND_URL);
+    },
+  )
+  .get("/logout", async ({ cookie: { session } }) => {
+    if (session.value) {
+      await destroySession(session.value as string);
+      session.remove();
+    }
+    return new Response("Logged out successfully", {
+      status: 200,
+      headers: { "Content-Type": "text/plain" },
+    });
+  })
+  .get("/me", async ({ cookie: { session } }) => {
+    const user = userBySession(session.value as string | undefined);
+    if (!user) {
+      return new Response(null, { status: 204 });
+    }
+
+    let freshUser = user;
+    try {
+      if (!user.tokenExpires || user.tokenExpires <= Date.now()) {
+        freshUser = await refreshDiscordToken(freshUser);
+      }
+
+      if (Date.now() - user.updatedAt > PROFILE_REFRESH_INTERVAL_MS) {
+        freshUser = await refreshDiscordProfile(freshUser);
+      }
+    } catch (error) {
+      Logger.error(
+        `Failed to refresh Discord token for ${user.id}, logging out: ${error}`,
+      );
+      await destroySession(session.value as string);
+      session.remove();
+      return new Response(null, { status: 204 });
+    }
+
+    return new Response(
+      JSON.stringify({ user: toAuthenticatedUser(freshUser) }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  })
+  .patch(
+    "/me",
+    async ({ cookie: { session }, body }) => {
+      const user = userBySession(session.value as string | undefined);
+      if (!user) {
+        return new Response("Unauthorized", {
+          status: 401,
+          headers: { "Content-Type": "text/plain" },
+        });
+      }
+
+      const updatedUser = updateUser({
+        id: user.id,
+        ...(body.anonymous !== undefined ? { anonymous: body.anonymous } : {}),
+        ...(body.displayName !== undefined
+          ? { displayName: body.displayName }
+          : {}),
+        ...(body.syncProfile !== undefined
+          ? { shouldSync: body.syncProfile }
+          : {}),
+      });
+      if (!updatedUser) {
+        return new Response("User not found", {
+          status: 404,
+          headers: { "Content-Type": "text/plain" },
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ user: toAuthenticatedUser(updatedUser) }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    },
+    {
+      body: t.Object({
+        anonymous: t.Optional(t.Boolean()),
+        displayName: t.Optional(t.String({ minLength: 4, maxLength: 48 })),
+        syncProfile: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .delete("/me", async ({ cookie: { session } }) => {
+    const user = userBySession(session.value as string | undefined);
+    if (!user) {
+      return new Response("Unauthorized", {
+        status: 401,
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+    const sessions = sessionsByUserId(user.userId);
+    for (const s of sessions) {
+      await destroySession(s.token);
+    }
+    deleteUser(user.id);
+    await notifyAccountDeleted(user);
+    return new Response(
+      `User ${user.username} (${user.userId}) deleted successfully`,
+      { status: 200, headers: { "Content-Type": "text/plain" } },
+    );
+  })
+  .get("/user/:userId", async ({ params }) => {
+    const user = getUserByUserId(params.userId);
+    if (!user) {
+      return new Response("User not found", {
+        status: 404,
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
+    const freshUser = await refreshDiscordProfileIfStale(
+      user,
+      PUBLIC_PROFILE_REFRESH_INTERVAL_MS,
+    );
+
+    return new Response(JSON.stringify({ user: toPublicUser(freshUser) }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  });

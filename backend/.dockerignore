@@ -1,0 +1,9 @@
+.git
+main.db
+.gitignore
+node_modules
+.env
+.env.*
+data/*.db
+coverage
+dist
