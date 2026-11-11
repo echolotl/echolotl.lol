@@ -1,12 +1,12 @@
 ---
-slug: botan
-name: Botan
+slug: suki
+name: Suki
 species: Plushie
 height: 5' 5"
 created_at: "2026-09-27T00:00:00.000Z"
 modified_at: "2026-09-27T00:00:00.000Z"
 pronouns: they/it
-ipa: boʊtæn
+ipa: suːkiː
 category: Other
 short_description: plushie slushie
 theme_color: "#d4508e"
