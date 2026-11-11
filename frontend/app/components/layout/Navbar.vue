@@ -93,12 +93,20 @@
           Account
         </NuxtLink>
         <NuxtLink
-          to="#"
-          class="nav-link lotl-font disabled"
+          to="/blog"
+          class="nav-link lotl-font"
           exact-active-class="active"
         >
           <Icon icon="lore" size="1.25lh" />
           Blog
+        </NuxtLink>
+        <NuxtLink
+          to="#"
+          class="nav-link lotl-font disabled"
+          exact-active-class="active"
+        >
+          <Icon icon="weather" size="1.25lh" />
+          Weather
         </NuxtLink>
       </div>
       <hr class="menu-divider" />
