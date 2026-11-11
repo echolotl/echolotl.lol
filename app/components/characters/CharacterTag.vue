@@ -2,7 +2,8 @@
   <Tag
     variant="character"
     :to="`/characters/${slug}`"
-    :custom-color="themeColor">
+    :custom-color="themeColor"
+  >
     <span v-if="character?.name" class="name lotl-font">
       {{ character.name }}
     </span>
@@ -47,6 +48,6 @@ const themeColor = computed(() => {
 
 <style scoped lang="scss">
 .name {
-  transform: translateY(2px);
+  text-box-trim: trim-end;
 }
 </style>

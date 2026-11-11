@@ -1,401 +1,319 @@
 <template>
   <header class="navbar">
-    <nav class="navbar-top">
-      <div class="content">
-        <!-- Desktop theme icon -->
+    <nav>
+      <NuxtLink to="/" class="home-link nav-link" exact-active-class="active">
+        <Icon icon="echolotl" size="1.5lh" />
+        <div class="home-text"></div>
+      </NuxtLink>
+      <div class="nav-links">
+        <NuxtLink
+          to="/art"
+          class="nav-link primary-nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="art_brush" size="1.25lh" />
+          Artchive
+        </NuxtLink>
+        <NuxtLink
+          to="/characters"
+          class="nav-link primary-nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="character" size="1.25lh" />
+          Characters
+        </NuxtLink>
         <button
           type="button"
-          class="themeicon desktop"
-          :aria-label="`Switch to ${props.light ? 'dark' : 'light'} theme`"
-          @click="toggleTheme">
-          <Icon
-            :icon="currentThemeIcon"
-            size="48px"
-            class="icon hoverable" />
+          class="nav-link menu-trigger lotl-font"
+          popovertarget="navigation-menu"
+          aria-controls="navigation-menu"
+          aria-label="Open navigation menu"
+          :aria-expanded="popoverOpen"
+        >
+          <Icon :icon="popoverOpen ? 'close' : 'hamburger'" size="1.25lh" />
         </button>
-
-        <!-- Mobile hamburger menu -->
         <button
           type="button"
-          class="hamburger"
-          :aria-expanded="mobileMenuOpen"
-          aria-controls="primary-mobile-navigation"
-          :aria-label="mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'"
-          @click="toggleMobileMenu">
-          <Icon
-            :icon="mobileMenuOpen ? 'close' : 'hamburger-open'"
-            size="48px"
-            class="icon hoverable" />
+          class="nav-link theme-toggle lotl-font"
+          @click="toggleTheme"
+          aria-label="Toggle theme"
+        >
+          <Icon :icon="theme ? 'sun' : 'moon'" size="1.25lh" />
         </button>
-
-        <div class="logo">
-          <nuxt-link to="/" aria-label="Go to homepage">
-            <Icon
-              icon="echolotl"
-              size="48px"
-              class="logo-icon desktop"
-              color="var(--inverted-solid)"
-              :style="{
-                background:
-                  route.path === '/' ? 'var(--primary)' : 'var(--text)',
-              }" />
-            <div
-              class="logo-image"
-              :style="{
-                background:
-                  route.path === '/' ? 'var(--primary)' : 'var(--text)',
-              }" />
-          </nuxt-link>
-        </div>
-
-        <!-- Desktop navigation icons -->
-        <div class="nav-icons desktop">
-          <nuxt-link
-            v-for="(navIcon, index) in navIcons"
-            :key="index"
-            :to="navIcon.to"
-            :aria-current="route.path === navIcon.to ? 'page' : undefined">
-            <Icon
-              :icon="navIcon.icon"
-              :alt="navIcon.alt"
-              size="48px"
-              class="icon hoverable"
-              :style="
-                route.path === navIcon.to
-                  ? `background: var(--primary);`
-                  : 'background: var(--text)'
-              " />
-          </nuxt-link>
-        </div>
-      </div>
-
-      <!-- Mobile menu dropdown -->
-      <div
-        id="primary-mobile-navigation"
-        v-show="mobileMenuOpen"
-        class="mobile-menu"
-        aria-label="Primary">
-        <div class="mobile-menu-content">
-          <!-- Mobile theme toggle -->
-          <button
-            type="button"
-            class="mobile-item"
-            @click="toggleTheme">
-            <Icon
-              :icon="currentThemeIcon"
-              size="32px"
-              class="icon hoverable" />
-            <span>{{ props.light ? "Dark Mode" : "Light Mode" }}</span>
-          </button>
-
-          <!-- Mobile navigation items -->
-          <nuxt-link
-            v-for="(navIcon, index) in navIcons"
-            :key="index"
-            :to="navIcon.to"
-            class="mobile-item"
-            :aria-current="route.path === navIcon.to ? 'page' : undefined"
-            @click="closeMobileMenu">
-            <Icon
-              :icon="navIcon.icon"
-              :alt="navIcon.alt"
-              size="32px"
-              class="icon hoverable"
-              :style="{
-                background:
-                  route.path === navIcon.to
-                    ? 'linear-gradient(to bottom in oklab, var(--primary), var(--text))'
-                    : 'var(--text)',
-              }" />
-            <span>{{ navIcon.alt }}</span>
-          </nuxt-link>
-        </div>
       </div>
     </nav>
-    <div class="navbar-bottom" :class="{ light: props.light }" />
+    <div
+      id="navigation-menu"
+      class="menu"
+      popover="auto"
+      :style="`filter: ${filterUrl}`"
+    >
+      <div class="link-grid mobile-menu-links">
+        <NuxtLink
+          to="/art"
+          class="nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="art_brush" size="1.25lh" />
+          Artchive
+        </NuxtLink>
+        <NuxtLink
+          to="/characters"
+          class="nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="character" size="1.25lh" />
+          Characters
+        </NuxtLink>
+      </div>
+      <div class="menu-header lotl-font">Other Stuff. . .</div>
+      <div class="link-grid">
+        <NuxtLink
+          to="/picross"
+          class="nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="picross" size="1.25lh" />
+          Picross
+        </NuxtLink>
+        <NuxtLink
+          to="/wheel"
+          class="nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="wheel" size="1.25lh" />
+          Wheel
+        </NuxtLink>
+        <NuxtLink
+          to="/account"
+          class="nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="profile" size="1.25lh" />
+          Account
+        </NuxtLink>
+        <NuxtLink
+          to="#"
+          class="nav-link lotl-font disabled"
+          exact-active-class="active"
+        >
+          <Icon icon="lore" size="1.25lh" />
+          Blog
+        </NuxtLink>
+      </div>
+      <button
+        type="button"
+        class="nav-link mobile-theme-toggle"
+        @click="toggleTheme"
+        aria-label="Toggle theme"
+        style="
+          background: var(--surface);
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          border-radius: 4px;
+        "
+      >
+        <Icon :icon="theme ? 'sun' : 'moon'" size="1.25lh" />
+        <span class="lotl-font" style="text-box-trim: trim-end"
+          >Switch Theme</span
+        >
+      </button>
+    </div>
   </header>
-  <div class="navbar-spacer" />
 </template>
 
 <script setup lang="ts">
-import Icon from "@/components/ui/Icon.vue";
+import Icon from "../ui/Icon.vue";
+const { url: filterUrl } = useSketchFilter(() => ({
+  color: "var(--distant)",
+}));
 
-interface NavIcon {
-  icon: string;
-  alt: string;
-  to: string;
-}
+const { theme, toggleTheme } = useTheme();
 
-const navIcons: NavIcon[] = [
-  { icon: "art_brush", alt: "Art", to: "/art" },
-  { icon: "character", alt: "Characters", to: "/characters" },
-];
-
-const props = defineProps({
-  light: {
-    type: Boolean,
-    default: false,
-  },
-});
-
-const emit = defineEmits(["toggle-theme"]);
-
-const mobileMenuOpen = ref(false);
-const currentThemeIcon = computed(() => (props.light ? "moon" : "sun"));
 const route = useRoute();
 
-function toggleTheme() {
-  emit("toggle-theme");
-}
+const popoverOpen = ref(false);
 
-function toggleMobileMenu() {
-  mobileMenuOpen.value = !mobileMenuOpen.value;
-}
-
-function closeMobileMenu() {
-  mobileMenuOpen.value = false;
-}
-
-// Close mobile menu when clicking outside or when route changes
 onMounted(() => {
-  const handleClickOutside = (event: Event) => {
-    const navbar = document.querySelector(".navbar");
-    if (navbar && !navbar.contains(event.target as Node)) {
-      mobileMenuOpen.value = false;
-    }
-  };
-
-  document.addEventListener("click", handleClickOutside);
-
-  onUnmounted(() => {
-    document.removeEventListener("click", handleClickOutside);
-  });
+  const menu = document.getElementById("navigation-menu");
+  if (menu) {
+    menu.addEventListener("toggle", () => {
+      popoverOpen.value = menu.matches(":popover-open");
+    });
+  }
 });
 </script>
 
-<style scoped lang="scss">
-@use "@/assets/styles/partials/_variables.scss" as vars;
-@use "@/assets/styles/partials/_mixins" as *;
-
+<style scoped>
 .navbar {
+  padding: 4px 2px;
+  background-color: var(--distant);
+  color: var(--text);
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 1000;
-  @media not screen {
-    display: none;
+  .nav-link {
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    text-box-trim: trim-end;
+    gap: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    &.disabled {
+      pointer-events: none;
+      color: var(--text-secondary);
+    }
+    &:hover,
+    &.active {
+      color: var(--scrollbar-bar, var(--primary));
+    }
   }
-}
-
-.navbar-top {
-  width: 100%;
-  height: fit-content;
-  background-color: var(--distant);
-}
-
-.content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: row;
-  padding: 0 1rem;
-  padding-top: 0.75rem;
-  height: 100%;
-  width: calc(100% - 2rem);
-  position: relative;
-
-  @media (max-width: 768px) {
+  > nav {
+    padding: 2px 12px 0;
+    max-width: 1200px;
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+    margin: 0 auto;
   }
-}
-
-.desktop.themeicon {
-  position: absolute;
-  left: 1rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-}
-
-.hamburger {
-  position: absolute;
-  left: 1rem;
-  display: none;
-  padding: 0;
-  border: 0;
-  background: transparent;
-
-  @media (max-width: 768px) {
+  &::after {
+    content: "";
+    position: absolute;
     display: block;
-    position: static;
-    order: 2;
+    clear: both;
+    mask-image: url("/images/sketch_divider.webp");
+    mask-repeat: repeat-x;
+    mask-position: center;
+    mask-size: contain;
+    background-color: var(--distant);
+    width: 100%;
+    height: 16px;
+    bottom: -14px;
+    left: 0;
+    transition: background-color 0.3s ease;
   }
 }
 
-.logo:hover * .logo-icon,
-.logo:focus-visible * .logo-icon {
-  animation: jumpAndFlip 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.logo a {
-  display: flex;
-  flex-direction: row;
-  min-width: auto;
-  &:hover {
-    .logo-icon,
-    .logo-image {
-      background: var(--primary) !important;
-    }
-  }
-
-  @media (max-width: 768px) {
-    order: 1;
-    img {
-      width: 200px;
-      height: auto;
-    }
-  }
-}
-
-.logo-icon {
-  margin-right: 0.5rem;
-}
-
-.desktop.logo-icon {
-  @media (max-width: 768px) {
-    display: none !important;
-  }
-}
-
-.logo-image {
-  width: 300px;
-  height: 48px;
-  mask-image: url("~/assets/images/logo.png");
+.home-text {
+  display: inline-block;
+  mask-image: url("/images/logo.webp");
   mask-size: contain;
   mask-repeat: no-repeat;
   mask-position: center;
-
-  @media (max-width: 768px) {
-    width: 200px;
-    height: auto;
-    aspect-ratio: 4.17;
-  }
+  width: 120px;
+  height: 1.25lh;
+  background-color: currentColor;
 }
 
-.desktop.nav-icons {
+.nav-links {
   display: flex;
-  gap: 1rem;
-  align-items: center;
-  position: absolute;
-  right: 1rem;
+  gap: 12px;
 
-  @media (max-width: 768px) {
-    display: none;
+  > .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 }
 
-.mobile-menu {
-  position: absolute;
-  top: 50;
-  left: 0;
-  width: 100%;
-  background-color: var(--distant);
+.menu-trigger {
+  anchor-name: --navbar-menu;
+  border: 0;
+  background: none;
+  font: inherit;
+  padding: 0;
+}
+
+.theme-toggle {
+  border: 0;
+  background: none;
+  font: inherit;
+  padding: 0;
+}
+
+.link-grid.mobile-menu-links,
+.nav-link.mobile-theme-toggle {
   display: none;
-
-  @media (max-width: 768px) {
-    display: block;
-  }
 }
 
-.mobile-menu-content {
-  padding: 1rem;
-  padding-top: calc(1rem + 60px);
+.menu {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-
-.mobile-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 8px;
-  text-decoration: none;
-  color: var(--inverted-solid);
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--surface);
-  }
-
-  span {
-    font-size: var(--base-text);
-    font-weight: 500;
-  }
-
-  .icon {
-    flex-shrink: 0;
-  }
-}
-
-button.mobile-item {
-  border: 0;
-  background: transparent;
-  font: inherit;
-  text-align: left;
-}
-
-.navbar-bottom {
-  width: 100%;
-  height: 60px;
-  mask-image: url("@/assets/images/sketch_divider.png");
+  position-anchor: --navbar-menu;
+  position: fixed;
+  inset: auto;
+  width: 275px;
+  top: anchor(bottom);
+  right: anchor(right);
+  margin: 0.25rem 0 0;
   background-color: var(--distant);
-  transform: scaleY(-1);
-}
+  color: var(--text);
+  border: none;
+  z-index: 1001;
+  border-radius: 0 0 12px 12px;
+  padding: 8px 8px;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+  &:popover-open {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+  }
 
-.icon {
-  cursor: pointer;
-  color: var(--inverted-solid);
-
-  &.hoverable {
-    @include hover-scale(1.1);
-    &:hover {
-      background: var(--primary) !important;
-    }
-  }
-}
-
-@keyframes jumpAndFlip {
-  0% {
-    transform: rotateY(0) translateY(0px);
-  }
-  35% {
-    transform: rotateY(180deg) translateY(-13px) rotateZ(-8deg);
-  }
-  65% {
-    transform: rotateY(360deg) translateY(-8px) rotateZ(4deg);
-  }
-  85% {
-    transform: rotateY(360deg) translateY(0px) rotateZ(2deg);
-  }
-  92% {
-    transform: rotateY(360deg) translateY(-1px) rotateZ(1deg);
-  }
-  100% {
-    transform: rotateY(360deg) translateY(0px) rotateZ(0deg);
+  @media (max-width: 768px) {
+    position-anchor: none;
+    top: 32px;
+    right: 0;
+    width: calc(100% - 16px);
+    gap: 8px;
   }
 }
 
-.navbar-spacer {
-  height: 64px;
-  @media not screen {
+.mobile-theme-toggle {
+  border: 0;
+  background: none;
+  font: inherit;
+  padding: 4px 0;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.menu-header {
+  font-size: var(--small-text);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.link-grid {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .nav-links > .primary-nav-link,
+  .nav-links > .theme-toggle,
+  .navbar .menu .menu-header {
     display: none;
+  }
+
+  .link-grid.mobile-menu-links,
+  .navbar .menu .nav-link.mobile-theme-toggle {
+    display: grid;
+  }
+
+  .navbar .menu .nav-link.mobile-theme-toggle {
+    display: flex;
   }
 }
 </style>

@@ -7,7 +7,7 @@
 
     <div class="header-links">
       <NuxtLink to="/picross" class="link" exact-active-class="active">
-        <Icon icon="moves" size="20px" /> Free Play
+        <Icon icon="picross" size="20px" /> Free Play
       </NuxtLink>
       •
       <NuxtLink to="/picross/daily" class="link" exact-active-class="active">
@@ -18,7 +18,11 @@
         <Icon icon="art" size="20px" /> Editor
       </NuxtLink>
       •
-      <button type="button" class="link how-to-play" @click="showHowToPlay = true">
+      <button
+        type="button"
+        class="link how-to-play"
+        @click="showHowToPlay = true"
+      >
         <Icon icon="help" size="20px" />How To Play
       </button>
     </div>

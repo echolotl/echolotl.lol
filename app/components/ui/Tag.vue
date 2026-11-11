@@ -7,7 +7,8 @@
     v-else-if="clickable"
     type="button"
     :class="tagClasses"
-    :style="customStyles">
+    :style="customStyles"
+  >
     <Icon v-if="icon" :icon="icon" :color="iconColor" />
     <slot></slot>
   </button>
@@ -66,7 +67,7 @@ const customStyles = computed(() => {
   font-weight: 400;
   gap: 0.25rem;
   line-height: 1;
-  padding: 0.35rem 0.65rem;
+  padding: 0.25rem 0.65rem;
   text-decoration: none;
   transition:
     background-color 0.2s ease,
