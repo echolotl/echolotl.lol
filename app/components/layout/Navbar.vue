@@ -263,10 +263,12 @@ onMounted(() => {
   transition:
     opacity 0.1s ease,
     transform 0.1s ease;
+  pointer-events: none;
   &:popover-open {
     display: flex;
     opacity: 1;
     transform: translateY(0);
+    pointer-events: auto;
   }
 
   @media (max-width: 768px) {
