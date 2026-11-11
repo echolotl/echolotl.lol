@@ -356,7 +356,6 @@ export function upsertUser(user: Omit<User, "createdAt">): User {
 export function updateUser(
   user: Pick<User, "id"> & Partial<Omit<User, "id" | "createdAt">>,
 ): User | null {
-
   // We have to do some processing on some fields
   const columns: Record<string, string | number | null | undefined> = {
     user_id: user.userId,
@@ -364,17 +363,18 @@ export function updateUser(
     display_name: user.displayName,
     avatar_hash: user.avatarHash,
     anonymous: user.anonymous === undefined ? undefined : +user.anonymous,
-    should_sync:
-      user.shouldSync === undefined ? undefined : +user.shouldSync,
+    should_sync: user.shouldSync === undefined ? undefined : +user.shouldSync,
     refresh_token:
       user.refreshToken === undefined ? undefined : encrypt(user.refreshToken),
-    access_token: user.accessToken ? encrypt(user.accessToken) : user.accessToken,
+    access_token: user.accessToken
+      ? encrypt(user.accessToken)
+      : user.accessToken,
     token_expires: user.tokenExpires,
   };
 
   const entries = Object.entries(columns).filter(([, v]) => v !== undefined);
   const sets = [...entries.map(([k]) => `${k} = ?`), "updated_at = ?"];
-  const values = [...entries.map(([, v]) => v as string | number | null)];
+  const values = entries.map(([, v]) => v as string | number | null);
 
   db.query(`UPDATE users SET ${sets.join(", ")} WHERE id = ?`).run(
     ...values,
@@ -391,7 +391,6 @@ export function updateUser(
 export function deleteUser(id: string) {
   deleteUserStmt.run(id);
 }
-
 
 /**
  * What the database actually returns for a user row.

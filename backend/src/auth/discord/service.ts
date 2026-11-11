@@ -7,11 +7,7 @@ import { Logger } from "../../util/logger";
 import { sendDiscordWebhook } from "../../util/webhook";
 import type { AuthenticatedUser, PublicUser } from "@echolotl/types";
 import { DISCORD_TOKEN_URL } from "./model";
-import type {
-  DiscordTokenResponse,
-  DiscordUserResponse,
-  User,
-} from "./model";
+import type { DiscordTokenResponse, DiscordUserResponse, User } from "./model";
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const PROFILE_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
@@ -69,7 +65,9 @@ export async function fetchDiscordProfile(
 function updateUserFromDiscordProfile(
   user: User,
   profile: DiscordUserResponse | null,
-  extras: Partial<Pick<User, "refreshToken" | "accessToken" | "tokenExpires">> = {},
+  extras: Partial<
+    Pick<User, "refreshToken" | "accessToken" | "tokenExpires">
+  > = {},
 ): User {
   return {
     ...user,
@@ -193,6 +191,7 @@ export function getAvatarUrl(user: User, size: number = 128): string | null {
 }
 
 export function toAuthenticatedUser(user: User): AuthenticatedUser {
+  // oxlint-disable-next-line no-unused-vars
   const { refreshToken, accessToken, tokenExpires, ...authenticatedUser } =
     user;
   return authenticatedUser;

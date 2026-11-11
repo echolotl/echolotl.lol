@@ -123,7 +123,10 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
         set.status = 400;
         return new Response(
           JSON.stringify({ error: "Missing authorization code." }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
         );
       }
 
@@ -142,7 +145,10 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
         set.status = 502;
         return new Response(
           JSON.stringify({ error: "Failed to exchange code with Discord" }),
-          { status: 502, headers: { "Content-Type": "application/json" } },
+          {
+            status: 502,
+            headers: { "Content-Type": "application/json" },
+          },
         );
       }
 
@@ -159,7 +165,10 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
         );
         return new Response(
           JSON.stringify({ error: "Failed to fetch user info from Discord" }),
-          { status: 502, headers: { "Content-Type": "application/json" } },
+          {
+            status: 502,
+            headers: { "Content-Type": "application/json" },
+          },
         );
       }
 
@@ -293,7 +302,10 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
 
       return new Response(
         JSON.stringify({ user: toAuthenticatedUser(updatedUser) }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
       );
     },
     {
@@ -320,7 +332,10 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
     await notifyAccountDeleted(user);
     return new Response(
       `User ${user.username} (${user.userId}) deleted successfully`,
-      { status: 200, headers: { "Content-Type": "text/plain" } },
+      {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      },
     );
   })
   .get("/user/:userId", async ({ params }) => {

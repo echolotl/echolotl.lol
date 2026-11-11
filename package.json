@@ -14,7 +14,7 @@
     "build": "pnpm --recursive --if-present run build",
     "build:frontend": "pnpm --filter ./frontend build",
     "build:backend": "pnpm --filter ./backend build",
-    "lint": "pnpm --filter ./frontend lint",
-    "format": "pnpm --filter ./frontend format"
+    "lint": "pnpm --filter ./frontend --filter ./backend lint",
+    "format": "pnpm --filter ./frontend --filter ./backend format"
   }
 }
