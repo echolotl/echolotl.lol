@@ -1,69 +1,77 @@
 <template>
   <div ref="root" class="activity-heatmap">
     <div class="activity-heatmap-inner">
-    <table>
-      <thead>
-        <tr>
-          <td></td>
-          <th
-            v-for="month in monthHeaders"
-            :key="month.key"
-            :colspan="month.span"
-            scope="colgroup"
+      <table>
+        <thead>
+          <tr>
+            <td></td>
+            <th
+              v-for="month in monthHeaders"
+              :key="month.key"
+              :colspan="month.span"
+              scope="colgroup"
+            >
+              <span class="month-label">{{ month.label }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in ROWS" :key="row">
+            <th scope="row" class="day-label">
+              {{ [1, 3, 5].includes(row - 1) ? DAY_LABELS[row - 1] : "" }}
+            </th>
+            <td v-for="weekStart in weekStarts" :key="weekStart.getTime()">
+              <Tooltip direction="top" display-only>
+                <div
+                  v-if="cellDate(weekStart, row - 1) <= today"
+                  class="activity-cell"
+                  :class="`lvl-${getRelativeActivity(dateKey(cellDate(weekStart, row - 1)))}`"
+                  :style="
+                    getActivityStyle(dateKey(cellDate(weekStart, row - 1)))
+                  "
+                  :title="dateKey(cellDate(weekStart, row - 1))"
+                ></div>
+                <template #text>
+                  <div style="display: flex; align-items: center">
+                    <span class="text-secondary tooltip-text"
+                      >{{
+                        describeActivity(dateKey(cellDate(weekStart, row - 1)))
+                      }}
+                      on
+                      {{ formatDate(cellDate(weekStart, row - 1)) }}</span
+                    >
+                  </div>
+                </template>
+              </Tooltip>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="activity-heatmap-legend">
+        <div class="activity-type-legend">
+          <span
+            v-for="(count, unit) in numberOfItemsPerTypeWithinRange"
+            :key="unit"
+            class="activity-type-legend-item"
           >
-            <span class="month-label">{{ month.label }}</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in ROWS" :key="row">
-          <th scope="row" class="day-label">
-            {{ [1, 3, 5].includes(row - 1) ? DAY_LABELS[row - 1] : "" }}
-          </th>
-          <td v-for="weekStart in weekStarts" :key="weekStart.getTime()">
-            <Tooltip direction="top" display-only>
-              <div
-                v-if="cellDate(weekStart, row - 1) <= today"
-                class="activity-cell"
-                :class="`lvl-${getRelativeActivity(dateKey(cellDate(weekStart, row - 1)))}`"
-                :title="dateKey(cellDate(weekStart, row - 1))"
-              ></div>
-              <template #text>
-                <div style="display: flex; align-items: center">
-                  <span class="text-secondary tooltip-text"
-                    >{{
-                      describeActivity(dateKey(cellDate(weekStart, row - 1)))
-                    }}
-                    on
-                    {{ formatDate(cellDate(weekStart, row - 1)) }}</span
-                  >
-                </div>
-              </template>
-            </Tooltip>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="activity-heatmap-legend">
-      <span>
-        <span
-          v-for="(count, unit) in numberOfItemsPerTypeWithinRange"
-          :key="unit"
-        >
-          {{ pluralize(count, unit) }} in the past
-          {{ formatTimeSpan(oldestDate) }}
-        </span>
-      </span>
-      <div>
-        <span style="margin-right: 4px">Less</span>
-        <span class="activity-heatmap-legend-color lvl-0"></span>
-        <span class="activity-heatmap-legend-color lvl-1"></span>
-        <span class="activity-heatmap-legend-color lvl-2"></span>
-        <span class="activity-heatmap-legend-color lvl-3"></span>
-        <span class="activity-heatmap-legend-color lvl-4"></span>
-        <span style="margin-left: 4px">More</span>
+            <span
+              class="activity-type-legend-color"
+              :style="{ backgroundColor: getActivityColor(unit) }"
+            ></span>
+            {{ pluralize(count, unit) }} in the past
+            {{ formatTimeSpan(oldestDate) }}
+          </span>
+        </div>
+        <div>
+          <span style="margin-right: 4px">Less</span>
+          <span class="activity-heatmap-legend-color lvl-0"></span>
+          <span class="activity-heatmap-legend-color lvl-1"></span>
+          <span class="activity-heatmap-legend-color lvl-2"></span>
+          <span class="activity-heatmap-legend-color lvl-3"></span>
+          <span class="activity-heatmap-legend-color lvl-4"></span>
+          <span style="margin-left: 4px">More</span>
+        </div>
       </div>
-    </div>
     </div>
   </div>
 </template>
@@ -78,7 +86,8 @@ type Activity = {
   count: number;
 };
 type ActivityData = {
-  [date: string]: Activity[];
+  activitiesByDate: Record<string, Activity[]>;
+  colorsByUnit: Record<string, string>;
 };
 
 const props = withDefaults(
@@ -194,11 +203,46 @@ const monthHeaders = computed(() => {
 
 const histogram = computed(() => {
   const counts: { [date: string]: number } = {};
-  for (const date in props.data) {
-    counts[date] = props.data[date]!.reduce((sum, a) => sum + a.count, 0);
+  for (const [date, activities] of Object.entries(
+    props.data.activitiesByDate,
+  )) {
+    counts[date] = activities.reduce((sum, a) => sum + a.count, 0);
   }
   return counts;
 });
+
+function getActivityColor(unit: string) {
+  return props.data.colorsByUnit[unit] ?? "var(--theme-color, var(--primary))";
+}
+
+function getActivityStyle(date: string): Record<string, string> {
+  const countsByUnit = new Map<string, number>();
+  for (const { unit, count } of props.data.activitiesByDate[date] ?? []) {
+    if (count > 0)
+      countsByUnit.set(unit, (countsByUnit.get(unit) ?? 0) + count);
+  }
+  const total = [...countsByUnit.values()].reduce(
+    (sum, count) => sum + count,
+    0,
+  );
+  if (!total) return {};
+
+  const tint = getRelativeActivity(date) * 20;
+  let start = 0;
+  const stops = [...countsByUnit.entries()]
+    .sort(([unitA], [unitB]) => unitA.localeCompare(unitB))
+    .map(([unit, count]) => {
+      const end = (start + count / total) * 100;
+      const color = `color-mix(in oklab, ${getActivityColor(unit)} ${tint}%, var(--surface) ${100 - tint}%)`;
+      const stop = `${color} ${start}% ${end}%`;
+      start = end;
+      return stop;
+    });
+
+  return {
+    backgroundImage: `conic-gradient(from -90deg, ${stops.join(", ")})`,
+  };
+}
 
 // Only dates inside the displayed range count towards the scale
 const maxActivity = computed(() => {
@@ -219,7 +263,9 @@ const numberOfItemsPerTypeWithinRange = computed(() => {
   const start = dateKey(first);
   const end = dateKey(today);
   const counts: { [unit: string]: number } = {};
-  for (const [date, activities] of Object.entries(props.data)) {
+  for (const [date, activities] of Object.entries(
+    props.data.activitiesByDate,
+  )) {
     if (date < start || date > end) continue;
     for (const { unit, count } of activities) {
       counts[unit] = (counts[unit] ?? 0) + count;
@@ -235,7 +281,7 @@ function pluralize(count: number, unit: string) {
 // e.g. "2 arts, 1 post", summing counts that share a unit
 function describeActivity(date: string) {
   const totals: { [unit: string]: number } = {};
-  for (const { unit, count } of props.data[date] ?? []) {
+  for (const { unit, count } of props.data.activitiesByDate[date] ?? []) {
     if (count > 0) totals[unit] = (totals[unit] ?? 0) + count;
   }
   const parts = Object.entries(totals).map(([unit, count]) =>
@@ -323,6 +369,20 @@ thead th {
   }
 }
 
+.activity-type-legend {
+  margin-top: 2px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.activity-type-legend-item {
+  gap: 4px;
+}
+.activity-type-legend-color {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+}
 .activity-heatmap-legend {
   display: flex;
   align-items: center;

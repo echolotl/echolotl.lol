@@ -5,11 +5,7 @@
 
     <div v-if="allPinnedArtworks.length > 0" class="section-header">
       <h2 class="section-title">
-        <Icon
-          icon="pin"
-          style="color: var(--text)"
-          size="30px"
-        />
+        <Icon icon="pin" style="color: var(--text)" size="30px" />
         <span class="lotl-font" style="font-size: 1.2em">Pinned</span>
       </h2>
     </div>
@@ -199,11 +195,7 @@
                     @click="removeTag(tag)"
                   >
                     {{ tag }}
-                    <Icon
-                      icon="close"
-                      size="1em"
-                      style="margin-left: 0.1rem"
-                    />
+                    <Icon icon="close" size="1em" style="margin-left: 0.1rem" />
                   </Tag>
                 </div>
               </div>
@@ -541,17 +533,21 @@ const allPinnedArtworks = computed(() =>
 );
 
 const artActivityData = computed(() => {
-  const data: Record<string, { unit: string; count: number }[]> = {};
+  const activitiesByDate: Record<string, { unit: string; count: number }[]> =
+    {};
   (allArtworks.value || []).forEach((artwork) => {
     if (!isEcholotlArtwork(artwork)) return;
     // UTC, matching how the art detail page displays created_at; many dates are midnight UTC
     const date = new Date(artwork.created_at).toISOString().slice(0, 10);
-    const activities = (data[date] ??= []);
+    const activities = (activitiesByDate[date] ??= []);
     const art = activities.find((a) => a.unit === "artwork");
     if (art) art.count++;
     else activities.push({ unit: "artwork", count: 1 });
   });
-  return data;
+  return {
+    activitiesByDate,
+    colorsByUnit: { artwork: "var(--primary)" },
+  };
 });
 
 const filteredArtworks = computed(() => {

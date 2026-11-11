@@ -16,11 +16,7 @@
     </div>
     <div class="character-images">
       <h2 class="section-title">
-        <Icon
-          icon="art_brush"
-          size="36px"
-          style="color: var(--theme-color)"
-        />
+        <Icon icon="art_brush" size="36px" style="color: var(--theme-color)" />
         <span class="lotl-font" style="font-size: 1.2em">Artwork</span>
       </h2>
       <ArtGrid
@@ -97,21 +93,25 @@ const { data: characterArtworks } = await useAsyncData(
 );
 
 const activityData = computed(() => {
-  const data: Record<string, { unit: string; count: number }[]> = {};
+  const activitiesByDate: Record<string, { unit: string; count: number }[]> =
+    {};
   if (characterArtworks.value) {
     for (const artwork of characterArtworks.value) {
       const date = artwork.created_at.slice(0, 10);
-      if (!data[date]) data[date] = [];
+      if (!activitiesByDate[date]) activitiesByDate[date] = [];
       const unit = "artwork";
-      const existing = data[date].find((a) => a.unit === unit);
+      const existing = activitiesByDate[date].find((a) => a.unit === unit);
       if (existing) {
         existing.count++;
       } else {
-        data[date].push({ unit, count: 1 });
+        activitiesByDate[date].push({ unit, count: 1 });
       }
     }
   }
-  return data;
+  return {
+    activitiesByDate,
+    colorsByUnit: { artwork: themeColor.value },
+  };
 });
 
 const { theme } = useTheme();
