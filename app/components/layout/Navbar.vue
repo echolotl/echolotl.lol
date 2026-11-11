@@ -2,7 +2,7 @@
   <header class="navbar">
     <nav>
       <NuxtLink to="/" class="home-link nav-link" exact-active-class="active">
-        <Icon icon="echolotl" size="1.5lh" />
+        <Icon class="echolotl-icon" icon="echolotl" size="1.5lh" />
         <div class="home-text"></div>
       </NuxtLink>
       <div class="nav-links">
@@ -314,6 +314,62 @@ onMounted(() => {
 
   .navbar .menu .nav-link.mobile-theme-toggle {
     display: flex;
+  }
+}
+
+.echolotl-icon {
+  pointer-events: none;
+  will-change: transform;
+}
+
+.home-link:hover .echolotl-icon {
+  animation: jumpAndFlip 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.home-link:hover .echolotl-icon,
+.home-link:hover .home-text {
+  transition: none;
+}
+
+.home-link:hover {
+  animation: accentColorPulse 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transition: none;
+}
+
+@keyframes jumpAndFlip {
+  0% {
+    transform: rotateY(0) translateY(0px);
+  }
+  35% {
+    transform: rotateY(180deg) translateY(-13px) rotateZ(-8deg);
+  }
+  65% {
+    transform: rotateY(360deg) translateY(-8px) rotateZ(4deg);
+  }
+  85% {
+    transform: rotateY(360deg) translateY(0px) rotateZ(2deg);
+  }
+  92% {
+    transform: rotateY(360deg) translateY(-1px) rotateZ(1deg);
+  }
+  100% {
+    transform: rotateY(360deg) translateY(0px) rotateZ(0deg);
+  }
+}
+
+@keyframes accentColorPulse {
+  0% {
+    color: var(--scrollbar-bar, var(--primary));
+  }
+  50% {
+    color: color-mix(
+      in oklab,
+      var(--scrollbar-bar, var(--primary)) 80%,
+      var(--inverted-solid) 50%
+    );
+  }
+  100% {
+    color: var(--scrollbar-bar, var(--primary));
   }
 }
 </style>
