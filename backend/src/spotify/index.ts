@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import cors from "@elysiajs/cors";
-import { SpotifyResponse } from "./model";
+import type { SpotifyResponse } from "@echolotl/types";
 import { getCurrentSpotifyPlayback } from "./service";
 import { rateLimit } from "elysia-rate-limit";
 

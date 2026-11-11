@@ -1,4 +1,4 @@
-import type { PublicUser } from "../auth/discord/model";
+import type { CommentNode } from "@echolotl/types";
 
 export interface Comment {
   id: number;
@@ -10,17 +10,5 @@ export interface Comment {
   editedAt: number | null;
   deletedAt: number | null;
 }
-
-export type CommentNode = {
-  id: number;
-  slug: string;
-  parentId: number | null;
-  body: string;
-  createdAt: number;
-  editedAt: number | null;
-  deletedAt: number | null;
-  author: PublicUser | null;
-  replyCount: number;
-};
 
 export type UserComment = Omit<CommentNode, "author" | "replyCount">;

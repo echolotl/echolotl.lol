@@ -1,21 +1,4 @@
-export interface AuthenticatedUser {
-  id: string;
-  userId: string;
-  username: string;
-  displayName: string | null;
-  avatarHash: string | null;
-  anonymous: boolean;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface PublicUser {
-  id: string | null;
-  userId: string;
-  username: string;
-  displayName: string | null;
-  avatarHash: string | null;
-}
+import type { AuthenticatedUser, PublicUser } from "@echolotl/types";
 
 type AuthStatus =
   | "idle"
@@ -43,6 +26,7 @@ const mockUser: AuthenticatedUser = {
   displayName: "Account",
   avatarHash: null,
   anonymous: false,
+  shouldSync: false,
   createdAt: 0,
   updatedAt: 0,
 };

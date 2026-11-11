@@ -9,7 +9,8 @@ import { type User } from "../auth/discord/model";
 import { Logger } from "../util/logger";
 import { sendDiscordWebhook } from "../util/webhook";
 import { FRONTEND_URL } from "../constants";
-import type { Comment, CommentNode, UserComment } from "./model";
+import type { CommentNode } from "@echolotl/types";
+import type { Comment, UserComment } from "./model";
 
 const commentsLogger = Logger.fmtPackage("COMMENTS");
 

@@ -2,12 +2,12 @@
   "name": "app",
   "version": "1.0.50",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",
     "build": "bun build --compile --minify-whitespace --minify-syntax --target bun-linux-x64 --outfile server src/index.ts",
     "start": "bun run ./src/index.ts"
   },
   "dependencies": {
+    "@echolotl/types": "workspace:*",
     "@elysiajs/cors": "^1.4.2",
     "elysia": "latest",
     "elysia-rate-limit": "^4.6.2",
@@ -15,7 +15,9 @@
   },
   "devDependencies": {
     "bun-types": "latest",
-    "shiki": "^4.3.1"
+    "shiki": "^4.3.1",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0"
   },
   "module": "src/index.js"
 }

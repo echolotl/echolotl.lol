@@ -5,13 +5,12 @@ import {
 } from "../../db";
 import { Logger } from "../../util/logger";
 import { sendDiscordWebhook } from "../../util/webhook";
-import {
-  AuthenticatedUser,
-  DISCORD_TOKEN_URL,
-  PublicUser,
-  type DiscordTokenResponse,
-  type DiscordUserResponse,
-  type User,
+import type { AuthenticatedUser, PublicUser } from "@echolotl/types";
+import { DISCORD_TOKEN_URL } from "./model";
+import type {
+  DiscordTokenResponse,
+  DiscordUserResponse,
+  User,
 } from "./model";
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;

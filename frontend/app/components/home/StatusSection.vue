@@ -62,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import type { SpotifyResponse, Status } from "@echolotl/types";
 import Icon from "~/components/ui/Icon.vue";
 import { SlotText } from "slot-text/vue";
 import "slot-text/style.css";
@@ -72,30 +73,7 @@ const dateFormat = new Intl.RelativeTimeFormat("en", { style: "short" });
 const curDurationMsSpotify = ref(0);
 const { backendUrl } = useRuntimeConfig().public;
 
-type SpotifyStatus = {
-  playing: boolean;
-  title: string;
-  href: string;
-  durationMs: number;
-  progressMs: number;
-  artists: {
-    name: string;
-    href: string;
-  }[];
-  album: {
-    name: string;
-    href: string;
-    imageUrl: string | null;
-  };
-};
-
-type EcholotlStatus = {
-  text: string;
-  emoji: string;
-  createdAt: string;
-};
-
-type StatusValue = SpotifyStatus | EcholotlStatus | "loading" | "error" | null;
+type StatusValue = SpotifyResponse | Status | "loading" | "error" | null;
 
 const thinkerImages = [
   "/images/home/plushking.webp",
@@ -148,7 +126,7 @@ const msToMinutesAndSeconds = (ms: number) => {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-const isEcholotlStatus = (value: StatusValue): value is EcholotlStatus => {
+const isEcholotlStatus = (value: StatusValue): value is Status => {
   return (
     value !== null &&
     value !== "loading" &&
@@ -157,7 +135,7 @@ const isEcholotlStatus = (value: StatusValue): value is EcholotlStatus => {
   );
 };
 
-const isSpotifyStatus = (value: StatusValue): value is SpotifyStatus => {
+const isSpotifyStatus = (value: StatusValue): value is SpotifyResponse => {
   return (
     value !== null &&
     value !== "loading" &&
@@ -166,7 +144,7 @@ const isSpotifyStatus = (value: StatusValue): value is SpotifyStatus => {
   );
 };
 
-const getCreatedAtRelativeTime = (createdAt: string) => {
+const getCreatedAtRelativeTime = (createdAt: number) => {
   const createdAtDate = new Date(createdAt);
   const now = new Date();
   const diffMs = createdAtDate.getTime() - now.getTime();
@@ -199,7 +177,7 @@ const startProgressTick = () => {
   }, PROGRESS_TICK_MS);
 };
 
-const scheduleSpotifyRefetchOnSongEnd = (playback: SpotifyStatus) => {
+const scheduleSpotifyRefetchOnSongEnd = (playback: SpotifyResponse) => {
   clearSpotifyRefetchTimeout();
 
   const remainingMs = Math.max(playback.durationMs - playback.progressMs, 0);
@@ -210,7 +188,7 @@ const scheduleSpotifyRefetchOnSongEnd = (playback: SpotifyStatus) => {
   }, refetchDelayMs);
 };
 
-const fetchSpotifyStatus: () => Promise<SpotifyStatus | null> = async () => {
+const fetchSpotifyStatus: () => Promise<SpotifyResponse | null> = async () => {
   try {
     const fetchStart = Date.now();
     const data = await fetch(`${backendUrl}/spotify`);
@@ -222,7 +200,7 @@ const fetchSpotifyStatus: () => Promise<SpotifyStatus | null> = async () => {
       throw new Error(`HTTP error! status: ${data.status}`);
     }
 
-    const json = (await data.json()) as SpotifyStatus;
+    const json = (await data.json()) as SpotifyResponse;
     const fetchElapsed = Date.now() - fetchStart;
     curDurationMsSpotify.value =
       (json.progressMs ?? 0) + (json.playing ? fetchElapsed : 0);
@@ -234,7 +212,7 @@ const fetchSpotifyStatus: () => Promise<SpotifyStatus | null> = async () => {
   }
 };
 
-const fetchEcholotlStatus: () => Promise<EcholotlStatus | null> = async () => {
+const fetchEcholotlStatus: () => Promise<Status | null> = async () => {
   try {
     const data = await fetch(`${backendUrl}/status`);
     if (data.status === 204) {
@@ -244,7 +222,7 @@ const fetchEcholotlStatus: () => Promise<EcholotlStatus | null> = async () => {
       throw new Error(`HTTP error! status: ${data.status}`);
     }
 
-    const json = (await data.json()) as EcholotlStatus;
+    const json = (await data.json()) as Status;
     return json;
   } catch (err) {
     console.error("Error fetching Echolotl status:", err);

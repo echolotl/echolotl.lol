@@ -1,4 +1,4 @@
-import type { Status } from "./model";
+import type { Status } from "@echolotl/types";
 import { getLatestStatus, insertStatus, getStatusesLimit } from "../db";
 import { sendDiscordWebhook } from "../util/webhook";
 

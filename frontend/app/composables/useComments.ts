@@ -1,16 +1,4 @@
-import type { PublicUser } from "./useAuth";
-
-export interface CommentNode {
-  id: number;
-  slug: string;
-  parentId: number | null;
-  body: string;
-  createdAt: number;
-  editedAt: number | null;
-  deletedAt: number | null;
-  author: PublicUser | null;
-  replyCount: number;
-}
+import type { CommentNode } from "@echolotl/types";
 
 interface CommentsResponse {
   slug: string;

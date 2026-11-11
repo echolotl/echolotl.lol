@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useAuth } from "~/composables/useAuth";
-import { type PublicUser } from "~/composables/useAuth";
+import type { PublicUser } from "@echolotl/types";
 
 const props = withDefaults(
   defineProps<{

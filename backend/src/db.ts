@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
+import type { Status } from "@echolotl/types";
 import type { SpotifyTokenRecord } from "./spotify/model";
-import type { Status } from "./status/model";
 import { Session, User } from "./auth/discord/model";
 import { Comment } from "./comments/model";
 import { encrypt, decrypt } from "./util/crypto";

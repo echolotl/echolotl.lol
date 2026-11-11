@@ -16,19 +16,6 @@ export interface User {
   updatedAt: number;
 }
 
-export interface PublicUser {
-  id: string | null;
-  userId: string;
-  username: string;
-  displayName: string | null;
-  avatarHash: string | null;
-}
-
-export type AuthenticatedUser = Omit<
-  User,
-  "refreshToken" | "accessToken" | "tokenExpires"
->;
-
 export interface Session {
   token: string;
   id: string;

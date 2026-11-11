@@ -1,0 +1,20 @@
+{
+  "name": "echolotl-lol",
+  "private": true,
+  "packageManager": "pnpm@12.9.0",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "packages/types"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./frontend --filter ./backend dev",
+    "dev:frontend": "pnpm --filter ./frontend dev",
+    "dev:backend": "pnpm --filter ./backend dev",
+    "build": "pnpm --recursive --if-present run build",
+    "build:frontend": "pnpm --filter ./frontend build",
+    "build:backend": "pnpm --filter ./backend build",
+    "lint": "pnpm --filter ./frontend lint",
+    "format": "pnpm --filter ./frontend format"
+  }
+}

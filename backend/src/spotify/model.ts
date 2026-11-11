@@ -174,20 +174,3 @@ export type CurrentlyPlayingResponse = {
     transferring_playback: boolean;
   };
 };
-
-export type SpotifyResponse = {
-  playing: boolean;
-  title: string;
-  href: string;
-  durationMs: number;
-  progressMs: number;
-  artists: {
-    name: string;
-    href: string;
-  }[];
-  album: {
-    name: string;
-    href: string;
-    imageUrl: string | null;
-  };
-};
