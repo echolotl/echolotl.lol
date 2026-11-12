@@ -101,23 +101,15 @@
           Blog
         </NuxtLink>
       </div>
+      <hr class="menu-divider" />
       <button
         type="button"
         class="nav-link mobile-theme-toggle"
         @click="toggleTheme"
         aria-label="Toggle theme"
-        style="
-          background: var(--surface);
-          align-items: center;
-          justify-content: center;
-          gap: 2px;
-          border-radius: 4px;
-        "
       >
         <Icon :icon="theme ? 'sun' : 'moon'" size="1.25lh" />
-        <span class="lotl-font" style="text-box-trim: trim-end"
-          >Switch Theme</span
-        >
+        <span class="lotl-font" style="text-box-trim: trim-end">Theme</span>
       </button>
     </div>
   </header>
@@ -169,7 +161,7 @@ onMounted(() => {
     }
     &:hover,
     &.active {
-      color: var(--scrollbar-bar, var(--primary));
+      color: var(--theme-color);
     }
   }
   > nav {
@@ -284,9 +276,8 @@ onMounted(() => {
   border: 0;
   background: none;
   font: inherit;
-  padding: 4px 0;
+  padding: 0;
   width: 100%;
-  margin-top: 4px;
 }
 
 .menu-header {
@@ -294,6 +285,16 @@ onMounted(() => {
   text-transform: uppercase;
   color: var(--text-secondary);
   margin-bottom: 8px;
+}
+
+.menu-divider {
+  border: 0;
+  border-top: 1px solid rgba(from var(--inverted-solid) r g b / 0.1);
+  margin: 2px 0;
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+  }
 }
 
 .link-grid {
@@ -310,8 +311,10 @@ onMounted(() => {
   }
 
   .link-grid.mobile-menu-links,
-  .navbar .menu .nav-link.mobile-theme-toggle {
+  .navbar .menu .nav-link.mobile-theme-toggle,
+  .navbar .menu .link-grid {
     display: grid;
+    grid-template-columns: 100%;
   }
 
   .navbar .menu .nav-link.mobile-theme-toggle {
@@ -334,7 +337,7 @@ onMounted(() => {
 }
 
 .home-link:hover {
-  animation: accentColorPulse 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: accentColorPulse 1.5s ease infinite;
   transition: none;
 }
 
@@ -361,17 +364,17 @@ onMounted(() => {
 
 @keyframes accentColorPulse {
   0% {
-    color: var(--scrollbar-bar, var(--primary));
+    color: var(--theme-color);
   }
   50% {
     color: color-mix(
       in oklab,
-      var(--scrollbar-bar, var(--primary)) 80%,
-      var(--inverted-solid) 50%
+      var(--theme-color) 90%,
+      var(--inverted-solid) 10%
     );
   }
   100% {
-    color: var(--scrollbar-bar, var(--primary));
+    color: var(--theme-color);
   }
 }
 </style>

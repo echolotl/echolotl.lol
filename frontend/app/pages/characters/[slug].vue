@@ -130,10 +130,7 @@ const themeColor = computed(() => {
 const commentSlug = computed(() => `char:${character.value?.slug}`);
 
 const updateScrollbarColor = () => {
-  document.documentElement.style.setProperty(
-    "--scrollbar-bar",
-    themeColor.value,
-  );
+  document.documentElement.style.setProperty("--theme-color", themeColor.value);
 };
 
 watch(themeColor, () => {
@@ -146,10 +143,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   // Reset scrollbar color on unmount
-  document.documentElement.style.setProperty(
-    "--scrollbar-bar",
-    "var(--primary)",
-  );
+  document.documentElement.style.setProperty("--theme-color", "var(--primary)");
 });
 
 useSeoMeta({
@@ -162,7 +156,7 @@ useSeoMeta({
 </script>
 
 <style lang="scss" scoped>
-@use "~/assets/styles/partials/mixins" as *;
+@use "~/assets/styles/util" as *;
 
 .character-page {
   position: relative;

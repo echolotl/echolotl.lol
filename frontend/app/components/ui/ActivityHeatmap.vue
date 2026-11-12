@@ -212,7 +212,7 @@ const histogram = computed(() => {
 });
 
 function getActivityColor(unit: string) {
-  return props.data.colorsByUnit[unit] ?? "var(--theme-color, var(--primary))";
+  return props.data.colorsByUnit[unit] ?? "var(--theme-color)";
 }
 
 function getActivityStyle(date: string): Record<string, string> {
@@ -345,7 +345,7 @@ thead th {
 }
 .activity-cell,
 .activity-heatmap-legend-color {
-  --color: var(--theme-color, var(--primary));
+  --color: var(--theme-color);
   width: 12px;
   height: 12px;
   margin: 1px;

@@ -1,7 +1,7 @@
 <template>
   <div v-if="shouldShow" class="tag-list">
     <Icon v-if="icon" :icon="icon" color="var(--text-secondary)" />
-    <div class="items flex-row-wrap">
+    <div class="items">
       <slot></slot>
     </div>
   </div>
@@ -23,15 +23,20 @@ const shouldShow = computed(() => {
 </script>
 
 <style scoped lang="scss">
-/* Tag list items now use .flex-row-wrap utility class from _reusables.scss */
 .tag-list {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 
   .icon {
     flex-shrink: 0;
     align-self: flex-start;
+  }
+  .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 }
 </style>

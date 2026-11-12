@@ -83,7 +83,7 @@ const { logout, login, user, getDisplayName } = useAuth();
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/_mixins" as *;
+@use "~/assets/styles/util" as *;
 
 footer {
   position: relative;
@@ -148,7 +148,7 @@ footer {
 .footer-content {
   position: relative;
   bottom: 0;
-  @include gradient-fade-top(var(--surface));
+  background: linear-gradient(to top, var(--surface), transparent 100%);
   height: 50%;
   width: 100%;
   padding-bottom: 1.5rem;

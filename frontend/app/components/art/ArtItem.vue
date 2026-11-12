@@ -30,25 +30,13 @@
           >
             <Icon icon="character" />
           </div>
-          <div
-            v-if="artwork.pinned"
-            class="metadata-icon"
-            title="Pinned"
-          >
+          <div v-if="artwork.pinned" class="metadata-icon" title="Pinned">
             <Icon icon="pin" />
           </div>
-          <div
-            v-if="artwork.sketch"
-            class="metadata-icon"
-            title="Sketch"
-          >
+          <div v-if="artwork.sketch" class="metadata-icon" title="Sketch">
             <Icon icon="sketch" />
           </div>
-          <div
-            v-if="hasVariants"
-            class="metadata-icon"
-            title="Has Variants"
-          >
+          <div v-if="hasVariants" class="metadata-icon" title="Has Variants">
             <Icon icon="layers" />
           </div>
           <div
@@ -65,11 +53,7 @@
           >
             <Icon icon="other" />
           </div>
-          <div
-            v-if="artwork.nsfw"
-            class="metadata-icon"
-            title="NSFW Content"
-          >
+          <div v-if="artwork.nsfw" class="metadata-icon" title="NSFW Content">
             <Icon icon="r18" />
           </div>
         </div>
@@ -116,7 +100,7 @@ const hasMultipleImages = computed(() => {
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/_mixins" as *;
+@use "~/assets/styles/util" as *;
 
 .art-item {
   display: flex;
@@ -176,7 +160,7 @@ const hasMultipleImages = computed(() => {
     .metadata {
       color: var(--background);
       &::before {
-        background: var(--theme-color, var(--primary));
+        background: var(--theme-color);
       }
     }
   }
@@ -197,7 +181,7 @@ const hasMultipleImages = computed(() => {
 .metadata {
   position: absolute;
   display: flex;
-  color: var(--theme-color, var(--primary));
+  color: var(--theme-color);
   align-items: flex-start;
   justify-content: left;
   transition: filter 0.2s ease;

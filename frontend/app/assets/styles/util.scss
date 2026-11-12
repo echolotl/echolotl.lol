@@ -1,0 +1,18 @@
+@mixin text-stroke($color, $size: 1px) {
+  text-shadow:
+    $size 0 0 $color,
+    (-$size) 0 0 $color,
+    0 $size 0 $color,
+    0 (-$size) 0 $color,
+    $size $size 0 $color,
+    (-$size) (-$size) 0 $color,
+    (-$size) $size 0 $color,
+    $size (-$size) 0 $color;
+}
+
+@mixin color-text-stroke($color, $size: 1px) {
+  paint-order: stroke fill;
+  -webkit-text-stroke-color: $color;
+  -webkit-text-stroke-width: $size;
+}
+

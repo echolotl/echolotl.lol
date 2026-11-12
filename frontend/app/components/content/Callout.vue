@@ -81,7 +81,7 @@ const color = computed(() => {
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/_mixins" as *;
+@use "~/assets/styles/util" as *;
 
 .callout {
   position: relative;

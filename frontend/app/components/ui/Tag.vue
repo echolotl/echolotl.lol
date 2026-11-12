@@ -52,7 +52,7 @@ const customStyles = computed(() => {
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/_variables" as *;
+@use "~/assets/styles/vars" as *;
 
 .tag {
   --tag-color: var(--text-secondary);

@@ -7,10 +7,7 @@
     @mouseenter="hasInteracted = true"
     @focusin="hasInteracted = true"
   >
-    <NuxtLink
-      :to="`/characters/${props.character.slug}`"
-      class="image"
-    >
+    <NuxtLink :to="`/characters/${props.character.slug}`" class="image">
       <div class="image-bg"></div>
 
       <div
@@ -64,7 +61,7 @@ const randomRotation = `${Math.floor(Math.random() * 41) - 20}deg`; // -20 to 20
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/mixins" as *;
+@use "~/assets/styles/util" as *;
 
 .character-card {
   --theme-color: v-bind(characterColor);

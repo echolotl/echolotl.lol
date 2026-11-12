@@ -146,8 +146,6 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss">
-@use "~/assets/styles/partials/_mixins" as *;
-
 .social-icons {
   --tumblr-hover: #eebb00;
   --twitter-hover: #1da1f2;
@@ -172,7 +170,9 @@ onUnmounted(() => {
 .social-icons .discord-icon {
   text-decoration: none;
   color: inherit;
-  @include hover-scale(1.1);
+  &:hover {
+    transform: scale(1.1);
+  }
   transition:
     filter 0.2s ease,
     color 0s;
@@ -220,7 +220,9 @@ onUnmounted(() => {
 }
 .discord-icon {
   cursor: pointer;
-  @include hover-scale(1.1);
+  &:hover {
+    transform: scale(1.1);
+  }
   transition: color 0s;
   display: inline-block;
   padding: 0;
@@ -241,5 +243,16 @@ onUnmounted(() => {
 }
 .float-up {
   animation: float-up-centered 2s ease-out forwards;
+}
+
+@keyframes float-up-centered {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-30px);
+  }
 }
 </style>

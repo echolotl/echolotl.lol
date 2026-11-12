@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="gallery"
-    v-if="art.images && art.images.length"
-  >
+  <div class="gallery" v-if="art.images && art.images.length">
     <div class="viewer-container">
       <div class="viewer">
         <div class="image-wrapper">
@@ -15,7 +12,9 @@
             class="hero"
             :data-index="currentImageIndex"
             :data-variant="currentVariantIndex ?? 'base'"
-            @error="imageLoadError = 'Could not load the selected artwork image.'"
+            @error="
+              imageLoadError = 'Could not load the selected artwork image.'
+            "
           />
           <div v-else class="placeholder">
             <Icon icon="loading" size="3rem" />Loading...
@@ -27,7 +26,8 @@
     <!-- Variant selector for current base image -->
     <div
       v-if="currentImage?.variants && currentImage.variants.length"
-      class="variants">
+      class="variants"
+    >
       <div class="list">
         <Icon icon="layers" />
         <button
@@ -35,7 +35,8 @@
           class="chip"
           :class="{ active: currentVariantIndex === null }"
           :aria-pressed="currentVariantIndex === null"
-          @click="currentVariantIndex = null">
+          @click="currentVariantIndex = null"
+        >
           Original
         </button>
         <button
@@ -45,7 +46,8 @@
           class="chip"
           :class="{ active: currentVariantIndex === vIndex }"
           :aria-pressed="currentVariantIndex === vIndex"
-          @click="selectVariant(vIndex)">
+          @click="selectVariant(vIndex)"
+        >
           {{ variant.label || "Alt " + (vIndex + 1) }}
         </button>
       </div>
@@ -62,7 +64,8 @@
           :class="{ active: currentImageIndex === index }"
           :aria-label="`Show image ${index + 1} of ${art.images.length}`"
           :aria-pressed="currentImageIndex === index"
-          @click="selectImage(index)"></button>
+          @click="selectImage(index)"
+        ></button>
       </div>
       <div class="label">
         <button
@@ -70,7 +73,8 @@
           class="nav prev"
           @click="prevImage"
           aria-label="Previous image"
-          style="border-radius: 100%">
+          style="border-radius: 100%"
+        >
           <Icon icon="small-arrow" style="transform: rotate(180deg)" />
         </button>
         <Icon icon="images" /> {{ currentImageIndex + 1 }} /
@@ -80,7 +84,8 @@
           class="nav next"
           @click="nextImage"
           aria-label="Next image"
-          style="border-radius: 100%">
+          style="border-radius: 100%"
+        >
           <Icon icon="small-arrow" />
         </button>
       </div>
@@ -95,7 +100,8 @@
       "
       :href="activeSource?.image_url"
       target="_blank"
-      rel="noopener noreferrer">
+      rel="noopener noreferrer"
+    >
       {{ activeSource?.image_url.split("/").pop() || "Untitled Image" }}
       <Icon icon="open-in-new" />
     </a>
@@ -234,7 +240,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/_mixins.scss" as *;
+@use "~/assets/styles/util" as *;
 .gallery {
   display: flex;
   flex-direction: column;
@@ -360,5 +366,14 @@ onMounted(() => {
 .gallery-empty {
   color: var(--text-secondary);
   font-style: italic;
+}
+
+.chip {
+  border: 1px solid var(--distant);
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: var(--very-small-text);
+  cursor: pointer;
+  transition: border-color 0.18s ease;
 }
 </style>

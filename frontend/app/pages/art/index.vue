@@ -220,7 +220,7 @@
                 <span class="sr-only"> Sort artworks </span>
                 <select id="art-sort" v-model="filters.sortBy">
                   <option value="created">Created</option>
-                  <option value="added">Added</option>
+                  <option value="added">Modified</option>
                   <option value="alphabetical">Alphabetical</option>
                   <option value="whatever">Whatever</option>
                 </select>
@@ -644,7 +644,7 @@ useSeoMeta({
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/mixins" as *;
+@use "~/assets/styles/util" as *;
 .art-page {
   margin: 0 auto;
   padding: 2rem;

@@ -82,7 +82,6 @@ const bannerVariant = computed(() => {
 </script>
 
 <style scoped lang="scss">
-@use "~/assets/styles/partials/_mixins" as *;
 .character-banner {
   position: relative;
   height: 600px;
@@ -119,7 +118,10 @@ const bannerVariant = computed(() => {
   mask-repeat: repeat;
   mask-size: 300px 300px;
   mask-origin: content-box;
-  @include theme-transition;
+  transition:
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 .texture-layer {
@@ -157,8 +159,15 @@ const bannerVariant = computed(() => {
   width: 100%;
   height: 100%;
   z-index: -1;
-  @include gradient-fade-bottom(var(--theme-color));
-  @include theme-transition;
+  background: linear-gradient(
+    to bottom,
+    var(--theme-color),
+    transparent 100%
+  );
+  transition:
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 .underlay::after {
   content: "";
@@ -170,7 +179,10 @@ const bannerVariant = computed(() => {
   z-index: -1;
   background-color: var(--background);
   mask-image: linear-gradient(to top, black, transparent);
-  @include theme-transition;
+  transition:
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 .nautilus .underlay {
   background: repeating-linear-gradient(
@@ -196,7 +208,8 @@ const bannerVariant = computed(() => {
 }
 
 .nautilus .texture-layer {
-  @include mask-gradient(to bottom, black, 0%, transparent, 100%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
 }
 
 @keyframes nautilus-gradient-scroll {
@@ -233,7 +246,8 @@ const bannerVariant = computed(() => {
 }
 
 .nae .texture-layer {
-  @include mask-gradient(to bottom, black, 0%, transparent, 100%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
 }
 
 .sesame .underlay {
@@ -246,7 +260,8 @@ const bannerVariant = computed(() => {
 }
 
 .sesame .texture-layer {
-  @include mask-gradient(to bottom, black, 0%, transparent, 100%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
 }
 
 .unyruu .underlay {
@@ -259,11 +274,13 @@ const bannerVariant = computed(() => {
 }
 
 .unyruu .texture-layer {
-  @include mask-gradient(to bottom, black, 0%, transparent, 100%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
 }
 
 .images {
-  @include mask-gradient(to top, transparent, 0%, black, 70%);
+  mask-image: linear-gradient(to top, transparent 0%, black 70%);
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 70%);
   position: absolute;
   top: 0;
   left: 0;
@@ -286,7 +303,7 @@ const bannerVariant = computed(() => {
     image-rendering: crisp-edges;
   }
 
-  @include smooth-transition(background-color, 0.2s);
+  transition: background-color 0.2s ease;
   @media (max-width: 768px) {
     &-image {
       width: calc(2 / 3) * 100vw;

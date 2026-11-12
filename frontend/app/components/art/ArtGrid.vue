@@ -1,5 +1,5 @@
 <template>
-  <div v-if="artworks.length > 0" class="art-grid grid-auto-fill">
+  <div v-if="artworks.length > 0" class="art-grid">
     <ArtItem
       v-for="artwork in artworks"
       :key="artwork.slug"
@@ -52,3 +52,15 @@ function onAgeConfirmed() {
   pendingSlug.value = null;
 }
 </script>
+
+<style scoped lang="scss">
+.art-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: 1rem;
+  justify-content: center;
+  @media (max-width: 581px) {
+    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  }
+}
+</style>
