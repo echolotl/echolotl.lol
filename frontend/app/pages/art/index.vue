@@ -651,6 +651,7 @@ useSeoMeta({
   margin-top: 2rem;
   max-width: 1200px;
   text-align: center;
+  
   @media (max-width: 600px) {
     padding: 1rem;
   }

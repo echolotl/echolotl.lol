@@ -193,6 +193,7 @@ useSeoMeta({
 .art-page {
   min-height: 100vh;
   padding: 2rem;
+  margin-top: 32px;
 }
 
 .art-header {

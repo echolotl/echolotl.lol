@@ -130,6 +130,7 @@ useSeoMeta({
   max-width: 1200px;
   min-height: 80vh;
   justify-content: center;
+  margin-top: 32px;
   h1 {
     text-align: center;
   }
