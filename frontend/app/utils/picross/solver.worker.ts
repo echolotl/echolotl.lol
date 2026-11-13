@@ -1,4 +1,4 @@
-import { solvePicross, type PicrossHints } from "./solver";
+import { solvePicross, type PicrossHints } from "@echolotl/picross/solver";
 
 export type SolverWorkerRequest = {
   hints: PicrossHints;
