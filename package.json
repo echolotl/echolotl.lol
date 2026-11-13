@@ -5,7 +5,8 @@
   "workspaces": [
     "backend",
     "frontend",
-    "packages/types"
+    "packages/types",
+    "packages/picross"
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter ./frontend --filter ./backend dev",

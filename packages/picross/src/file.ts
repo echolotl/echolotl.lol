@@ -3,8 +3,17 @@ import type {
   PicrossPalette,
   PicrossSize,
   PicrossSolution,
-} from "~/utils/picross";
-import { isValidSolution } from "~/utils/picross";
+} from "./index";
+import {
+  isValidSolution,
+  MAGIC_HEADER,
+  CURRENT_MAJOR_VERSION,
+  CURRENT_MINOR_VERSION,
+  MIN_BOARD_SIZE,
+  MAX_BOARD_SIZE,
+  MAX_PALETTE_SIZE,
+  MAX_COLOR_BYTES,
+} from "./index";
 
 // What a saved puzzle file holds. Hints are derived from the solution on load, never stored.
 export type PicrossPuzzleData = {

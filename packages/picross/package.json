@@ -1,0 +1,11 @@
+{
+  "name": "@echolotl/picross",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./solver": "./src/solver.ts",
+    "./file": "./src/file.ts",
+    "./daily": "./src/daily.ts"
+  }
+}

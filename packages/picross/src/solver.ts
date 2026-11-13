@@ -222,6 +222,7 @@ export function generateSolvableSolution(
   maxAttempts = 300,
   timeBudgetMs = 750,
   random: () => number = Math.random,
+  requireLogicSolvable = false,
 ): boolean[][] {
   const deadline = Date.now() + timeBudgetMs;
   let best: boolean[][] | null = null;
@@ -259,5 +260,8 @@ export function generateSolvableSolution(
     }
     if (Date.now() > deadline) break;
   }
-  return finish(best!);
+  if (requireLogicSolvable || !best) {
+    throw new Error("Could not generate a logic-solvable puzzle");
+  }
+  return finish(best);
 }

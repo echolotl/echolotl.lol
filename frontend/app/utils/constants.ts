@@ -2,6 +2,16 @@
 
 import type { InputMode, InputModeDefinition } from "./picross";
 import { toggleTo } from "./picross";
+import {
+  MIN_BOARD_SIZE,
+  MAX_BOARD_SIZE,
+  MAGIC_HEADER,
+  CURRENT_MAJOR_VERSION,
+  CURRENT_MINOR_VERSION,
+  MAX_PALETTE_SIZE,
+  MAX_COLOR_BYTES,
+  FILE_EXTENSION,
+} from "@echolotl/picross";
 
 /** The size of each tile in the Picross grid, in pixels. */
 const TILE_SIZE = 30;
@@ -23,10 +33,6 @@ const REVEAL_PAUSE_MS = 8000;
 const REVEAL_PULSE_MS = 3000;
 /** The maximum number of undo history entries. */
 const UNDO_HISTORY_LIMIT = 100;
-/** For things that need it, the minimum allowed board size. */
-const MIN_BOARD_SIZE = 1;
-/** For things that need it, the maximum allowed board size. */
-const MAX_BOARD_SIZE = 50;
 /** The default board size. */
 const DEFAULT_BOARD_SIZE = 10;
 
@@ -109,21 +115,6 @@ export const initializeBoardColors = (force: boolean = false): BoardColors => {
   };
   return BOARD_COLORS;
 };
-
-/** The magic header for the Picross puzzle file format. Reads as `ECHOLOTL` */
-const MAGIC_HEADER = new Uint8Array([
-  0x45, 0x43, 0x48, 0x4f, 0x4c, 0x4f, 0x54, 0x4c,
-]);
-/** The current major version of the Picross puzzle file format. */
-const CURRENT_MAJOR_VERSION = 1;
-/** The current minor version of the Picross puzzle file format. */
-const CURRENT_MINOR_VERSION = 0;
-/** The maximum number of colors allowed in a puzzle's palette. */
-const MAX_PALETTE_SIZE = 255;
-/** The maximum number of bytes allowed for a single color string. */
-const MAX_COLOR_BYTES = 255;
-/** The file extension for the Picross puzzle files. */
-const FILE_EXTENSION = "epcp";
 
 export {
   TILE_SIZE,

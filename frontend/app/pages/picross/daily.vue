@@ -6,10 +6,17 @@
         <button @click="beginGame" class="round filled">Start</button>
       </div>
     </div>
-    <p v-else class="lotl-font loading" role="status">
+    <p v-else-if="loading" class="lotl-font loading" role="status">
       <Icon icon="loading" size="20px" />
       Loading puzzle...
     </p>
+    <div v-else-if="loadError" class="load-error lotl-font loading">
+      <p role="alert">{{ loadError }}</p>
+      <button @click="startDailyGame" class="round">
+        <Icon icon="reload" size="1.3lh" />Retry
+      </button>
+    </div>
+
     <p
       v-if="game"
       class="daily-info text-secondary lotl-font"
@@ -65,7 +72,7 @@
         :grid="grid"
         :disabled="!game || game.isCompleted"
       />
-      <button @click="game && clearBoard(game)" class="round">
+      <button @click="clearDailyBoard" class="round">
         <Icon icon="trash" size="20px" />
         Clear
       </button>
@@ -75,15 +82,6 @@
         Hint
       </button>
     </div>
-    <p
-      class="text-secondary"
-      style="display: flex; align-items: center; gap: 2px"
-    >
-      <Icon icon="info" />
-      Right now, every puzzle is generated randomly <b>on your device</b>. I'm
-      currently working on making it so that each day has a custom-made puzzle,
-      so it actually makes a fun picture!
-    </p>
   </PicrossPage>
 </template>
 
@@ -91,30 +89,28 @@
 import PicrossPage from "~/components/picross/PicrossPage.vue";
 import PicrossInputControls from "~/components/picross/PicrossInputControls.vue";
 import PicrossGrid from "~/components/picross/PicrossGrid.vue";
-import Icon from "~/components/ui/Icon.vue";
 import { SlotText } from "slot-text/vue";
 import "slot-text/style.css";
 import {
   createPicrossGame,
-  getHints,
-  type PicrossBoard,
   type PicrossGame,
   fillRandomTile,
   isBoardSolved,
   clearBoard,
   solveGame,
-  type PicrossSize,
   isValidBoard,
 } from "~/utils/picross";
 import {
   getSecondsUntilNextDay,
   daysBetweenDateKeys,
   getDateKey,
-  mulberry32,
-} from "~/utils/picross/daily";
-import { generateSolvableSolution } from "~/utils/picross/solver";
+  FIRST_GAME_DATE,
+} from "@echolotl/picross/daily";
+import { loadPicrossPuzzle } from "@echolotl/picross/file";
+import Icon from "~/components/ui/Icon.vue";
 
 const { theme } = useTheme();
+const config = useRuntimeConfig();
 
 definePageMeta({
   pageTransition: false,
@@ -123,9 +119,11 @@ definePageMeta({
 
 type PicrossGameStats = Omit<PicrossGame, "palette" | "solution"> & {
   gaveUp?: boolean;
+  puzzleId: string;
 };
 
 type PicrossSave = {
+  version: 2;
   history: Record<string, PicrossGameStats>; // Keyed by date
   totalMoves: number;
   totalHintsUsed: number;
@@ -133,17 +131,19 @@ type PicrossSave = {
   lastPlayed: string | null; // date
 };
 
-const MIN_SIZE = 5;
-const MAX_SIZE = 20;
-const LOCAL_STORAGE_KEY = "picross:stats:v1";
-const FIRST_GAME_DATE = "2026-10-18";
+const LOCAL_STORAGE_KEY = "picross:stats:v2";
+const LEGACY_STORAGE_KEY = "picross:stats:v1";
 
 const game = ref<PicrossGame | null>(null);
 const dateKey = ref("");
+const puzzleId = ref("");
+const loading = ref(true);
+const loadError = ref("");
 const gaveUp = ref(false);
 const started = ref(false);
 const grid = ref<InstanceType<typeof PicrossGrid> | null>(null);
 const save = ref<PicrossSave>({
+  version: 2,
   history: {},
   totalMoves: 0,
   totalHintsUsed: 0,
@@ -154,6 +154,10 @@ let timer: ReturnType<typeof setInterval> | undefined;
 let countedMoves = 0;
 let countedHints = 0;
 let countedWin = false;
+let requestId = 0;
+let controller: AbortController | undefined;
+let clockOffset = 0;
+let observedDay = "";
 
 // Reactive clock so the countdown updates every tick
 const now = ref(new Date());
@@ -175,10 +179,13 @@ const subtitle = computed(() =>
 // #region SAVE DATA
 function loadSave() {
   try {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw) as Partial<PicrossSave>;
+    if (parsed.version !== 2) throw new Error("Unsupported save version");
     save.value = {
+      version: 2,
       history: parsed.history ?? {},
       totalMoves: parsed.totalMoves ?? 0,
       totalHintsUsed: parsed.totalHintsUsed ?? 0,
@@ -214,6 +221,7 @@ function persist() {
 
   save.value.lastPlayed = dateKey.value;
   save.value.history[dateKey.value] = {
+    puzzleId: puzzleId.value,
     board: current.board,
     hints: current.hints,
     size: current.size,
@@ -229,49 +237,82 @@ function persist() {
 // #endregion SAVE DATA
 
 // #region GAME INIT
-// The same date always produces the same size and puzzle
-function createDailyGame(key: string): PicrossGame {
-  const random = mulberry32(`echolotl-picross-${key}`);
-  const randomSide = () =>
-    MIN_SIZE + Math.floor(random() * (MAX_SIZE - MIN_SIZE + 1));
-  const size = { width: randomSide(), height: randomSide() };
-  const solution = generateSolvableSolution(
-    size,
-    getHints,
-    300,
-    Infinity,
-    random,
-  );
-  return createPicrossGame(size, solution);
-}
-
-function startDailyGame() {
-  dateKey.value = getDateKey();
-  const created = createDailyGame(dateKey.value);
+async function startDailyGame() {
+  const id = ++requestId;
+  controller?.abort();
+  controller = new AbortController();
+  loading.value = true;
+  loadError.value = "";
+  game.value = null;
   gaveUp.value = false;
   started.value = false;
   countedMoves = 0;
   countedHints = 0;
   countedWin = false;
 
-  const saved = save.value.history[dateKey.value];
-  if (saved && isValidBoard(saved.board, created.size)) {
-    created.board = saved.board;
-    created.moves = saved.moves ?? 0;
-    created.hintsUsed = saved.hintsUsed ?? 0;
-    created.secondsElapsed = saved.secondsElapsed ?? 0;
-    created.isCompleted = saved.isCompleted ?? false;
-    gaveUp.value = saved.gaveUp ?? false;
-    started.value = true;
-    countedMoves = created.moves;
-    countedHints = created.hintsUsed;
-    countedWin = created.isCompleted;
-  }
+  try {
+    if (!config.public.backendEnabled || !config.public.backendUrl) {
+      throw new Error("The puzzle server is not configured.");
+    }
+    const response = await fetch(`${config.public.backendUrl}/picross/today`, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (!response.ok)
+      throw new Error(`Puzzle server returned ${response.status}.`);
+    const key = response.headers.get("X-Picross-Date");
+    const serverNow = response.headers.get("X-Picross-Now");
+    if (!key || !serverNow) {
+      throw new Error("Puzzle server returned an invalid date.");
+    }
+    const puzzle = loadPicrossPuzzle(
+      new Uint8Array(await response.arrayBuffer()),
+    );
+    if (id !== requestId) return;
+    clockOffset = Date.parse(serverNow) - Date.now();
+    now.value = new Date(Date.now() + clockOffset);
+    observedDay = key;
+    dateKey.value = key;
+    puzzleId.value = JSON.stringify(puzzle);
+    const created = createPicrossGame(puzzle.size, puzzle.solution);
+    created.palette = puzzle.palette;
+    created.metadata = puzzle.metadata;
 
-  game.value = created;
-  game.value.isCompleted = isBoardSolved(game.value);
+    const saved = save.value.history[key];
+    if (
+      saved &&
+      saved.puzzleId === puzzleId.value &&
+      isValidBoard(saved.board, created.size)
+    ) {
+      created.board = saved.board;
+      created.moves = saved.moves ?? 0;
+      created.hintsUsed = saved.hintsUsed ?? 0;
+      created.secondsElapsed = saved.secondsElapsed ?? 0;
+      created.isCompleted = saved.isCompleted ?? false;
+      gaveUp.value = saved.gaveUp ?? false;
+      started.value = true;
+      countedMoves = created.moves;
+      countedHints = created.hintsUsed;
+      countedWin = created.isCompleted;
+    }
+    game.value = created;
+    game.value.isCompleted = isBoardSolved(game.value);
+  } catch (error) {
+    if (id !== requestId) return;
+    console.error("Failed to load daily puzzle:", error);
+    loadError.value =
+      "Erm... something went wrong loading today's puzzle. Maybe try again?";
+  } finally {
+    if (id === requestId) loading.value = false;
+  }
 }
 // #endregion GAME INIT
+
+function clearDailyBoard() {
+  if (!game.value) return;
+  clearBoard(game.value);
+  grid.value?.clearHistory();
+}
 
 function beginGame() {
   started.value = true;
@@ -298,11 +339,13 @@ function copyWin() {
 
 onMounted(() => {
   loadSave();
+  observedDay = getDateKey();
   startDailyGame();
   timer = setInterval(() => {
-    now.value = new Date();
+    now.value = new Date(Date.now() + clockOffset);
     // Start the new puzzle if the page stayed open past midnight
-    if (getDateKey(now.value) !== dateKey.value) {
+    if (getDateKey(now.value) !== observedDay) {
+      observedDay = getDateKey(now.value);
       startDailyGame();
       return;
     }
@@ -317,7 +360,11 @@ onMounted(() => {
   }, 1000);
 });
 
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+  requestId++;
+  controller?.abort();
+  clearInterval(timer);
+});
 
 watch(game, persist, { deep: true });
 
@@ -366,6 +413,17 @@ useSeoMeta({
     display: flex;
     align-items: center;
     gap: 4px;
+  }
+}
+
+.loading.load-error {
+  flex-direction: column;
+  color: var(--red);
+  > button {
+    padding: 4px 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
   }
 }
 </style>

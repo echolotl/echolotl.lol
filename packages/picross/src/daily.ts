@@ -1,5 +1,6 @@
 // The daily puzzle changes at midnight in this timezone, regardless of the player's own
 export const DAILY_TIME_ZONE = "America/Chicago";
+export const FIRST_GAME_DATE = "2026-11-12";
 
 const dateKeyFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: DAILY_TIME_ZONE,

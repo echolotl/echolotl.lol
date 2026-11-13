@@ -197,7 +197,7 @@ import {
   type PicrossGame,
   type PicrossSize,
 } from "~/utils/picross";
-import { loadPicrossPuzzle, savePicrossPuzzle } from "~/utils/picross/file";
+import { loadPicrossPuzzle, savePicrossPuzzle } from "@echolotl/picross/file";
 import Tooltip from "~/components/ui/Tooltip.vue";
 
 const sizeInput = reactive<PicrossSize>({

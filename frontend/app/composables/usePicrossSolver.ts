@@ -1,4 +1,7 @@
-import type { PicrossHints, PicrossSolveResult } from "~/utils/picross/solver";
+import type {
+  PicrossHints,
+  PicrossSolveResult,
+} from "@echolotl/picross/solver";
 import type { SolverWorkerRequest } from "~/utils/picross/solver.worker";
 
 const DEBOUNCE_MS = 150;

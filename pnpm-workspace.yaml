@@ -2,6 +2,7 @@ packages:
   - backend
   - frontend
   - packages/types
+  - packages/picross
 
 allowBuilds:
   '@parcel/watcher': true

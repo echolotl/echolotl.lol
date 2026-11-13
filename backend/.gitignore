@@ -31,9 +31,6 @@ yarn-error.log*
 .env.production.local
 .env
 
-# vercel
-.vercel
-
 **/*.trace
 **/*.zip
 **/*.tar.gz
@@ -42,7 +39,6 @@ yarn-error.log*
 package-lock.json
 **/*.bun
 
-# local sqlite data
-/data/*.db
+# local data
+/data/*
 !/data/.gitkeep
-/main.db
