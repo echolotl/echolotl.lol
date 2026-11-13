@@ -16,7 +16,7 @@
         <Icon
           v-if="props.icon"
           :icon="props.icon"
-          class="icon"
+          class="modal-icon"
           :color="props.iconColor"
           size="48px"
           aria-hidden="true"
@@ -216,7 +216,7 @@ watch(
     padding: 24px;
     overflow-y: auto;
   }
-  & .icon {
+  & .modal-icon {
     position: absolute;
     top: 8px;
     left: -32px;
@@ -225,7 +225,7 @@ watch(
   // On narrow screens there's no room beside the box, so the icon
   // sits centered over its top edge
   @media (max-width: 768px) {
-    & .icon {
+    & .modal-icon {
       top: -24px;
       right: 24px;
       left: auto;
