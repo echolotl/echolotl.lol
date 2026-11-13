@@ -1,0 +1,5 @@
+{
+  "title": "Discord OAuth",
+  "id": "discord-auth",
+  "description": "Lets you login with Discord for echolotl.lol. This is what will power any authenticated requests."
+}

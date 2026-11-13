@@ -1,0 +1,5 @@
+{
+  "title": "Comments",
+  "id": "comments",
+  "description": "Lets people leave comments (and replies) on art pieces (or, theoretically, anything in the future), identified by a `slug`. Posting, editing, and deleting comments requires an active `session` cookie from [Discord OAuth](#discord-auth). The slugs provided aren't checked for existence in actuality."
+}

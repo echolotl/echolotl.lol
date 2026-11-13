@@ -312,9 +312,9 @@ summary > div:hover {
   margin-top: 0;
 }
 
-.scriptShiki pre code {
+.shiki code {
   background: unset;
 }
-.scriptShiki pre {
+pre.shiki {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }

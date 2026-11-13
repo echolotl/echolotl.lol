@@ -8,6 +8,7 @@ import cors from "@elysiajs/cors";
 import { ALLOWED_ORIGINS } from "./constants";
 import { commentsRouter } from "./comments";
 import { picrossRouter } from "./picross";
+import { renderDocs } from "./docs";
 
 const fileRouter = new Elysia().get("/assets/*", ({ params }) => {
   const requestedPath = params["*"];
@@ -18,7 +19,12 @@ const fileRouter = new Elysia().get("/assets/*", ({ params }) => {
 });
 
 const app = new Elysia()
-  .use(cors({ origin: ALLOWED_ORIGINS, exposeHeaders: ["X-Picross-Date", "X-Picross-Now"] }))
+  .use(
+    cors({
+      origin: ALLOWED_ORIGINS,
+      exposeHeaders: ["X-Picross-Date", "X-Picross-Now"],
+    }),
+  )
   .onRequest(({ request }) => {
     Logger.hex(
       "#f53eb8",
@@ -55,12 +61,18 @@ const app = new Elysia()
   .use(picrossRouter)
   .get(
     "/",
-    () =>
-      new Response(file("./src/assets/index.html"), {
-        headers: {
-          "Content-Type": "text/html",
+    async () =>
+      new Response(
+        await renderDocs(
+          "./docs",
+          await file("./src/assets/index.html").text(),
+        ),
+        {
+          headers: {
+            "Content-Type": "text/html",
+          },
         },
-      }),
+      ),
   )
   .listen({
     hostname: "0.0.0.0",
