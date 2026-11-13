@@ -1,6 +1,6 @@
 // The daily puzzle changes at midnight in this timezone, regardless of the player's own
 export const DAILY_TIME_ZONE = "America/Chicago";
-export const FIRST_GAME_DATE = "2026-11-12";
+export const FIRST_GAME_DATE = "2026-10-18"; // save data was reset on 2026-11-12. This is technically the first game date though
 
 const dateKeyFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: DAILY_TIME_ZONE,
@@ -42,7 +42,7 @@ export function daysBetweenDateKeys(from: string, to: string) {
 
 /**
  * mulberry32 PRNG, but seeded from a string instead of a number
- * @param seed 
+ * @param seed
  * @returns The PRNG function, which should be used to generate a random number.
  */
 export function mulberry32(seed: string): () => number {
