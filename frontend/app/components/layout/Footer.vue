@@ -46,7 +46,7 @@
             <br />
             Source code is licensed under the
             <a
-              href="https://github.com/echolotl/echolotlweb/blob/master/LICENSE"
+              href="https://github.com/echolotl/echolotl.lol/blob/master/frontend/LICENSE"
               target="_blank"
               class="link"
               rel="noopener noreferrer"
