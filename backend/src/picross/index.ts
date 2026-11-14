@@ -19,10 +19,16 @@ export const picrossRouter = new Elysia({ prefix: "/picross" })
     const today = getDateKey(now);
     const date = params.date === "today" ? today : params.date;
     if (!validDate(date)) {
-      return new Response("Invalid puzzle date", { status: 400 });
+      return new Response("Invalid puzzle date", {
+        status: 400,
+        headers: { "Content-Type": "text/plain" },
+      });
     }
     if (date < FIRST_GAME_DATE || date > today) {
-      return new Response("Puzzle not available", { status: 404 });
+      return new Response("Puzzle not available", {
+        status: 404,
+        headers: { "Content-Type": "text/plain" },
+      });
     }
     try {
       const bytes = await getDailyPuzzle(date);
@@ -41,6 +47,9 @@ export const picrossRouter = new Elysia({ prefix: "/picross" })
       });
     } catch (error) {
       Logger.error(`Failed to load daily puzzle ${date}: ${error}`);
-      return new Response("Puzzle temporarily unavailable", { status: 503 });
+      return new Response("Puzzle temporarily unavailable", {
+        status: 503,
+        headers: { "Content-Type": "text/plain" },
+      });
     }
   });
