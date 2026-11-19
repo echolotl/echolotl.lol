@@ -5,9 +5,9 @@ import type {
 import type { SolverWorkerRequest } from "~/utils/picross/solver.worker";
 
 const DEBOUNCE_MS = 150;
-const SEARCH_BUDGET_MS = 2000;
+const SEARCH_BUDGET_MS = 10000;
 // Line logic isn't covered by the search deadline, so a stuck worker gets killed
-const HARD_TIMEOUT_MS = 6000;
+const HARD_TIMEOUT_MS = 15000;
 
 const TIMED_OUT: PicrossSolveResult = {
   solutionCount: 0,

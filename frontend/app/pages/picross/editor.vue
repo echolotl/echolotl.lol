@@ -104,18 +104,25 @@
       <div class="solve-result-header text-secondary lotl-font">
         SOLVABILITY
       </div>
-      <div v-if="solving" style="color: var(--text-secondary)">Checking...</div>
+      <div v-if="solving" style="color: var(--text-secondary)">
+        <Icon icon="loading" size="24px" /> Checking...
+      </div>
+      <div v-else-if="!solveResult" style="color: var(--text-secondary)">
+        Waiting to check...
+      </div>
+      <div v-else-if="solveResult.timedOut" style="color: var(--orange)">
+        <Icon icon="warning" size="20px" />
+        Too slow to determine solvability
+      </div>
       <div
-        v-else-if="
-          solveResult?.logicSolvable && solveResult?.solutionCount === 1
-        "
+        v-else-if="solveResult.solutionCount === 1"
         style="color: var(--green)"
       >
         <Icon icon="check" size="20px" />
         Solvable
       </div>
       <div
-        v-else-if="solveResult && solveResult.solutionCount > 1"
+        v-else-if="solveResult.solutionCount > 1"
         style="color: var(--orange)"
       >
         <Icon icon="warning" size="20px" />

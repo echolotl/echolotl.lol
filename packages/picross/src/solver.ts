@@ -33,29 +33,41 @@ export function solveLine(
   line: SolverCell[],
   clues: number[],
 ): SolverCell[] | null {
+  return analyzeLine(line, clues)?.cells ?? null;
+}
+
+function analyzeLine(
+  line: SolverCell[],
+  clues: number[],
+): { cells: SolverCell[]; placements: number } | null {
   const n = line.length;
   const blocks = clues.filter((clue) => clue > 0);
   const m = blocks.length;
 
+  const emptyPrefix = new Array<number>(n + 1).fill(0);
+  for (let i = 0; i < n; i++) {
+    emptyPrefix[i + 1] = emptyPrefix[i]! + (line[i] === 0 ? 1 : 0);
+  }
+
   const fits = (pos: number, k: number) => {
     const length = blocks[k]!;
     if (pos + length > n) return false;
-    for (let i = pos; i < pos + length; i++) if (line[i] === 0) return false;
+    if (emptyPrefix[pos + length] !== emptyPrefix[pos]) return false;
     return pos + length === n || line[pos + length] !== 1;
   };
   // Position after placing block k at pos, including the mandatory gap
   const after = (pos: number, k: number) => Math.min(pos + blocks[k]! + 1, n);
 
-  // suffix[pos][k]: cells pos.. can hold blocks k.. validly
+  // suffix[pos][k]: number of valid arrangements of blocks k.. in cells pos..
   const suffix = Array.from({ length: n + 1 }, () =>
-    new Array<boolean>(m + 1).fill(false),
+    new Array<number>(m + 1).fill(0),
   );
-  suffix[n]![m] = true;
+  suffix[n]![m] = 1;
   for (let pos = n - 1; pos >= 0; pos--) {
     for (let k = 0; k <= m; k++) {
-      let ok = line[pos] !== 1 && suffix[pos + 1]![k]!;
-      if (!ok && k < m && fits(pos, k)) ok = suffix[after(pos, k)]![k + 1]!;
-      suffix[pos]![k] = ok;
+      let count = line[pos] !== 1 ? suffix[pos + 1]![k]! : 0;
+      if (k < m && fits(pos, k)) count += suffix[after(pos, k)]![k + 1]!;
+      suffix[pos]![k] = count;
     }
   }
   if (!suffix[0]![0]) return null;
@@ -97,37 +109,58 @@ export function solveLine(
     else if (!canFill && !canEmpty[i]) return null;
     else result.push(-1);
   }
-  return result;
+  return { cells: result, placements: suffix[0]![0]! };
 }
 
-// Repeatedly solves rows and columns until nothing changes. False on contradiction.
-function propagate(grid: SolverGrid, hints: PicrossHints): boolean {
+// Re-solves only lines affected by changed cells. False on contradiction.
+function propagate(
+  grid: SolverGrid,
+  hints: PicrossHints,
+  lineCounts: number[],
+  changedCell?: { x: number; y: number },
+): boolean {
   const height = grid.length;
   const width = grid[0]?.length ?? 0;
-  let changed = true;
+  const queue: number[] = [];
+  const queued = new Array<boolean>(height + width).fill(false);
+  const enqueue = (line: number) => {
+    if (!queued[line]) {
+      queued[line] = true;
+      queue.push(line);
+    }
+  };
 
-  while (changed) {
-    changed = false;
+  if (changedCell) {
+    enqueue(changedCell.y);
+    enqueue(height + changedCell.x);
+  } else {
+    for (let line = 0; line < height + width; line++) enqueue(line);
+  }
 
-    for (let y = 0; y < height; y++) {
-      const solved = solveLine(grid[y]!, hints.rows[y] ?? []);
+  for (let next = 0; next < queue.length; next++) {
+    const line = queue[next]!;
+    queued[line] = false;
+    if (line < height) {
+      const y = line;
+      const solved = analyzeLine(grid[y]!, hints.rows[y] ?? []);
       if (!solved) return false;
+      lineCounts[line] = solved.placements;
       for (let x = 0; x < width; x++) {
-        if (solved[x] !== grid[y]![x]) {
-          grid[y]![x] = solved[x]!;
-          changed = true;
+        if (solved.cells[x] !== grid[y]![x]) {
+          grid[y]![x] = solved.cells[x]!;
+          enqueue(height + x);
         }
       }
-    }
-
-    for (let x = 0; x < width; x++) {
+    } else {
+      const x = line - height;
       const column = grid.map((row) => row[x]!);
-      const solved = solveLine(column, hints.columns[x] ?? []);
+      const solved = analyzeLine(column, hints.columns[x] ?? []);
       if (!solved) return false;
+      lineCounts[line] = solved.placements;
       for (let y = 0; y < height; y++) {
-        if (solved[y] !== grid[y]![x]) {
-          grid[y]![x] = solved[y]!;
-          changed = true;
+        if (solved.cells[y] !== grid[y]![x]) {
+          grid[y]![x] = solved.cells[y]!;
+          enqueue(y);
         }
       }
     }
@@ -141,6 +174,86 @@ function findUnknown(grid: SolverGrid) {
     if (x !== -1) return { x, y };
   }
   return null;
+}
+
+function findGuess(grid: SolverGrid, lineCounts: number[]) {
+  const width = grid[0]?.length ?? 0;
+  let best: { x: number; y: number } | null = null;
+  let bestScore = Infinity;
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < width; x++) {
+      if (grid[y]![x] !== -1) continue;
+      const score = lineCounts[y]! * lineCounts[grid.length + x]!;
+      if (best === null || score < bestScore) {
+        best = { x, y };
+        bestScore = score;
+      }
+    }
+  }
+  return best;
+}
+
+function hasAlternativeRectangle(
+  grid: SolverGrid,
+  hints: PicrossHints,
+  initial: SolverGrid | undefined,
+  deadline: number,
+): boolean {
+  const height = grid.length;
+  const width = grid[0]?.length ?? 0;
+  const matches = (line: SolverCell[], a: number, b: number, clues: number[]) => {
+    let clueIndex = 0;
+    let run = 0;
+    for (let i = 0; i < line.length; i++) {
+      const filled = i === a || i === b ? line[i] === 0 : line[i] === 1;
+      if (filled) {
+        run++;
+      } else if (run > 0) {
+        if (clues[clueIndex++] !== run) return false;
+        run = 0;
+      }
+    }
+    if (run > 0 && clues[clueIndex++] !== run) return false;
+    return clueIndex === clues.length;
+  };
+  const columns = Array.from({ length: width }, (_, x) =>
+    grid.map((row) => row[x]!),
+  );
+  const rowClues = grid.map((_, y) => (hints.rows[y] ?? []).filter((n) => n > 0));
+  const columnClues = columns.map((_, x) =>
+    (hints.columns[x] ?? []).filter((n) => n > 0),
+  );
+
+  for (let y1 = 0; y1 < height; y1++) {
+    for (let y2 = y1 + 1; y2 < height; y2++) {
+      if (Date.now() >= deadline) return false;
+      for (let x1 = 0; x1 < width; x1++) {
+        for (let x2 = x1 + 1; x2 < width; x2++) {
+          if (
+            grid[y1]![x1] === grid[y1]![x2] ||
+            grid[y1]![x1] === grid[y2]![x1] ||
+            grid[y1]![x1] !== grid[y2]![x2] ||
+            (initial &&
+              (initial[y1]?.[x1] !== -1 ||
+                initial[y1]?.[x2] !== -1 ||
+                initial[y2]?.[x1] !== -1 ||
+                initial[y2]?.[x2] !== -1))
+          ) {
+            continue;
+          }
+          if (
+            matches(grid[y1]!, x1, x2, rowClues[y1]!) &&
+            matches(grid[y2]!, x1, x2, rowClues[y2]!) &&
+            matches(columns[x1]!, y1, y2, columnClues[x1]!) &&
+            matches(columns[x2]!, y1, y2, columnClues[x2]!)
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -159,7 +272,8 @@ export function solvePicross(
       new Array<SolverCell>(size.width).fill(-1),
     );
 
-  if (!propagate(start, hints)) {
+  const lineCounts = new Array<number>(size.height + size.width).fill(0);
+  if (!propagate(start, hints, lineCounts)) {
     return {
       solutionCount: 0,
       logicSolvable: false,
@@ -181,25 +295,38 @@ export function solvePicross(
     return { solutionCount: 0, logicSolvable, solution: null, unknownCount };
   }
 
-  const search = (grid: SolverGrid) => {
+  const search = (grid: SolverGrid, counts: number[]) => {
     if (options.deadline !== undefined && Date.now() > options.deadline) {
       timedOut = true;
     }
     if (timedOut) return;
-    const cell = findUnknown(grid);
+    const cell = findGuess(grid, counts);
     if (!cell) {
       count++;
       solution ??= grid.map((row) => row.map((value) => value === 1));
+      if (
+        count === 1 &&
+        !logicSolvable &&
+        hasAlternativeRectangle(
+          grid,
+          hints,
+          initial,
+          Math.min(options.deadline ?? Infinity, Date.now() + 20),
+        )
+      ) {
+        count = 2;
+      }
       return;
     }
     for (const value of [1, 0] as const) {
       if (count >= 2 || timedOut) return;
       const copy = grid.map((row) => [...row]);
+      const nextCounts = [...counts];
       copy[cell.y]![cell.x] = value;
-      if (propagate(copy, hints)) search(copy);
+      if (propagate(copy, hints, nextCounts, cell)) search(copy, nextCounts);
     }
   };
-  search(start);
+  search(start, lineCounts);
 
   return {
     // An interrupted search can't vouch for uniqueness
