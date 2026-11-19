@@ -81,39 +81,39 @@ const DEFAULT_INPUT_MODE = Object.keys(INPUT_MODES)[0] as InputMode;
 const INPUT_MODE_DEFINITIONS: Record<InputMode, InputModeDefinition> =
   INPUT_MODES;
 
-/** The colors used for the Picross board. */
-interface BoardColors {
-  line: string;
-  tile: string;
-  stripe: string;
-  completed: string;
+/** Colors that can be used on canvasses */
+interface CanvasColors {
+  distant: string;
   text: string;
-  solvedHint: string;
-  incorrect: string;
+  inverted_solid: string;
+  primary: string;
+  gray: string;
+  error: string;
 }
 
 /**
- * The current board colors, initialized lazily.
+ * The current canvas colors, initialized lazily.
  * If you have a problem with my constants file having a mutable object explode
  */
-let BOARD_COLORS: BoardColors | undefined;
+let CANVAS_COLORS: CanvasColors | undefined;
 
 /** Initialize the board colors based on the current CSS variables. */
-export const initializeBoardColors = (force: boolean = false): BoardColors => {
-  if (BOARD_COLORS && !force) return BOARD_COLORS;
+export const initializeCanvasColors = (
+  force: boolean = false,
+): CanvasColors => {
+  if (CANVAS_COLORS && !force) return CANVAS_COLORS;
   const style = window.getComputedStyle(document.documentElement);
   const invertedSolid = style.getPropertyValue("--inverted-solid").trim();
   const solid = style.getPropertyValue("--solid").trim();
-  BOARD_COLORS = {
-    line: style.getPropertyValue("--distant"),
-    tile: style.getPropertyValue("--text"),
-    stripe: invertedSolid,
-    completed: style.getPropertyValue("--primary"),
+  CANVAS_COLORS = {
+    distant: style.getPropertyValue("--distant"),
     text: style.getPropertyValue("--text"),
-    solvedHint: `color-mix(in srgb, ${invertedSolid} 40%, ${solid})`,
-    incorrect: style.getPropertyValue("--red"),
+    inverted_solid: invertedSolid,
+    primary: style.getPropertyValue("--primary"),
+    gray: `color-mix(in srgb, ${invertedSolid} 40%, ${solid})`,
+    error: style.getPropertyValue("--red"),
   };
-  return BOARD_COLORS;
+  return CANVAS_COLORS;
 };
 
 export {
@@ -128,7 +128,8 @@ export {
   UNDO_HISTORY_LIMIT,
   REVEAL_PULSE_MS,
   DEFAULT_INPUT_MODE,
-  BOARD_COLORS,
+  CANVAS_COLORS,
+  CANVAS_COLORS as BOARD_COLORS,
   MIN_BOARD_SIZE,
   MAX_BOARD_SIZE,
   DEFAULT_BOARD_SIZE,
