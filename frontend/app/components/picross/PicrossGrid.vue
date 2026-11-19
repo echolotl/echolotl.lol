@@ -80,7 +80,7 @@ import {
   DEFAULT_INPUT_MODE,
   HINT_FONT_SIZE,
   HINT_LINE_HEIGHT,
-  initializeBoardColors,
+  initializeCanvasColors,
   INPUT_MODES,
   PAINT_DOT_SIZE,
   REVEAL_PAUSE_MS,
@@ -343,8 +343,8 @@ function drawHint(
 ) {
   if (outlined) {
     hintCtx.strokeStyle = incorrect
-      ? BOARD_COLORS!.incorrect
-      : BOARD_COLORS!.stripe;
+      ? BOARD_COLORS!.error
+      : BOARD_COLORS!.inverted_solid;
     hintCtx.lineWidth = 3;
     hintCtx.lineJoin = "round";
     hintCtx.globalAlpha = 0.5;
@@ -352,9 +352,9 @@ function drawHint(
     hintCtx.globalAlpha = 1;
   }
   hintCtx.fillStyle = incorrect
-    ? BOARD_COLORS!.incorrect
+    ? BOARD_COLORS!.error
     : solved
-      ? BOARD_COLORS!.solvedHint
+      ? BOARD_COLORS!.gray
       : BOARD_COLORS!.text;
   hintCtx.fillText(text, x, y);
 }
@@ -427,7 +427,7 @@ function drawHints() {
       });
       // if solved, draw a line through the column hints
       if (isColumnSolved && !unmarkedLines.value.columns[column]) {
-        columnCtx.strokeStyle = BOARD_COLORS!.solvedHint ?? "black";
+        columnCtx.strokeStyle = BOARD_COLORS!.gray ?? "black";
         columnCtx.lineWidth = 2;
         columnCtx.beginPath();
         const bottom = columnHeight - COLUMN_HINTS_PADDING;
@@ -485,7 +485,7 @@ function drawHints() {
 
     // if solved, draw a line through the row hints
     if (isRowSolved && !unmarkedLines.value.rows[row]) {
-      rowCtx.strokeStyle = BOARD_COLORS!.solvedHint ?? "black";
+      rowCtx.strokeStyle = BOARD_COLORS!.gray ?? "black";
       rowCtx.lineWidth = 2;
       rowCtx.beginPath();
       const lineRight = rowWidth - ROW_HINTS_PADDING;
@@ -574,10 +574,10 @@ function drawBoard() {
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  ctx.strokeStyle = BOARD_COLORS!.line;
+  ctx.strokeStyle = BOARD_COLORS!.distant;
 
   // Draw checkered background for the grid
-  ctx.fillStyle = BOARD_COLORS!.stripe;
+  ctx.fillStyle = BOARD_COLORS!.inverted_solid;
   ctx.globalAlpha = 0.05;
   for (let y = 0; y < size.height; y++) {
     for (let x = 0; x < size.width; x++) {
@@ -619,7 +619,7 @@ function drawBoard() {
     markCtx!.globalCompositeOperation = "source-over";
     markCtx!.drawImage(markImage!, 0, 0, TILE_SIZE, TILE_SIZE);
     markCtx!.globalCompositeOperation = "source-in";
-    markCtx!.fillStyle = BOARD_COLORS!.tile;
+    markCtx!.fillStyle = BOARD_COLORS!.text;
     markCtx!.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
     markCtx!.globalCompositeOperation = "source-over";
   }
@@ -638,9 +638,9 @@ function drawBoard() {
       // Always draw filled and marked tiles.
       if (state === "filled") {
         if (props.editable) {
-          ctx.fillStyle = tileColor ?? BOARD_COLORS!.tile;
+          ctx.fillStyle = tileColor ?? BOARD_COLORS!.text;
         } else {
-          ctx.fillStyle = BOARD_COLORS!.tile;
+          ctx.fillStyle = BOARD_COLORS!.text;
         }
         const TILE_INSET = 1;
         ctx.fillRect(
@@ -1011,7 +1011,7 @@ onMounted(() => {
   ).then((buffers) => {
     placeSounds = buffers.filter((b): b is AudioBuffer => b !== null);
   });
-  initializeBoardColors();
+  initializeCanvasColors();
   initializeCanvas();
   drawBoard();
   drawHints();
@@ -1054,7 +1054,7 @@ watch(
 watch(
   [theme, () => props.game],
   () => {
-    initializeBoardColors(true);
+    initializeCanvasColors(true);
     scheduleDrawBoard();
     drawHints();
   },

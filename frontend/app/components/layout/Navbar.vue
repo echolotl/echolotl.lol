@@ -83,6 +83,14 @@
           Account
         </NuxtLink>
         <NuxtLink
+          to="/guestbook"
+          class="nav-link lotl-font"
+          exact-active-class="active"
+        >
+          <Icon icon="star-outline" size="1.25lh" />
+          Guestbook
+        </NuxtLink>
+        <NuxtLink
           to="#"
           class="nav-link lotl-font disabled"
           exact-active-class="active">
