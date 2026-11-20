@@ -26,6 +26,7 @@
     "frontend": {
       "name": "@echolotl/frontend",
       "dependencies": {
+        "@echolotl/flashish": "workspace:*",
         "@echolotl/picross": "workspace:*",
         "@echolotl/types": "workspace:*",
         "@nuxt/content": "^3.16.2",
@@ -61,6 +62,12 @@
       "devDependencies": {
         "oxfmt": "^0.72.0",
         "oxlint": "^1.89.0",
+      },
+    },
+    "packages/flashish": {
+      "name": "@echolotl/flashish",
+      "dependencies": {
+        "paper": "^0.17.0",
       },
     },
     "packages/picross": {
@@ -151,6 +158,8 @@
     "@echolotl/backend": ["@echolotl/backend@workspace:backend"],
 
     "@echolotl/frontend": ["@echolotl/frontend@workspace:frontend"],
+
+    "@echolotl/flashish": ["@echolotl/flashish@workspace:packages/flashish"],
 
     "@echolotl/picross": ["@echolotl/picross@workspace:packages/picross"],
 
@@ -1535,6 +1544,8 @@
     "package-manager-detector": ["package-manager-detector@1.9.0", "", {}, "sha512-zAMfbta9nPA8AKkA4WdmNAT8R8s6Dk0/xwPsqNnRidMFcLo1YkLuPDTgs2f64XdzS8vbLNnoJ+uUIkgbz7oRHA=="],
 
     "pako": ["pako@1.0.11", "", {}, "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="],
+
+    "paper": ["paper@0.17.0", "", {}, "sha512-AWHQVUNScPN/swbCg0wwb2bTerMieraol76Fpn1s+7Zw7R6mMyI0QltMkj/XOS3Jv+9785q0p4eLsYggn63ZQw=="],
 
     "parse-entities": ["parse-entities@4.0.2", "", { "dependencies": { "@types/unist": "^2.0.0", "character-entities-legacy": "^3.0.0", "character-reference-invalid": "^2.0.0", "decode-named-character-reference": "^1.0.0", "is-alphanumerical": "^2.0.0", "is-decimal": "^2.0.0", "is-hexadecimal": "^2.0.0" } }, "sha512-GG2AQYWoLgL877gQIKeRPGO1xF9+eG1ujIb5soS5gPvLQ1y2o8FL90w2QWNdf9I361Mpp7726c+lj3U0qK1uGw=="],
 
