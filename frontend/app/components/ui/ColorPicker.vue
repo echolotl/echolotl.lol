@@ -1,5 +1,5 @@
 <template>
-  <div class="color-picker">
+  <div class="color-picker" :class="{ 'color-picker-horizontal': horizontal }">
     <canvas
       ref="colorWheel"
       :width="WHEEL_SIZE"
@@ -21,6 +21,7 @@
       @pointerup="handlePointerUp"
       @pointercancel="handlePointerUp"
       @keydown="handleWheelKeydown"
+      @keyup="handleColorKeyup"
       @blur="usingPointer = false"
       :class="{ dragging, 'pointer-focus': usingPointer }"
     >
@@ -51,7 +52,7 @@
       aria-valuemin="0"
       aria-valuemax="100"
       :aria-valuenow="Math.round(color.v * 100)"
-      aria-orientation="horizontal"
+      :aria-orientation="horizontal ? 'vertical' : 'horizontal'"
       :class="{ 'pointer-focus': usingPointer }"
       @blur="usingPointer = false"
       @pointerdown="handleSliderPointerDown"
@@ -59,11 +60,15 @@
       @pointerup="handleSliderPointerUp"
       @pointercancel="handleSliderPointerUp"
       @keydown="handleBrightnessKeydown"
+      @keyup="handleColorKeyup"
     >
       <div class="track" :style="{ background: trackGradient }"></div>
       <div
         class="thumb"
-        :style="{ left: color.v * 100 + '%', background: hexColor }"
+        :style="{
+          [horizontal ? 'top' : 'left']: (horizontal ? 1 - color.v : color.v) * 100 + '%',
+          background: hexColor,
+        }"
       ></div>
     </div>
     <input
@@ -74,6 +79,7 @@
       aria-label="Color hex value"
       :value="draft"
       @input="handleHexInput"
+      @focus="emit('interaction-start', 'text')"
       @blur="handleHexBlur"
     />
   </div>
@@ -88,6 +94,12 @@ import {
   type HSVColor,
 } from "~/utils/color";
 import { onMounted, ref, watch } from "vue";
+
+const props = defineProps<{ horizontal?: boolean }>();
+const emit = defineEmits<{
+  "interaction-start": [kind: "wheel" | "brightness" | "text" | "keyboard"];
+  "interaction-end": [kind: "wheel" | "brightness" | "text" | "keyboard"];
+}>();
 
 const colorWheel = ref<HTMLCanvasElement | null>(null);
 
@@ -115,7 +127,7 @@ const chooserCenter = computed(() => ({
 // Track fades from the current hue/saturation at full brightness to black
 const trackGradient = computed(() => {
   const bright = rgbToHex(hsvToRgb({ ...color.value, v: 1 }));
-  return `linear-gradient(to right, #000 0%, ${bright} 100%)`;
+  return `linear-gradient(to ${props.horizontal ? "top" : "right"}, #000 0%, ${bright} 100%)`;
 });
 
 // Focus outlines are for keyboard use only; hidden while interacting by pointer
@@ -163,12 +175,13 @@ function handleHexInput(event: Event) {
 function handleHexBlur() {
   editing = false;
   draft.value = hexColor.value;
+  emit("interaction-end", "text");
 }
 
 watch(hexColor, (hex) => {
   if (!editing) draft.value = hex;
   if (model.value !== hex) model.value = hex;
-});
+}, { flush: "sync" });
 
 watch(
   model,
@@ -239,6 +252,7 @@ function updateFromPointer(event: PointerEvent) {
 }
 
 function handlePointerDown(event: PointerEvent) {
+  emit("interaction-start", "wheel");
   usingPointer.value = true;
   heldPointerId = event.pointerId;
   dragging.value = true;
@@ -255,6 +269,7 @@ function handlePointerUp(event: PointerEvent) {
   if (heldPointerId !== event.pointerId) return;
   heldPointerId = null;
   dragging.value = false;
+  emit("interaction-end", "wheel");
 }
 
 function setBrightness(value: number) {
@@ -262,6 +277,8 @@ function setBrightness(value: number) {
 }
 
 function handleWheelKeydown(event: KeyboardEvent) {
+  if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+  emit("interaction-start", "keyboard");
   usingPointer.value = false;
   const step = event.shiftKey ? 10 : 2;
   switch (event.key) {
@@ -291,6 +308,8 @@ function handleWheelKeydown(event: KeyboardEvent) {
 }
 
 function handleBrightnessKeydown(event: KeyboardEvent) {
+  if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  emit("interaction-start", "keyboard");
   usingPointer.value = false;
   const step = event.shiftKey ? 0.1 : 0.01;
   switch (event.key) {
@@ -316,11 +335,15 @@ function handleBrightnessKeydown(event: KeyboardEvent) {
 
 function updateBrightnessFromPointer(event: PointerEvent) {
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  // Right end of the slider is full brightness
-  setBrightness((event.clientX - rect.left) / rect.width);
+  setBrightness(
+    props.horizontal
+      ? (rect.bottom - event.clientY) / rect.height
+      : (event.clientX - rect.left) / rect.width,
+  );
 }
 
 function handleSliderPointerDown(event: PointerEvent) {
+  emit("interaction-start", "brightness");
   usingPointer.value = true;
   heldSliderPointerId = event.pointerId;
   (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
@@ -335,6 +358,13 @@ function handleSliderPointerMove(event: PointerEvent) {
 function handleSliderPointerUp(event: PointerEvent) {
   if (heldSliderPointerId !== event.pointerId) return;
   heldSliderPointerId = null;
+  emit("interaction-end", "brightness");
+}
+
+function handleColorKeyup(event: KeyboardEvent) {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+    emit("interaction-end", "keyboard");
+  }
 }
 
 onMounted(() => {
@@ -363,6 +393,17 @@ onBeforeUnmount(() => {
 .color-picker canvas {
   display: block;
   clip-path: circle(50%);
+}
+.color-picker-horizontal {
+  display: grid;
+  grid-template-columns: 175px 20px;
+  grid-template-rows: 175px auto;
+  gap: 8px;
+  max-width: none;
+  width: max-content;
+}
+.color-picker-horizontal .color-input {
+  grid-column: 1 / -1;
 }
 .color-chooser-overlay {
   position: absolute;
@@ -408,6 +449,23 @@ onBeforeUnmount(() => {
   pointer-events: none;
   transition: none;
   transition: border-color 0.2s ease;
+}
+.color-picker-horizontal .brightness-slider {
+  width: 20px;
+  height: 175px;
+  margin-top: 0;
+}
+.color-picker-horizontal .brightness-slider .track {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 100%;
+}
+.color-picker-horizontal .brightness-slider .thumb {
+  left: 50%;
+  width: 24px;
+  height: 8px;
 }
 
 .color-picker [role="slider"]:focus:not(:focus-visible),

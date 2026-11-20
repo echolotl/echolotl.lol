@@ -57,7 +57,7 @@ const INPUT_MODES = {
     },
   },
   erase: {
-    icon: "trash",
+    icon: "erase",
     keys: ["KeyE", "Key3"],
     resolve: (current, button, editor) =>
       editor ? { state: "empty", color: null } : { state: "empty" },
@@ -85,8 +85,11 @@ const INPUT_MODE_DEFINITIONS: Record<InputMode, InputModeDefinition> =
 interface CanvasColors {
   distant: string;
   text: string;
+  solid: string;
   inverted_solid: string;
   primary: string;
+  background: string;
+  surface: string;
   gray: string;
   error: string;
 }
@@ -108,8 +111,11 @@ export const initializeCanvasColors = (
   CANVAS_COLORS = {
     distant: style.getPropertyValue("--distant"),
     text: style.getPropertyValue("--text"),
+    solid,
     inverted_solid: invertedSolid,
     primary: style.getPropertyValue("--primary"),
+    background: style.getPropertyValue("--background"),
+    surface: style.getPropertyValue("--surface"),
     gray: `color-mix(in srgb, ${invertedSolid} 40%, ${solid})`,
     error: style.getPropertyValue("--red"),
   };

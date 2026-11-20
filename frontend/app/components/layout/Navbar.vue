@@ -97,7 +97,7 @@
           class="nav-link lotl-font"
           exact-active-class="active"
         >
-          <Icon icon="star-outline" size="1.25lh" />
+          <Icon icon="canvas" size="1.25lh" />
           Guestbook
         </NuxtLink>
         <NuxtLink

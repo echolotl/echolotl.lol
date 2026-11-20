@@ -6,7 +6,8 @@
     "backend",
     "frontend",
     "packages/types",
-    "packages/picross"
+    "packages/picross",
+    "packages/flashish"
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter ./frontend --filter ./backend dev",

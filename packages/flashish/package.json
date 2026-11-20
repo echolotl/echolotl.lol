@@ -1,0 +1,11 @@
+{
+  "name": "@echolotl/flashish",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "paper": "^0.17.0"
+  }
+}

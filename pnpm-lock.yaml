@@ -227,6 +227,9 @@ importers:
 
   frontend:
     dependencies:
+      '@echolotl/flashish':
+        specifier: workspace:*
+        version: link:../packages/flashish
       '@echolotl/picross':
         specifier: workspace:*
         version: link:../packages/picross
@@ -327,6 +330,12 @@ importers:
       oxlint:
         specifier: ^1.89.0
         version: 1.93.0
+
+  packages/flashish:
+    dependencies:
+      paper:
+        specifier: ^0.17.0
+        version: 0.17.0
 
   packages/picross: {}
 
@@ -4220,6 +4229,10 @@ packages:
 
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
+
+  paper@0.17.0:
+    resolution: {integrity: sha512-AWHQVUNScPN/swbCg0wwb2bTerMieraol76Fpn1s+7Zw7R6mMyI0QltMkj/XOS3Jv+9785q0p4eLsYggn63ZQw==}
+    engines: {node: '>=8.0.0'}
 
   parse-entities@4.0.2:
     resolution: {integrity: sha512-GG2AQYWoLgL877gQIKeRPGO1xF9+eG1ujIb5soS5gPvLQ1y2o8FL90w2QWNdf9I361Mpp7726c+lj3U0qK1uGw==}
@@ -9952,6 +9965,8 @@ snapshots:
   package-manager-detector@1.9.0: {}
 
   pako@1.0.11: {}
+
+  paper@0.17.0: {}
 
   parse-entities@4.0.2:
     dependencies:

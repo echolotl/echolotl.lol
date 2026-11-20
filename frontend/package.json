@@ -15,6 +15,7 @@
     "start": "serve .output/public -l $PORT"
   },
   "dependencies": {
+    "@echolotl/flashish": "workspace:*",
     "@echolotl/picross": "workspace:*",
     "@echolotl/types": "workspace:*",
     "@nuxt/content": "^3.16.2",
