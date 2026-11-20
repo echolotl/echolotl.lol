@@ -129,6 +129,23 @@
                 :disabled="!!pointer.active"
               />
             </div>
+            <label for="brush-stabilization">Stabilization</label>
+            <div class="property">
+              <output
+                for="brush-stabilization"
+                class="lotl-font stabilization-value"
+                >{{ stabilization }}%</output
+              >
+              <input
+                id="brush-stabilization"
+                v-model.number="stabilization"
+                type="range"
+                :min="MIN_STABILIZATION"
+                :max="MAX_STABILIZATION"
+                step="5"
+                :disabled="!!pointer.active"
+              />
+            </div>
           </div>
         </details>
       </div>
@@ -306,6 +323,9 @@
       output {
         width: 3ch;
       }
+      output.stabilization-value {
+        width: 4ch;
+      }
     }
   }
 
@@ -388,6 +408,9 @@ let resizeObserver: ResizeObserver | undefined;
 
 const brushSize = ref(5);
 const brushColor = ref("#ffffff");
+const MIN_STABILIZATION = 0;
+const MAX_STABILIZATION = 200;
+const stabilization = ref(0);
 
 let drawing: FlashishDrawing;
 let pathDraft: (BrushSegment & { path: Path2D })[] = [];
@@ -601,14 +624,29 @@ function handlePointerMove(event: PointerEvent) {
     endPointer(event);
     return;
   }
-  updatePointer(event);
+  const coalescedEvents = event.getCoalescedEvents?.();
+  for (const sample of coalescedEvents?.length ? coalescedEvents : [event]) {
+    updatePointer(sample);
+  }
 }
 
 function updatePointer(event: PointerEvent) {
   if (pointer.active?.mode === "draw") {
-    const position = getWorldPosition(event);
+    const rawPosition = getWorldPosition(event);
     const previousPosition = pointer.active.lastWorldPosition;
-    if (position && previousPosition) {
+    if (rawPosition && previousPosition) {
+      const amount =
+        (stabilization.value - MIN_STABILIZATION) /
+        (MAX_STABILIZATION - MIN_STABILIZATION);
+      const smoothing = event.type === "pointerup" ? 0 : amount * 0.9;
+      const position = {
+        x:
+          previousPosition.x +
+          (rawPosition.x - previousPosition.x) * (1 - smoothing),
+        y:
+          previousPosition.y +
+          (rawPosition.y - previousPosition.y) * (1 - smoothing),
+      };
       const path = new Path2D();
       path.moveTo(previousPosition.x, previousPosition.y);
       path.lineTo(position.x, position.y);
@@ -792,7 +830,7 @@ function endPointer(event: PointerEvent) {
       clearSelection();
       setSelection(
         active.lastWorldPosition.x === active.marqueeEnd.x ||
-        active.lastWorldPosition.y === active.marqueeEnd.y
+          active.lastWorldPosition.y === active.marqueeEnd.y
           ? []
           : drawing.pathsInRectangle(
               active.lastWorldPosition,
@@ -936,12 +974,9 @@ function handleKeys(event: KeyboardEvent) {
     event.preventDefault();
     deleteSelection();
   }
-  if (event.code === "KeyB" || event.code === "Digit1")
-    setInputMode("draw");
-  if (event.code === "KeyV" || event.code === "Digit2")
-    setInputMode("select");
-  if (event.code === "KeyE" || event.code === "Digit3")
-    setInputMode("erase");
+  if (event.code === "KeyB" || event.code === "Digit1") setInputMode("draw");
+  if (event.code === "KeyV" || event.code === "Digit2") setInputMode("select");
+  if (event.code === "KeyE" || event.code === "Digit3") setInputMode("erase");
 }
 
 function handlePointerUp(event: PointerEvent) {
