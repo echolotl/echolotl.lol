@@ -48,7 +48,7 @@
     <div class="side-panels">
       <div class="vertical-actions-row">
         <div
-          v-if="inputMode !== 'select'"
+          v-if="inputMode === 'draw' || inputMode === 'erase'"
           class="vertical-actions input-modes"
           role="group"
           aria-label="Drawing layer"
@@ -65,6 +65,7 @@
           </button>
         </div>
         <div
+          v-if="inputMode !== 'pan'"
           class="vertical-actions input-modes"
           role="group"
           aria-label="Drawing layer"
@@ -114,7 +115,7 @@
           <div v-else-if="inputMode === 'select'">
             <p>Nothing selected.</p>
           </div>
-          <div v-if="inputMode !== 'select'">
+          <div v-if="inputMode === 'draw' || inputMode === 'erase'">
             <label for="brush-size">Brush size</label>
             <div class="property">
               <output for="brush-size" class="lotl-font">{{
@@ -210,6 +211,19 @@
           <div class="zoom-level lotl-font">
             {{ (camera.zoom * 100).toFixed(0) }}%
           </div>
+        </div>
+        <div class="input-modes" role="group" aria-label="Color picking">
+          <button
+            type="button"
+            class="round"
+            :class="{ active: eyedropperActive }"
+            aria-label="Pick color from canvas"
+            :aria-pressed="eyedropperActive"
+            :disabled="!!pointer.active"
+            @click="eyedropperActive = !eyedropperActive"
+          >
+            <Icon icon="eyedropper" size="20px" />
+          </button>
         </div>
       </div>
     </div>
@@ -422,8 +436,10 @@ const inputModes = [
   { value: "draw", label: "Draw", icon: "edit" },
   { value: "erase", label: "Erase", icon: "erase" },
   { value: "select", label: "Select", icon: "select" },
+  { value: "pan", label: "Pan", icon: "grab" },
 ] as const;
 const inputMode = ref<InputMode>("draw");
+const eyedropperActive = ref(false);
 
 const selectedPathIds = ref<number[]>([]);
 let selectionOrigins = new Map<number, Point>();
@@ -484,10 +500,13 @@ const canvasStyle = computed(() => {
       };
     default:
       return {
-        cursor:
-          (pointer.active?.inputMode ?? inputMode.value) === "select"
+        cursor: eyedropperActive.value
+          ? "crosshair"
+          : (pointer.active?.inputMode ?? inputMode.value) === "select"
             ? "default"
-            : "none",
+            : (pointer.active?.inputMode ?? inputMode.value) === "pan"
+              ? "grab"
+              : "none",
       };
   }
 });
@@ -502,6 +521,7 @@ const renderer = createCanvasRenderer(() => ({
   selectedPaths: selectedPaths.value,
   selectionBounds: selectionBounds.value,
   inputMode: inputMode.value,
+  eyedropperActive: eyedropperActive.value,
   activePointer: pointer.active,
   brushPosition: pointer.position && getWorldPosition(pointer.position),
   brushSize: brushSize.value,
@@ -546,6 +566,7 @@ watch([theme], () => {
 });
 
 watch(brushSize, scheduleDrawBoard);
+watch(eyedropperActive, scheduleDrawBoard);
 
 function handlePointerDown(event: PointerEvent) {
   if (pointer.active !== null) return;
@@ -560,36 +581,57 @@ function handlePointerDown(event: PointerEvent) {
   const canvas = guestbookCanvas.value;
   if (!canvas) return;
 
-  const isDrawing = event.button === 0 || isEraser;
   const activeInputMode = isEraser ? "erase" : inputMode.value;
-  const position = isDrawing ? getWorldPosition(event) : null;
+  const pointerInputMode =
+    event.button === 0 || isEraser ? activeInputMode : "pan";
+  const isDrawing = pointerInputMode !== "pan";
+  const position =
+    isDrawing || (eyedropperActive.value && event.button === 0)
+      ? getWorldPosition(event)
+      : null;
   if (isDrawing && !position) return;
-  if (isDrawing && activeInputMode !== "select" && selectedPathIds.value.length)
-    clearSelection();
-
-  const hit =
-    position && activeInputMode === "select" ? findPathAt(position) : null;
-  if (position && activeInputMode === "select" && hit !== null) {
-    if (!selectedPathIds.value.includes(hit)) {
-      clearSelection();
-      const nextHit = findPathAt(position);
-      setSelection(nextHit === null ? [] : [nextHit]);
+  if (eyedropperActive.value && event.button === 0 && position) {
+    const path = findPathAt(position);
+    if (path) {
+      brushColor.value =
+        path.color === "primary"
+          ? initializeCanvasColors().primary
+          : path.color;
+      eyedropperActive.value = false;
     }
-    if (selectedPaths.value.length === 1 && selectedPath.value)
-      activeLayer.value = selectedPath.value.layer;
+    return;
+  }
+  let mode: Pointer["mode"];
+  switch (pointerInputMode) {
+    case "draw":
+    case "erase":
+      if (selectedPathIds.value.length) clearSelection();
+      mode = "draw";
+      break;
+    case "select": {
+      const hit = position ? (findPathAt(position)?.id ?? null) : null;
+      if (position && hit !== null) {
+        if (!selectedPathIds.value.includes(hit)) {
+          clearSelection();
+          const nextHit = findPathAt(position);
+          setSelection(nextHit === null ? [] : [nextHit.id]);
+        }
+        if (selectedPaths.value.length === 1 && selectedPath.value)
+          activeLayer.value = selectedPath.value.layer;
+      }
+      mode = hit === null ? "marquee" : "move";
+      break;
+    }
+    case "pan":
+      mode = "pan";
+      break;
   }
   pointer.active = {
     id: event.pointerId,
     lastX: event.clientX,
     lastY: event.clientY,
     lastWorldPosition: position,
-    mode: !isDrawing
-      ? "pan"
-      : activeInputMode === "select"
-        ? hit === null
-          ? "marquee"
-          : "move"
-        : "draw",
+    mode,
     inputMode: activeInputMode,
     color: brushColor.value,
     moveOffset: { x: 0, y: 0 },
@@ -680,17 +722,24 @@ function updatePointer(event: PointerEvent) {
   scheduleDrawBoard();
 }
 
-function findPathAt(position: Point) {
+function findPathAt(position: Point): RenderedPath | null {
   const context = ctx.value;
   if (!context) return null;
   context.save();
   context.setTransform(1, 0, 0, 1, 0, 0);
-  const hit = committedPaths.value
-    .slice()
-    .reverse()
-    .find(({ path }) => context.isPointInPath(path, position.x, position.y));
+  let hit: RenderedPath | undefined;
+  for (let layer = LAYER_COUNT; layer >= 1 && !hit; layer--) {
+    hit = committedPaths.value
+      .slice()
+      .reverse()
+      .find(
+        (path) =>
+          path.layer === layer &&
+          context.isPointInPath(path.path, position.x, position.y),
+      );
+  }
   context.restore();
-  return hit?.id ?? null;
+  return hit ?? null;
 }
 
 function getSegmentSize(event: PointerEvent) {
@@ -711,7 +760,7 @@ function updateBrushCursor(event: PointerEvent) {
     (pointer.active !== null && pointer.active.id !== event.pointerId)
   )
     return;
-  if (event.pointerType === "touch") {
+  if (event.pointerType === "touch" || inputMode.value === "pan") {
     pointer.position = null;
     scheduleDrawBoard();
     return;
@@ -754,15 +803,20 @@ function getWorldPosition(event: { clientX: number; clientY: number }) {
 
 function handleWheel(event: WheelEvent) {
   const canvas = guestbookCanvas.value;
-  if (
-    !canvas ||
-    !((event.button === 0 && event.ctrlKey) || (event.buttons & 4) !== 0)
-  )
-    return;
+  if (!canvas) return;
+
+  const zoomWithWheel =
+    (event.button === 0 && event.ctrlKey) || (event.buttons & 4) !== 0;
+  if (!zoomWithWheel && inputMode.value !== "pan") return;
 
   event.preventDefault();
-
-  zoom(event.deltaY, { x: event.clientX, y: event.clientY });
+  if (zoomWithWheel) {
+    zoom(event.deltaY, { x: event.clientX, y: event.clientY });
+  } else {
+    camera.x += event.deltaX / camera.zoom;
+    camera.y += event.deltaY / camera.zoom;
+    scheduleDrawBoard();
+  }
 }
 
 function zoom(delta: number, center?: { x: number; y: number }) {
@@ -895,6 +949,7 @@ function clearSelection() {
 }
 
 function setInputMode(mode: InputMode) {
+  eyedropperActive.value = false;
   if (inputMode.value === "select" && mode !== "select") clearSelection();
   inputMode.value = mode;
   scheduleDrawBoard();
@@ -974,9 +1029,11 @@ function handleKeys(event: KeyboardEvent) {
     event.preventDefault();
     deleteSelection();
   }
+  if (event.code === "KeyI") eyedropperActive.value = true;
   if (event.code === "KeyB" || event.code === "Digit1") setInputMode("draw");
-  if (event.code === "KeyV" || event.code === "Digit2") setInputMode("select");
-  if (event.code === "KeyE" || event.code === "Digit3") setInputMode("erase");
+  if (event.code === "KeyV" || event.code === "Digit3") setInputMode("select");
+  if (event.code === "KeyE" || event.code === "Digit2") setInputMode("erase");
+  if (event.code === "KeyH" || event.code === "Digit4") setInputMode("pan");
 }
 
 function handlePointerUp(event: PointerEvent) {

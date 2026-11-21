@@ -10,7 +10,7 @@ export interface Camera extends Point {
   zoom: number;
 }
 
-export type InputMode = "draw" | "erase" | "select";
+export type InputMode = "draw" | "erase" | "select" | "pan";
 
 export interface RenderedPath {
   id: number;
@@ -30,6 +30,7 @@ interface RenderState {
   selectedPaths: RenderedPath[];
   selectionBounds: RenderedPath["bounds"] | null;
   inputMode: InputMode;
+  eyedropperActive: boolean;
   activePointer: {
     mode: "draw" | "pan" | "move" | "marquee";
     inputMode: InputMode;
@@ -59,6 +60,7 @@ export function createCanvasRenderer(getState: () => RenderState) {
       selectedPaths,
       selectionBounds,
       inputMode,
+      eyedropperActive,
       activePointer,
       brushPosition,
       brushSize,
@@ -220,6 +222,7 @@ export function createCanvasRenderer(getState: () => RenderState) {
 
     if (
       brushPosition &&
+      !eyedropperActive &&
       (activePointer?.inputMode ?? inputMode) !== "select" &&
       activePointer?.mode !== "pan"
     ) {
