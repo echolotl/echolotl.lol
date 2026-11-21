@@ -36,18 +36,16 @@
 <script setup lang="ts">
 import Icon from "~/components/ui/Icon.vue";
 import type PicrossGrid from "~/components/picross/PicrossGrid.vue";
-import { getInputModes, type InputMode } from "~/utils/picross";
+import { getInputModes, type PicrossInputMode } from "~/utils/picross";
 
 const props = defineProps<{
   grid: InstanceType<typeof PicrossGrid> | null;
   disabled?: boolean;
-  removeModes?: InputMode[];
-  addModes?: InputMode[];
+  removeModes?: PicrossInputMode[];
+  addModes?: PicrossInputMode[];
 }>();
 
-const modes = computed(() =>
-  getInputModes(props.removeModes, props.addModes),
-);
+const modes = computed(() => getInputModes(props.removeModes, props.addModes));
 </script>
 
 <style scoped>

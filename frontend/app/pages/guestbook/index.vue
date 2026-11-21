@@ -16,7 +16,7 @@
       @wheel="handleWheel"
     ></canvas>
     <div
-      v-if="inputMode === 'select' && selectedPath && !pointer.active"
+      v-if="inputMode === 'select' && selectedPath && !interactionActive"
       class="selection-actions input-modes"
       :style="selectionActionsStyle"
     >
@@ -57,11 +57,39 @@
             type="button"
             class="round"
             aria-label="Use Pen Pressure"
-            :disabled="!!pointer.active"
+            :disabled="interactionActive"
             :class="{ active: usePenPressure }"
             @click="usePenPressure = !usePenPressure"
           >
             <Icon icon="pen-pressure" size="20px" />
+          </button>
+        </div>
+        <div
+          class="vertical-actions input-modes"
+          role="group"
+          aria-label="Flip Camera"
+        >
+          <button
+            type="button"
+            class="round"
+            aria-label="Flip Horizontally"
+            :aria-pressed="camera.flipX"
+            :class="{ active: camera.flipX }"
+            :disabled="interactionActive"
+            @click="flipCamera('horizontal')"
+          >
+            <Icon icon="flip-h" size="20px" />
+          </button>
+          <button
+            type="button"
+            class="round"
+            aria-label="Flip Vertically"
+            :aria-pressed="camera.flipY"
+            :class="{ active: camera.flipY }"
+            :disabled="interactionActive"
+            @click="flipCamera('vertical')"
+          >
+            <Icon icon="flip-v" size="20px" />
           </button>
         </div>
         <div
@@ -77,7 +105,7 @@
             :class="{ active: activeLayer === LAYER_COUNT - index + 1 }"
             :aria-label="`Layer ${LAYER_COUNT - index + 1}`"
             :aria-pressed="activeLayer === LAYER_COUNT - index + 1"
-            :disabled="!!pointer.active"
+            :disabled="interactionActive"
             @click="selectLayer(LAYER_COUNT - index + 1)"
           >
             <Icon
@@ -127,7 +155,7 @@
                 type="range"
                 min="1"
                 max="100"
-                :disabled="!!pointer.active"
+                :disabled="interactionActive"
               />
             </div>
             <label for="brush-stabilization">Stabilization</label>
@@ -144,7 +172,7 @@
                 :min="MIN_STABILIZATION"
                 :max="MAX_STABILIZATION"
                 step="5"
-                :disabled="!!pointer.active"
+                :disabled="interactionActive"
               />
             </div>
           </div>
@@ -158,17 +186,17 @@
       <div style="display: flex; gap: 6px">
         <div class="input-modes">
           <button
-            v-for="mode in inputModes"
-            :key="mode.value"
+            v-for="(definition, mode) in CANVAS_INPUT_MODES"
+            :key="mode"
             type="button"
             class="round"
-            :class="{ active: inputMode === mode.value }"
-            :aria-label="`${mode.label} mode`"
-            :aria-pressed="inputMode === mode.value"
-            :disabled="!!pointer.active"
-            @click="setInputMode(mode.value)"
+            :class="{ active: inputMode === mode }"
+            :aria-label="`${mode.charAt(0).toUpperCase()}${mode.slice(1)} mode`"
+            :aria-pressed="inputMode === mode"
+            :disabled="interactionActive"
+            @click="setInputMode(mode)"
           >
-            <Icon :icon="mode.icon" size="20px" />
+            <Icon :icon="definition.icon" size="20px" />
           </button>
         </div>
         <div class="input-modes">
@@ -176,7 +204,7 @@
             type="button"
             class="round"
             aria-label="Undo"
-            :disabled="!canUndo || !!pointer.active"
+            :disabled="!canUndo || interactionActive"
             @click="undo"
           >
             <Icon icon="undo" size="20px" />
@@ -185,7 +213,7 @@
             type="button"
             class="round"
             aria-label="Redo"
-            :disabled="!canRedo || !!pointer.active"
+            :disabled="!canRedo || interactionActive"
             @click="redo"
           >
             <Icon icon="redo" size="20px" />
@@ -194,23 +222,55 @@
         <div class="input-modes" role="group" aria-label="Zoom">
           <button
             type="button"
-            :disabled="!!pointer.active || camera.zoom === MAX_ZOOM"
+            :disabled="interactionActive || camera.zoom === MAX_ZOOM"
             aria-label="Zoom in"
-            @click="zoom(-200)"
+            @click="zoomFromWheel(-200)"
           >
             <Icon icon="zoom-in" size="20px" />
           </button>
           <button
             type="button"
-            :disabled="!!pointer.active || camera.zoom === MIN_ZOOM"
+            :disabled="interactionActive || camera.zoom === MIN_ZOOM"
             aria-label="Zoom out"
-            @click="zoom(200)"
+            @click="zoomFromWheel(200)"
           >
             <Icon icon="zoom-out" size="20px" />
           </button>
-          <div class="zoom-level lotl-font">
+          <button
+            class="zoom-level lotl-font"
+            :disabled="interactionActive || camera.zoom === 1"
+            aria-label="Reset zoom"
+            @click="zoom(1 - camera.zoom)"
+          >
             {{ (camera.zoom * 100).toFixed(0) }}%
-          </div>
+          </button>
+        </div>
+        <div class="input-modes" role="group" aria-label="Canvas rotation">
+          <button
+            type="button"
+            :disabled="interactionActive"
+            aria-label="Rotate canvas counterclockwise"
+            @click="rotateCamera(-Math.PI / 12)"
+          >
+            <Icon icon="rotate-ccw" size="20px" />
+          </button>
+          <button
+            type="button"
+            :disabled="interactionActive"
+            aria-label="Rotate canvas clockwise"
+            @click="rotateCamera(Math.PI / 12)"
+          >
+            <Icon icon="rotate-cw" size="20px" />
+          </button>
+          <button
+            type="button"
+            class="zoom-level lotl-font"
+            :disabled="interactionActive || camera.rotation === 0"
+            aria-label="Reset canvas rotation"
+            @click="rotateCamera(-camera.rotation)"
+          >
+            {{ Math.round((camera.rotation * 180) / Math.PI) }}°
+          </button>
         </div>
         <div class="input-modes" role="group" aria-label="Color picking">
           <button
@@ -219,7 +279,7 @@
             :class="{ active: eyedropperActive }"
             aria-label="Pick color from canvas"
             :aria-pressed="eyedropperActive"
-            :disabled="!!pointer.active"
+            :disabled="interactionActive"
             @click="eyedropperActive = !eyedropperActive"
           >
             <Icon icon="eyedropper" size="20px" />
@@ -394,60 +454,158 @@ import { initializeCanvasColors } from "~/utils/constants";
 import { FlashishDrawing, type BrushSegment } from "@echolotl/flashish";
 import {
   createCanvasRenderer,
+  getCanvasInputModeForKey,
   type Camera,
-  type InputMode,
+  type CanvasInputMode,
   type Point,
   type RenderedPath,
 } from "~/utils/canvas";
+import {
+  measureGesture,
+  screenToWorld,
+  updateCameraAt,
+  worldToScreen,
+} from "~/utils/canvas/camera";
 import Icon from "~/components/ui/Icon.vue";
 import ColorPicker from "~/components/ui/ColorPicker.vue";
 
+/**
+ * Reference to the guestbook canvas element.
+ */
 const guestbookCanvas: Ref<HTMLCanvasElement | null> = ref(null);
+/**
+ * Reference to the 2D rendering context of the guestbook canvas.
+ */
 const ctx: Ref<CanvasRenderingContext2D | null> = ref(null);
 
-const camera: Camera = reactive({ x: 0, y: 0, zoom: 1 });
-const canvasSize = reactive({ width: 0, height: 0 });
-const viewportCenter = computed(() => ({
-  x: camera.x + canvasSize.width / (2 * camera.zoom),
-  y: camera.y + canvasSize.height / (2 * camera.zoom),
-}));
+/**
+ * The camera object representing the current view of the canvas.
+ */
+const camera: Camera = reactive({
+  x: 0,
+  y: 0,
+  zoom: 1,
+  rotation: 0,
+  flipX: false,
+  flipY: false,
+});
 
+/**
+ * The size of the canvas element.
+ */
+const canvasSize = reactive({ width: 0, height: 0 });
+
+/**
+ * The center point of the viewport in world coordinates.
+ */
+const viewportCenter = computed(() =>
+  screenToWorld({ x: canvasSize.width / 2, y: canvasSize.height / 2 }, camera),
+);
+
+/**
+ * The pointer object representing the current state of the pointer.
+ */
 const pointer = reactive<{
   position: { clientX: number; clientY: number } | null;
   active: Pointer | null;
 }>({ position: null, active: null });
+
+/**
+ * The map of active touch points, keyed by their identifier.
+ */
+const touches = new Map<number, Point>();
+/**
+ * Indicates whether a touch gesture is currently in progress.
+ */
+const touchGesture = ref(false);
+/**
+ * Indicates whether any interaction (pointer or touch gesture) is currently active.
+ */
+const interactionActive = computed(
+  () => !!pointer.active || touchGesture.value,
+);
+/**
+ * The currently held mouse button.
+ */
 let heldButton = 0;
 
+/**
+ * The resize observer for the canvas element.
+ */
 let resizeObserver: ResizeObserver | undefined;
 
-const brushSize = ref(5);
+/**
+ * The size of the brush.
+ */
+const brushSize = ref(DEFAULT_BRUSH_SIZE);
+/**
+ * The color of the brush.
+ */
 const brushColor = ref("#ffffff");
-const MIN_STABILIZATION = 0;
-const MAX_STABILIZATION = 200;
-const stabilization = ref(0);
 
+/**
+ * The current stabilization value for the brush.
+ */
+const stabilization = ref(DEFAULT_STABILIZATION);
+
+/**
+ * The current drawing object.
+ */
 let drawing: FlashishDrawing;
+
+/**
+ * The draft paths that are currently being drawn but not yet committed.
+ */
 let pathDraft: (BrushSegment & { path: Path2D })[] = [];
+
+/**
+ * The committed paths that have been finalized and are part of the drawing.
+ */
 const committedPaths = shallowRef<RenderedPath[]>([]);
 
+/**
+ * The currently active layer in the drawing.
+ */
 const activeLayer = ref(2);
 
-const inputModes = [
-  { value: "draw", label: "Draw", icon: "edit" },
-  { value: "erase", label: "Erase", icon: "erase" },
-  { value: "select", label: "Select", icon: "select" },
-  { value: "pan", label: "Pan", icon: "grab" },
-] as const;
-const inputMode = ref<InputMode>("draw");
+/**
+ * The currently selected input mode for interacting with the canvas.
+ */
+const inputMode = ref<CanvasInputMode>("draw");
+
+/**
+ * Whether the eyedropper tool is currently active.
+ */
 const eyedropperActive = ref(false);
 
+/**
+ * The IDs of the currently selected paths.
+ */
 const selectedPathIds = ref<number[]>([]);
+/**
+ * The original positions of the selected paths before any movement.
+ */
 let selectionOrigins = new Map<number, Point>();
+/**
+ * The color change associated with the current selection, if any.
+ */
 let selectionColorChange: { kind: string; token: object } | null = null;
+
+/**
+ * The currently selected paths based on the selected path IDs.
+ */
 const selectedPaths = computed(() =>
   committedPaths.value.filter(({ id }) => selectedPathIds.value.includes(id)),
 );
+
+/**
+ * The first selected path, if any.
+ */
 const selectedPath = computed(() => selectedPaths.value[0]);
+
+/**
+ * The bounding box of the current selection, if any.
+ */
 const selectionBounds = computed(() => {
   if (!selectedPaths.value.length) return null;
   const left = Math.min(...selectedPaths.value.map(({ bounds }) => bounds.x));
@@ -460,37 +618,62 @@ const selectionBounds = computed(() => {
   );
   return { x: left, y: top, width: right - left, height: bottom - top };
 });
+
+/**
+ * The style for the selection actions UI based on the current selection bounds.
+ */
 const selectionActionsStyle = computed(() => {
   const bounds = selectionBounds.value;
   if (!bounds) return {};
+  const corners = [
+    worldToScreen({ x: bounds.x, y: bounds.y }, camera),
+    worldToScreen({ x: bounds.x + bounds.width, y: bounds.y }, camera),
+    worldToScreen({ x: bounds.x, y: bounds.y + bounds.height }, camera),
+    worldToScreen(
+      { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+      camera,
+    ),
+  ];
   return {
-    left: `${(bounds.x + bounds.width - camera.x) * camera.zoom + 6}px`,
-    top: `${(bounds.y - camera.y) * camera.zoom}px`,
+    left: `${Math.max(...corners.map((point) => point.x)) + 6}px`,
+    top: `${Math.min(...corners.map((point) => point.y))}px`,
   };
 });
 
+/**
+ * Whether an undo operation can be performed.
+ */
 const canUndo = ref(false);
+/**
+ * Whether a redo operation can be performed.
+ */
 const canRedo = ref(false);
+/**
+ * Whether pen pressure is being used for drawing.
+ */
 const usePenPressure = ref(false);
 
 const { theme } = useTheme();
 
-const MAX_ZOOM = 2;
-const MIN_ZOOM = 0.5;
-const LAYER_COUNT = 3;
-
+/**
+ * Represents a pointer's state during interaction with the canvas.
+ */
 interface Pointer {
   id: number;
   lastX: number;
   lastY: number;
   lastWorldPosition: Point | null;
   mode: "draw" | "pan" | "move" | "marquee";
-  inputMode: InputMode;
+  inputMode: CanvasInputMode;
   color: string;
   moveOffset: Point;
   marqueeEnd: Point | null;
 }
 
+/**
+ * The style for the canvas element based on the current pointer state.
+ * @returns An object containing CSS properties for the canvas element.
+ */
 const canvasStyle = computed(() => {
   switch (pointer.active?.mode) {
     case "pan":
@@ -511,6 +694,9 @@ const canvasStyle = computed(() => {
   }
 });
 
+/**
+ * The renderer responsible for drawing the canvas content.
+ */
 const renderer = createCanvasRenderer(() => ({
   canvas: guestbookCanvas.value,
   context: ctx.value,
@@ -527,7 +713,6 @@ const renderer = createCanvasRenderer(() => ({
   brushSize: brushSize.value,
   pathDraft,
 }));
-const scheduleDrawBoard = renderer.schedule;
 
 onMounted(() => {
   const canvas = guestbookCanvas.value;
@@ -544,7 +729,7 @@ onMounted(() => {
     const handleResize = () => {
       canvasSize.width = canvas.clientWidth;
       canvasSize.height = canvas.clientHeight;
-      scheduleDrawBoard();
+      renderer.schedule();
     };
     handleResize();
     resizeObserver = new ResizeObserver(handleResize);
@@ -562,13 +747,31 @@ onUnmounted(() => {
 watch([theme], () => {
   initializeCanvasColors(true);
   renderer.invalidateBackdrop();
-  scheduleDrawBoard();
+  renderer.schedule();
 });
 
-watch(brushSize, scheduleDrawBoard);
-watch(eyedropperActive, scheduleDrawBoard);
+watch(brushSize, () => renderer.schedule());
+watch(eyedropperActive, () => renderer.schedule());
 
 function handlePointerDown(event: PointerEvent) {
+  if (event.pointerType === "touch") {
+    if (pointer.active && !touches.has(pointer.active.id)) return;
+    const canvas = guestbookCanvas.value;
+    if (!canvas) return;
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    canvas.setPointerCapture(event.pointerId);
+    if (touches.size >= 2) {
+      touchGesture.value = true;
+      pointer.active = null;
+      pointer.position = null;
+      pathDraft = [];
+      renderer.schedule();
+      return;
+    }
+    if (touchGesture.value) return;
+  } else if (touchGesture.value) {
+    return;
+  }
   if (pointer.active !== null) return;
   const isEraser = event.pointerType === "pen" && event.button === 5;
   if (
@@ -654,10 +857,38 @@ function handlePointerDown(event: PointerEvent) {
       { path, from: position, to: position, size: getSegmentSize(event) },
     ];
   }
-  scheduleDrawBoard();
+  renderer.schedule();
 }
 
 function handlePointerMove(event: PointerEvent) {
+  if (event.pointerType === "touch" && touches.has(event.pointerId)) {
+    const previous = Array.from(touches.values());
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (touchGesture.value) {
+      const current = Array.from(touches.values());
+      if (previous.length >= 2 && current.length >= 2) {
+        const previousA = getCameraAnchor(previous[0]);
+        const previousB = getCameraAnchor(previous[1]);
+        const currentA = getCameraAnchor(current[0]);
+        const currentB = getCameraAnchor(current[1]);
+        if (previousA && previousB && currentA && currentB) {
+          const change = measureGesture(
+            [previousA, previousB],
+            [currentA, currentB],
+          );
+          const center = {
+            x: (current[0]!.x + current[1]!.x) / 2,
+            y: (current[0]!.y + current[1]!.y) / 2,
+          };
+          panCamera(-change.pan.x, -change.pan.y);
+          zoom(camera.zoom * (change.scale - 1), center);
+          rotateCamera(change.rotation, center);
+        }
+      }
+      return;
+    }
+  }
+  if (touchGesture.value) return;
   if (pointer.active === null || pointer.active.id === event.pointerId) {
     updateBrushCursor(event);
   }
@@ -672,6 +903,10 @@ function handlePointerMove(event: PointerEvent) {
   }
 }
 
+/**
+ * When a pointer event occurs, update the pointer state accordingly.
+ * @param event The pointer event to handle.
+ */
 function updatePointer(event: PointerEvent) {
   if (pointer.active?.mode === "draw") {
     const rawPosition = getWorldPosition(event);
@@ -714,14 +949,18 @@ function updatePointer(event: PointerEvent) {
   } else if (pointer.active?.mode === "pan") {
     const dx = event.clientX - pointer.active.lastX;
     const dy = event.clientY - pointer.active.lastY;
-    camera.x -= dx / camera.zoom;
-    camera.y -= dy / camera.zoom;
+    panCamera(-dx, -dy);
     pointer.active.lastX = event.clientX;
     pointer.active.lastY = event.clientY;
   }
-  scheduleDrawBoard();
+  renderer.schedule();
 }
 
+/**
+ * Finds the path at the given world position.
+ * @param position The world position to check for a path.
+ * @returns The rendered path at the given position, or null if none is found.
+ */
 function findPathAt(position: Point): RenderedPath | null {
   const context = ctx.value;
   if (!context) return null;
@@ -742,6 +981,11 @@ function findPathAt(position: Point): RenderedPath | null {
   return hit ?? null;
 }
 
+/**
+ * Gets the width of the current segment based on the pointer event.
+ * @param event The pointer event to determine the segment width from.
+ * @returns The width of the segment.
+ */
 function getSegmentSize(event: PointerEvent) {
   if (event.type === "pointerup") {
     return pathDraft.at(-1)?.size ?? brushSize.value;
@@ -753,6 +997,10 @@ function getSegmentSize(event: PointerEvent) {
     : brushSize.value;
 }
 
+/**
+ * Updates the brush cursor position based on the pointer event.
+ * @param event The pointer event to update the brush cursor from.
+ */
 function updateBrushCursor(event: PointerEvent) {
   const canvas = guestbookCanvas.value;
   if (
@@ -762,7 +1010,7 @@ function updateBrushCursor(event: PointerEvent) {
     return;
   if (event.pointerType === "touch" || inputMode.value === "pan") {
     pointer.position = null;
-    scheduleDrawBoard();
+    renderer.schedule();
     return;
   }
   const rect = canvas.getBoundingClientRect();
@@ -773,32 +1021,43 @@ function updateBrushCursor(event: PointerEvent) {
     event.clientY < rect.bottom
       ? { clientX: event.clientX, clientY: event.clientY }
       : null;
-  scheduleDrawBoard();
+  renderer.schedule();
 }
 
 function hideBrushCursor(event: PointerEvent) {
   if (pointer.active !== null && pointer.active.id !== event.pointerId) return;
   pointer.position = null;
-  scheduleDrawBoard();
+  renderer.schedule();
 }
 
+/**
+ * Gets the world position of the pointer event relative to the canvas.
+ * @param event The pointer event to get the world position from.
+ * @returns The world position, or null if the canvas is not available.
+ */
 function getWorldPosition(event: { clientX: number; clientY: number }) {
   const canvas = guestbookCanvas.value;
   if (!canvas) return null;
   const rect = canvas.getBoundingClientRect();
   if (!rect.width || !rect.height) return null;
-  return {
-    x:
-      camera.x +
-      ((event.clientX - rect.left) * canvas.clientWidth) /
-        rect.width /
-        camera.zoom,
-    y:
-      camera.y +
-      ((event.clientY - rect.top) * canvas.clientHeight) /
-        rect.height /
-        camera.zoom,
-  };
+  return screenToWorld(
+    {
+      x: ((event.clientX - rect.left) * canvas.clientWidth) / rect.width,
+      y: ((event.clientY - rect.top) * canvas.clientHeight) / rect.height,
+    },
+    camera,
+  );
+}
+
+/**
+ * Pans the camera by the given delta values.
+ * @param dx The change in the x-coordinate.
+ * @param dy The change in the y-coordinate.
+ */
+function panCamera(dx: number, dy: number) {
+  const position = screenToWorld({ x: dx, y: dy }, camera);
+  camera.x = position.x;
+  camera.y = position.y;
 }
 
 function handleWheel(event: WheelEvent) {
@@ -811,40 +1070,87 @@ function handleWheel(event: WheelEvent) {
 
   event.preventDefault();
   if (zoomWithWheel) {
-    zoom(event.deltaY, { x: event.clientX, y: event.clientY });
+    zoomFromWheel(event.deltaY, { x: event.clientX, y: event.clientY });
   } else {
-    camera.x += event.deltaX / camera.zoom;
-    camera.y += event.deltaY / camera.zoom;
-    scheduleDrawBoard();
+    panCamera(event.deltaX, event.deltaY);
+    renderer.schedule();
   }
 }
 
-function zoom(delta: number, center?: { x: number; y: number }) {
+function getCameraAnchor(center?: Point): Point | null {
   const canvas = guestbookCanvas.value;
-  if (!canvas) return;
+  if (!canvas) return null;
   const rect = canvas.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
+  if (!rect.width || !rect.height) return null;
   const x = center
     ? ((center.x - rect.left) * canvas.clientWidth) / rect.width
     : canvas.clientWidth / 2;
   const y = center
     ? ((center.y - rect.top) * canvas.clientHeight) / rect.height
     : canvas.clientHeight / 2;
-  let zoom = Math.min(
+  return { x, y };
+}
+
+function zoomFromWheel(delta: number, center?: Point) {
+  let target = Math.min(
     MAX_ZOOM,
     Math.max(MIN_ZOOM, camera.zoom * Math.exp(-delta * 0.001)),
   );
-  if ((camera.zoom < 1 && zoom >= 1) || (camera.zoom > 1 && zoom <= 1)) {
-    zoom = 1;
+  if ((camera.zoom < 1 && target >= 1) || (camera.zoom > 1 && target <= 1)) {
+    target = 1;
   }
+  zoom(target - camera.zoom, center);
+}
 
-  camera.x += x / camera.zoom - x / zoom;
-  camera.y += y / camera.zoom - y / zoom;
-  camera.zoom = zoom;
-  scheduleDrawBoard();
+function zoom(amount: number, center?: Point) {
+  const anchor = getCameraAnchor(center);
+  if (!anchor) return;
+  const target = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, camera.zoom + amount));
+  updateCameraAt(camera, anchor, { zoom: target });
+  renderer.schedule();
+}
+
+function rotateCamera(amount: number, center?: Point) {
+  const anchor = getCameraAnchor(center);
+  if (!anchor) return;
+  let rotation = camera.rotation + amount;
+  if (rotation >= Math.PI || rotation < -Math.PI) {
+    rotation =
+      ((((rotation + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) -
+      Math.PI;
+  }
+  updateCameraAt(camera, anchor, { rotation });
+  renderer.schedule();
+}
+
+function flipCamera(axis: "horizontal" | "vertical") {
+  const anchor = { x: canvasSize.width / 2, y: canvasSize.height / 2 };
+  updateCameraAt(
+    camera,
+    anchor,
+    axis === "horizontal" ? { flipX: !camera.flipX } : { flipY: !camera.flipY },
+  );
+  renderer.schedule();
 }
 
 function endPointer(event: PointerEvent) {
+  if (event.pointerType === "touch" && touches.delete(event.pointerId)) {
+    if (touchGesture.value) {
+      if (touches.size === 0) touchGesture.value = false;
+      const canvas = guestbookCanvas.value;
+      if (canvas?.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+      return;
+    }
+    if (pointer.active?.id !== event.pointerId) {
+      const canvas = guestbookCanvas.value;
+      if (canvas?.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+      return;
+    }
+  }
   if (pointer.active?.id === event.pointerId) {
     const active = pointer.active;
     pointer.active = null;
@@ -893,7 +1199,7 @@ function endPointer(event: PointerEvent) {
       );
     }
     pathDraft = [];
-    scheduleDrawBoard();
+    renderer.schedule();
   }
 }
 
@@ -915,7 +1221,7 @@ function syncDrawing() {
   }
   canUndo.value = drawing.canUndo;
   canRedo.value = drawing.canRedo;
-  scheduleDrawBoard();
+  renderer.schedule();
 }
 
 function setSelection(ids: number[]) {
@@ -948,21 +1254,21 @@ function clearSelection() {
   }
 }
 
-function setInputMode(mode: InputMode) {
+function setInputMode(mode: CanvasInputMode) {
   eyedropperActive.value = false;
   if (inputMode.value === "select" && mode !== "select") clearSelection();
   inputMode.value = mode;
-  scheduleDrawBoard();
+  renderer.schedule();
 }
 
 function selectLayer(layer: number) {
   clearSelection();
   activeLayer.value = layer;
-  scheduleDrawBoard();
+  renderer.schedule();
 }
 
 function moveSelectionLayer(direction: -1 | 1) {
-  if (!selectedPathIds.value.length || pointer.active) return;
+  if (!selectedPathIds.value.length || interactionActive.value) return;
   selectedPathIds.value = drawing.movePathsByLayer(
     selectedPathIds.value,
     direction,
@@ -971,7 +1277,7 @@ function moveSelectionLayer(direction: -1 | 1) {
 }
 
 function setSelectionColor(color: string) {
-  if (!selectedPathIds.value.length || pointer.active) return;
+  if (!selectedPathIds.value.length || interactionActive.value) return;
   selectedPathIds.value = drawing.setPathsColor(
     selectedPathIds.value,
     color,
@@ -991,13 +1297,13 @@ function endSelectionColorChange(kind: string) {
 }
 
 function undo() {
-  if (pointer.active || !drawing.canUndo) return;
+  if (interactionActive.value || !drawing.canUndo) return;
   drawing.undo();
   syncDrawing();
 }
 
 function redo() {
-  if (pointer.active || !drawing.canRedo) return;
+  if (interactionActive.value || !drawing.canRedo) return;
   drawing.redo();
   syncDrawing();
 }
@@ -1020,7 +1326,7 @@ function handleKeys(event: KeyboardEvent) {
     }
     return;
   }
-  if (event.altKey || pointer.active) return;
+  if (event.altKey || interactionActive.value) return;
   if (
     inputMode.value === "select" &&
     selectedPathIds.value.length > 0 &&
@@ -1030,21 +1336,19 @@ function handleKeys(event: KeyboardEvent) {
     deleteSelection();
   }
   if (event.code === "KeyI") eyedropperActive.value = true;
-  if (event.code === "KeyB" || event.code === "Digit1") setInputMode("draw");
-  if (event.code === "KeyV" || event.code === "Digit3") setInputMode("select");
-  if (event.code === "KeyE" || event.code === "Digit2") setInputMode("erase");
-  if (event.code === "KeyH" || event.code === "Digit4") setInputMode("pan");
+  const mode = getCanvasInputModeForKey(event.code);
+  if (mode) setInputMode(mode);
 }
 
 function handlePointerUp(event: PointerEvent) {
   if (pointer.active?.id === event.pointerId) {
     updatePointer(event);
     updateBrushCursor(event);
-    endPointer(event);
   }
+  endPointer(event);
 }
 function deleteSelection() {
-  if (!selectedPathIds.value.length || pointer.active) return;
+  if (!selectedPathIds.value.length || interactionActive.value) return;
   drawing.deletePaths(selectedPathIds.value);
   selectedPathIds.value = [];
   selectionOrigins.clear();

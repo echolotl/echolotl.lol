@@ -23,7 +23,7 @@
       <div
         v-if="hoveredTile && !game.isCompleted && !locked"
         class="hover-tile"
-        :class="inputMode"
+        :class="String(inputMode)"
         aria-hidden="true"
         :style="{
           width: `${TILE_SIZE}px`,
@@ -86,7 +86,7 @@ import {
   HINT_FONT_SIZE,
   HINT_LINE_HEIGHT,
   initializeCanvasColors,
-  INPUT_MODES,
+  PICROSS_INPUT_MODES,
   PAINT_DOT_SIZE,
   REVEAL_PAUSE_MS,
   REVEAL_PULSE_MS,
@@ -104,7 +104,7 @@ import {
   getSolvedHints,
   isBoardSolved,
   isLineOverfilled,
-  type InputMode,
+  type PicrossInputMode,
   type PicrossGame,
   type PicrossTile,
   type PicrossTileChange,
@@ -146,7 +146,7 @@ const metadataInfo = computed(() => {
 /**
  * The currently selected input mode for the Picross grid.
  */
-const inputMode = ref<InputMode>(DEFAULT_INPUT_MODE);
+const inputMode = ref<PicrossInputMode>(DEFAULT_INPUT_MODE);
 
 /**
  * The target height of the column hints area, including padding.
@@ -717,7 +717,7 @@ const selectedTile = ref({ x: 0, y: 0 });
 const boardAnnouncement = computed(() => {
   const { x, y } = selectedTile.value;
   const state = props.game.board[y]?.[x] ?? "empty";
-  return `Row ${y + 1}, column ${x + 1}, ${state}. ${inputMode.value} mode selected.`;
+  return `Row ${y + 1}, column ${x + 1}, ${state}. ${String(inputMode.value)} mode selected.`;
 });
 
 // #endregion MAIN CANVAS
@@ -819,7 +819,8 @@ function applyAction(x: number, y: number) {
  * @returns The resulting tile change.
  */
 function resolveTile(current: PicrossTile, button: number): PicrossTileChange {
-  const mode = INPUT_MODES[inputMode.value as keyof typeof INPUT_MODES];
+  const mode =
+    PICROSS_INPUT_MODES[inputMode.value as keyof typeof PICROSS_INPUT_MODES];
   return mode.resolve(current, button, props.editable, props.paintIndex);
 }
 
@@ -992,7 +993,7 @@ function stopHold() {
 // We expose certain functions and reactive properties to the parent component for UI purposes
 defineExpose({
   inputMode,
-  setInputMode: (mode: InputMode) => {
+  setInputMode: (mode: PicrossInputMode) => {
     inputMode.value = mode;
   },
   undo: handleUndo,

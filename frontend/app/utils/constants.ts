@@ -1,6 +1,7 @@
 //#region PICROSS CONSTANTS
 
-import type { InputMode, InputModeDefinition } from "./picross";
+import type { PicrossInputMode, PicrossInputModeDefinition } from "./picross";
+import type { CanvasInputModeDefinition } from "./canvas";
 import { toggleTo } from "./picross";
 import {
   MIN_BOARD_SIZE,
@@ -39,7 +40,7 @@ const DEFAULT_BOARD_SIZE = 10;
 /**
  * All input modes available for the Picross game.
  */
-const INPUT_MODES = {
+const PICROSS_INPUT_MODES = {
   fill: {
     icon: "edit",
     keys: ["KeyB", "Key1"],
@@ -72,14 +73,22 @@ const INPUT_MODES = {
       return { color: button === 2 ? null : (paintIndex ?? null) };
     },
   },
-} as const satisfies Record<string, InputModeDefinition>;
+} as const satisfies Record<string, PicrossInputModeDefinition>;
 
 /** The default input mode for the Picross game. */
-const DEFAULT_INPUT_MODE = Object.keys(INPUT_MODES)[0] as InputMode;
+const DEFAULT_INPUT_MODE = Object.keys(
+  PICROSS_INPUT_MODES,
+)[0] as PicrossInputMode;
 
 /** The definitions of all input modes for the Picross game. */
-const INPUT_MODE_DEFINITIONS: Record<InputMode, InputModeDefinition> =
-  INPUT_MODES;
+const INPUT_MODE_DEFINITIONS: Record<
+  PicrossInputMode,
+  PicrossInputModeDefinition
+> = PICROSS_INPUT_MODES;
+
+//#endregion PICROSS CONSTANTS
+
+//#region CANVAS CONSTANTS
 
 /** Colors that can be used on canvasses */
 interface CanvasColors {
@@ -121,6 +130,38 @@ export const initializeCanvasColors = (
   };
   return CANVAS_COLORS;
 };
+//#endregion CANVAS CONSTANTS
+
+//#region GUESTBOOK CONSTANTS
+
+/** The maximum zoom level for the canvas. */
+const MAX_ZOOM = 2;
+/** The minimum zoom level for the canvas. */
+const MIN_ZOOM = 0.5;
+/** The default zoom level for the canvas. */
+const DEFAULT_ZOOM = 1;
+/** The number of layers in the canvas. */
+const LAYER_COUNT = 3;
+/** The minimum stabilization value for the brush. */
+const MIN_STABILIZATION = 0;
+/** The maximum stabilization value for the brush. */
+const MAX_STABILIZATION = 200;
+/** The default stabilization value for the brush. */
+const DEFAULT_STABILIZATION = 25;
+/** The default brush size for the canvas. */
+const DEFAULT_BRUSH_SIZE = 5;
+
+/**
+ * The available input modes for interacting with the canvas.
+ */
+const CANVAS_INPUT_MODES = {
+  draw: { icon: "edit", keys: ["KeyB", "Digit1"] },
+  erase: { icon: "erase", keys: ["KeyE", "Digit2"] },
+  select: { icon: "select", keys: ["KeyV", "Digit3"] },
+  pan: { icon: "grab", keys: ["KeyH", "Digit4"] },
+} as const satisfies Record<string, CanvasInputModeDefinition>;
+
+//#endregion GUESTBOOK CONSTANTS
 
 export {
   TILE_SIZE,
@@ -138,9 +179,18 @@ export {
   CANVAS_COLORS as BOARD_COLORS,
   MIN_BOARD_SIZE,
   MAX_BOARD_SIZE,
+  MIN_STABILIZATION,
+  MAX_STABILIZATION,
+  DEFAULT_STABILIZATION,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  DEFAULT_ZOOM,
+  LAYER_COUNT,
+  DEFAULT_BRUSH_SIZE,
   DEFAULT_BOARD_SIZE,
-  INPUT_MODES,
+  PICROSS_INPUT_MODES,
   INPUT_MODE_DEFINITIONS,
+  CANVAS_INPUT_MODES,
   MAGIC_HEADER,
   CURRENT_MAJOR_VERSION,
   CURRENT_MINOR_VERSION,
@@ -148,4 +198,3 @@ export {
   MAX_COLOR_BYTES,
   FILE_EXTENSION,
 };
-//#endregion PICROSS CONSTANTS
