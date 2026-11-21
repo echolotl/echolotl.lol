@@ -1,11 +1,17 @@
 import paper from "paper";
 
+/**
+ * Represents a segment of a brush stroke.
+ */
 export interface BrushSegment {
   from: { x: number; y: number };
   to: { x: number; y: number };
   size: number;
 }
 
+/**
+ * Represents a fill in the drawing, including its color, layer, and shape.
+ */
 interface Fill {
   id: number;
   color: string;
@@ -13,11 +19,17 @@ interface Fill {
   shape: paper.PathItem;
 }
 
+/**
+ * Represents a change to a fill, including the fill and its index.
+ */
 interface FillChange {
   fill: Fill;
   index: number;
 }
 
+/**
+ * Represents a change to a stroke, including the fills that were removed and added.
+ */
 interface StrokeChange {
   removed: FillChange[];
   added: FillChange[];
@@ -28,12 +40,31 @@ interface StrokeChange {
  * It's meant to be similar to Flash/Animate, with paths being turned into fills and merged based on color and layer.
  */
 export class FlashishDrawing {
+  /**
+   * The Paper.js scope used for managing the drawing.
+   */
   private scope = new paper.PaperScope();
+  /**
+   * All fills in the current drawing.
+   */
   private fills: Fill[] = [];
+  /**
+   * The undo stack for tracking changes.
+   */
   private undoStack: StrokeChange[] = [];
+  /**
+   * The redo stack for tracking changes.
+   */
   private redoStack: StrokeChange[] = [];
+  /**
+   * The next ID to be assigned to a new fill.
+   */
   private nextId = 1;
+
   private _layerCount = 3;
+  /**
+   * The current color change being applied, if any.
+   */
   private colorChange: {
     token: object;
     change: StrokeChange;
@@ -45,6 +76,10 @@ export class FlashishDrawing {
     this.scope.setup(new this.scope.Size(1, 1));
   }
 
+  /**
+   * Validates that the given layer number is within the allowed range.
+   * @param layer The layer number to validate.
+   */
   private validateLayer(layer: number) {
     if (!Number.isSafeInteger(layer) || layer < 1 || layer > this._layerCount)
       throw new RangeError("Layer is outside the drawing's layer range");
@@ -80,6 +115,9 @@ export class FlashishDrawing {
     return this.redoStack.length > 0;
   }
 
+  /**
+   * The possible number of layers in the drawing.
+   */
   set layerCount(value: number) {
     if (!Number.isSafeInteger(value) || value < 1)
       throw new RangeError("Layer count must be a positive integer");
@@ -110,12 +148,22 @@ export class FlashishDrawing {
     this.undoStack.push(change);
   }
 
+  /**
+   * Apply a change to the drawing by removing and adding fills.
+   * @param removed The fills to remove from the drawing.
+   * @param added The fills to add to the drawing.
+   */
   private applyChange(removed: FillChange[], added: FillChange[]) {
     const removedFills = new Set(removed.map(({ fill }) => fill));
     this.fills = this.fills.filter((fill) => !removedFills.has(fill));
     for (const { fill, index } of added) this.fills.splice(index, 0, fill);
   }
 
+  /**
+   * Record a change to the drawing by comparing the current fills with the previous state.
+   * @param before The fills before the change.
+   * @returns The change object containing removed and added fills.
+   */
   private recordChange(before: Fill[]) {
     const beforeSet = new Set(before);
     const afterSet = new Set(this.fills);
@@ -216,7 +264,9 @@ export class FlashishDrawing {
     this.fills = this.fills
       .map((fill) => (selected.has(fill.id) ? update(fill) : fill))
       .sort((a, b) => a.layer - b.layer);
-    return this.fills.filter((fill) => selected.has(fill.id)).map(({ id }) => id);
+    return this.fills
+      .filter((fill) => selected.has(fill.id))
+      .map(({ id }) => id);
   }
 
   /**

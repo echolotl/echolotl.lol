@@ -1,25 +1,70 @@
-import { CANVAS_COLORS } from "../constants";
+import { CANVAS_COLORS, CANVAS_INPUT_MODES } from "../constants";
 import type { BrushSegment } from "@echolotl/flashish";
+import { cameraViewport } from "./camera";
+import type { PicrossInputModeDefinition } from "../picross";
 
+/**
+ * Represents a point in 2D space.
+ */
 export interface Point {
   x: number;
   y: number;
 }
 
+/**
+ * Represents the camera's state.
+ */
 export interface Camera extends Point {
   zoom: number;
+  rotation: number; // in radians
+  flipX: boolean;
+  flipY: boolean;
 }
 
-export type InputMode = "draw" | "erase" | "select" | "pan";
+/**
+ * Represents a rectangle in 2D space.
+ */
+export interface Rect extends Point {
+  width: number;
+  height: number;
+}
 
+/**
+ * The possible input modes for the canvas.
+ */
+export type CanvasInputMode = keyof typeof CANVAS_INPUT_MODES;
+
+/** The shared display and keyboard fields for a canvas input mode. */
+export type CanvasInputModeDefinition = Pick<
+  PicrossInputModeDefinition,
+  "icon" | "keys"
+>;
+
+/** Gets the canvas input mode associated with a keyboard code. */
+export function getCanvasInputModeForKey(
+  code: string,
+): CanvasInputMode | undefined {
+  const definitions: Record<CanvasInputMode, CanvasInputModeDefinition> =
+    CANVAS_INPUT_MODES;
+  return (Object.keys(definitions) as CanvasInputMode[]).find((mode) =>
+    definitions[mode].keys.includes(code),
+  );
+}
+
+/**
+ * A path that has been rendered after being processed.
+ */
 export interface RenderedPath {
   id: number;
   path: Path2D;
   color: string;
   layer: number;
-  bounds: Point & { width: number; height: number };
+  bounds: Rect;
 }
 
+/**
+ * The state of the canvas renderer and all of the elements it manages.
+ */
 interface RenderState {
   canvas: HTMLCanvasElement | null;
   context: CanvasRenderingContext2D | null;
@@ -29,11 +74,11 @@ interface RenderState {
   paths: RenderedPath[];
   selectedPaths: RenderedPath[];
   selectionBounds: RenderedPath["bounds"] | null;
-  inputMode: InputMode;
+  inputMode: CanvasInputMode;
   eyedropperActive: boolean;
   activePointer: {
     mode: "draw" | "pan" | "move" | "marquee";
-    inputMode: InputMode;
+    inputMode: CanvasInputMode;
     color: string;
     moveOffset: Point;
     lastWorldPosition: Point | null;
@@ -44,11 +89,19 @@ interface RenderState {
   pathDraft: (BrushSegment & { path: Path2D })[];
 }
 
+/**
+ * Creates a canvas renderer that manages drawing and rendering on the canvas.
+ * @param getState A function that returns the current render state.
+ * @returns An object with methods to control the canvas renderer.
+ */
 export function createCanvasRenderer(getState: () => RenderState) {
   let frame: number | null = null;
   let backdrop: CanvasPattern | null = null;
   let eraseCanvas: OffscreenCanvas | null = null;
 
+  /**
+   * Draws the current state of the canvas.
+   */
   function draw() {
     const {
       canvas,
@@ -82,42 +135,53 @@ export function createCanvasRenderer(getState: () => RenderState) {
     if (canvas.height !== height) canvas.height = height;
     const scaleX = canvas.width / canvas.clientWidth;
     const scaleY = canvas.height / canvas.clientHeight;
-    const pixelMarginX = 1 / (camera.zoom * scaleX);
-    const pixelMarginY = 1 / (camera.zoom * scaleY);
-    const viewport = {
-      left: camera.x - pixelMarginX,
-      top: camera.y - pixelMarginY,
-      right: camera.x + canvas.clientWidth / camera.zoom + pixelMarginX,
-      bottom: camera.y + canvas.clientHeight / camera.zoom + pixelMarginY,
-    };
-    const isVisible = (
-      left: number,
-      top: number,
-      right: number,
-      bottom: number,
-    ) =>
-      right >= viewport.left &&
-      left <= viewport.right &&
-      bottom >= viewport.top &&
-      top <= viewport.bottom;
+    const pixelMargin = Math.SQRT2 / (camera.zoom * Math.min(scaleX, scaleY));
+
+    /**
+     * Everything that the camera can see in the current viewport.
+     */
+    const viewport = cameraViewport(
+      camera,
+      canvas.clientWidth,
+      canvas.clientHeight,
+    );
+    viewport.x -= pixelMargin;
+    viewport.y -= pixelMargin;
+    viewport.width += 2 * pixelMargin;
+    viewport.height += 2 * pixelMargin;
+
+    /**
+     * Checks if a rectangle defined by the given coordinates is visible within the current viewport.
+     * @param rect The rectangle to check for visibility.
+     * @returns True if the rectangle is visible within the viewport, false otherwise.
+     */
+    const isVisible = (rect: Rect) =>
+      rect.x + rect.width >= viewport.x &&
+      rect.x <= viewport.x + viewport.width &&
+      rect.y + rect.height >= viewport.y &&
+      rect.y <= viewport.y + viewport.height;
+
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, canvas.width, canvas.height);
+    const cos = Math.cos(camera.rotation);
+    const sin = Math.sin(camera.rotation);
+    const flipX = camera.flipX ? -1 : 1;
+    const flipY = camera.flipY ? -1 : 1;
+    const a = flipX * camera.zoom * cos * scaleX;
+    const b = flipY * camera.zoom * sin * scaleY;
+    const c = -flipX * camera.zoom * sin * scaleX;
+    const d = flipY * camera.zoom * cos * scaleY;
     context.setTransform(
-      camera.zoom * scaleX,
-      0,
-      0,
-      camera.zoom * scaleY,
-      -camera.x * camera.zoom * scaleX,
-      -camera.y * camera.zoom * scaleY,
+      a,
+      b,
+      c,
+      d,
+      -camera.x * a - camera.y * c,
+      -camera.x * b - camera.y * d,
     );
     if (!backdrop) backdrop = createDotBackdrop(context, camera);
     context.fillStyle = backdrop || "transparent";
-    context.fillRect(
-      camera.x,
-      camera.y,
-      canvas.clientWidth / camera.zoom,
-      canvas.clientHeight / camera.zoom,
-    );
+    context.fillRect(viewport.x, viewport.y, viewport.width, viewport.height);
     const moveOffset =
       activePointer?.mode === "move" ? activePointer.moveOffset : null;
     const selectedIds = new Set(selectedPaths.map(({ id }) => id));
@@ -137,12 +201,12 @@ export function createCanvasRenderer(getState: () => RenderState) {
         eraseContext.setTransform(1, 0, 0, 1, 0, 0);
         eraseContext.clearRect(0, 0, width, height);
         eraseContext.setTransform(
-          camera.zoom * scaleX,
-          0,
-          0,
-          camera.zoom * scaleY,
-          -camera.x * camera.zoom * scaleX,
-          -camera.y * camera.zoom * scaleY,
+          a,
+          b,
+          c,
+          d,
+          -camera.x * a - camera.y * c,
+          -camera.x * b - camera.y * d,
         );
         // @ts-ignore-next-line: whatever the canvases are basically the same
         layerContext = eraseContext;
@@ -152,7 +216,8 @@ export function createCanvasRenderer(getState: () => RenderState) {
         const offset = selectedIds.has(id) ? moveOffset : null;
         const x = bounds.x + (offset?.x ?? 0);
         const y = bounds.y + (offset?.y ?? 0);
-        if (!isVisible(x, y, x + bounds.width, y + bounds.height)) continue;
+        if (!isVisible({ x, y, width: bounds.width, height: bounds.height }))
+          continue;
         layerContext.save();
         if (offset) {
           layerContext.translate(offset.x, offset.y);
@@ -167,12 +232,12 @@ export function createCanvasRenderer(getState: () => RenderState) {
         for (const { path, size, from, to } of pathDraft) {
           const radius = size / 2;
           if (
-            !isVisible(
-              Math.min(from.x, to.x) - radius,
-              Math.min(from.y, to.y) - radius,
-              Math.max(from.x, to.x) + radius,
-              Math.max(from.y, to.y) + radius,
-            )
+            !isVisible({
+              x: Math.min(from.x, to.x) - radius,
+              y: Math.min(from.y, to.y) - radius,
+              width: Math.abs(to.x - from.x) + size,
+              height: Math.abs(to.y - from.y) + size,
+            })
           )
             continue;
           layerContext.strokeStyle = activePointer.color;
@@ -242,6 +307,9 @@ export function createCanvasRenderer(getState: () => RenderState) {
     }
   }
 
+  /**
+   * Schedules a draw call on the next animation frame.
+   */
   function schedule() {
     if (frame !== null) return;
     frame = requestAnimationFrame(() => {
@@ -262,6 +330,11 @@ export function createCanvasRenderer(getState: () => RenderState) {
   };
 }
 
+/**
+ * Draws the infobox on the canvas.
+ * @param context The canvas rendering context to draw on.
+ * @param camera The current camera state.
+ */
 function drawInfobox(context: CanvasRenderingContext2D, camera: Camera) {
   if (!CANVAS_COLORS) return;
   context.save();
@@ -280,6 +353,12 @@ function drawInfobox(context: CanvasRenderingContext2D, camera: Camera) {
   context.restore();
 }
 
+/**
+ * Creates the repeating dot backdrop pattern for the canvas.
+ * @param context The canvas rendering context to create the pattern for.
+ * @param camera The current camera state.
+ * @returns The created repeating dot pattern, or null if it couldn't be created.
+ */
 function createDotBackdrop(context: CanvasRenderingContext2D, camera: Camera) {
   if (!CANVAS_COLORS) return null;
   const scaleX = context.canvas.width / context.canvas.clientWidth;

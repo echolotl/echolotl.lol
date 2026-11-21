@@ -64,7 +64,7 @@ export type PicrossTileChange = {
 /**
  * Definition of an input mode for interacting with Picross tiles.
  */
-export type InputModeDefinition = {
+export type PicrossInputModeDefinition = {
   icon: string;
   keys: KeyboardEvent["code"][];
   optIn?: true; // Hidden from the controls unless a parent lists it in `addModes`
@@ -79,7 +79,7 @@ export type InputModeDefinition = {
 /**
  * Type representing the input modes available for the Picross game.
  */
-export type InputMode = keyof typeof INPUT_MODES;
+export type PicrossInputMode = keyof typeof PICROSS_INPUT_MODES;
 
 /**
  * Clamps a Picross size to the allowed board size range.
@@ -204,10 +204,10 @@ export function toggleTo(
  * @returns The list of input modes to display in the controls, with their definitions.
  */
 export function getInputModes(
-  remove: readonly InputMode[] = [],
-  add: readonly InputMode[] = [],
-): { mode: InputMode; definition: InputModeDefinition }[] {
-  return (Object.keys(INPUT_MODES) as InputMode[])
+  remove: readonly PicrossInputMode[] = [],
+  add: readonly PicrossInputMode[] = [],
+): { mode: PicrossInputMode; definition: PicrossInputModeDefinition }[] {
+  return (Object.keys(PICROSS_INPUT_MODES) as PicrossInputMode[])
     .map((mode) => ({ mode, definition: INPUT_MODE_DEFINITIONS[mode] }))
     .filter(
       ({ mode, definition }) =>
@@ -220,7 +220,7 @@ export function getInputModes(
  * @param code The key code to check.
  * @returns The input mode associated with the key code, or undefined if none match.
  */
-export function getInputModeForKey(code: string): InputMode | undefined {
+export function getInputModeForKey(code: string): PicrossInputMode | undefined {
   return getInputModes().find(({ definition }) =>
     definition.keys.includes(code),
   )?.mode;
