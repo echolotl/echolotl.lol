@@ -1,5 +1,5 @@
 import type { Status } from "@echolotl/types";
-import { getLatestStatus, insertStatus, getStatusesLimit } from "../db";
+import { getLatestStatus, insertStatus, getStatusesLimit } from "./repository";
 import { sendDiscordWebhook } from "../util/webhook";
 
 export function getStatus(): Status | null {

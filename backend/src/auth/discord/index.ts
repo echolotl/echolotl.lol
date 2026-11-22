@@ -14,7 +14,7 @@ import {
   upsertUser,
   updateUser,
   userBySession,
-} from "../../db";
+} from "./repository";
 import {
   createSession,
   destroySession,
@@ -272,72 +272,70 @@ export const discordRouter = new Elysia({ prefix: "/discord" })
       },
     );
   })
-  .patch(
-    "/me",
-    async ({ cookie: { session }, body }) => {
-      const user = userBySession(session.value as string | undefined);
-      if (!user) {
-        return new Response("Unauthorized", {
-          status: 401,
-          headers: { "Content-Type": "text/plain" },
-        });
-      }
+  .group("", (app) =>
+    app
+      .guard({
+        cookie: t.Cookie({ session: t.Optional(t.String()) }),
+      })
+      .resolve(({ cookie: { session }, status }) => {
+        const user = userBySession(session?.value);
+        if (!user) return status(401, "Unauthorized");
+        return { user };
+      })
+      .patch(
+        "/me",
+        async ({ user, body }) => {
+          const updatedUser = updateUser({
+            id: user.id,
+            ...(body.anonymous !== undefined
+              ? { anonymous: body.anonymous }
+              : {}),
+            ...(body.displayName !== undefined
+              ? { displayName: body.displayName }
+              : {}),
+            ...(body.syncProfile !== undefined
+              ? { shouldSync: body.syncProfile }
+              : {}),
+          });
+          if (!updatedUser) {
+            return new Response("User not found", {
+              status: 404,
+              headers: { "Content-Type": "text/plain" },
+            });
+          }
 
-      const updatedUser = updateUser({
-        id: user.id,
-        ...(body.anonymous !== undefined ? { anonymous: body.anonymous } : {}),
-        ...(body.displayName !== undefined
-          ? { displayName: body.displayName }
-          : {}),
-        ...(body.syncProfile !== undefined
-          ? { shouldSync: body.syncProfile }
-          : {}),
-      });
-      if (!updatedUser) {
-        return new Response("User not found", {
-          status: 404,
-          headers: { "Content-Type": "text/plain" },
-        });
-      }
-
-      return new Response(
-        JSON.stringify({ user: toAuthenticatedUser(updatedUser) }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
+          return new Response(
+            JSON.stringify({ user: toAuthenticatedUser(updatedUser) }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
         },
-      );
-    },
-    {
-      body: t.Object({
-        anonymous: t.Optional(t.Boolean()),
-        displayName: t.Optional(t.String({ minLength: 4, maxLength: 48 })),
-        syncProfile: t.Optional(t.Boolean()),
+        {
+          body: t.Object({
+            anonymous: t.Optional(t.Boolean()),
+            displayName: t.Optional(t.String({ minLength: 4, maxLength: 48 })),
+            syncProfile: t.Optional(t.Boolean()),
+          }),
+        },
+      )
+      .delete("/me", async ({ user }) => {
+        const sessions = sessionsByUserId(user.userId);
+        for (const s of sessions) {
+          await destroySession(s.token);
+        }
+        deleteUser(user.id);
+        await notifyAccountDeleted(user);
+        return new Response(
+          `User ${user.username} (${user.userId}) deleted successfully`,
+          {
+            status: 200,
+            headers: { "Content-Type": "text/plain" },
+          },
+        );
       }),
-    },
   )
-  .delete("/me", async ({ cookie: { session } }) => {
-    const user = userBySession(session.value as string | undefined);
-    if (!user) {
-      return new Response("Unauthorized", {
-        status: 401,
-        headers: { "Content-Type": "text/plain" },
-      });
-    }
-    const sessions = sessionsByUserId(user.userId);
-    for (const s of sessions) {
-      await destroySession(s.token);
-    }
-    deleteUser(user.id);
-    await notifyAccountDeleted(user);
-    return new Response(
-      `User ${user.username} (${user.userId}) deleted successfully`,
-      {
-        status: 200,
-        headers: { "Content-Type": "text/plain" },
-      },
-    );
-  })
   .get("/user/:userId", async ({ params }) => {
     const user = getUserByUserId(params.userId);
     if (!user) {

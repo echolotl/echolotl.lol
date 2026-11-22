@@ -2,7 +2,7 @@ import {
   upsertSession,
   destroySession as removeSession,
   updateUser,
-} from "../../db";
+} from "./repository";
 import { Logger } from "../../util/logger";
 import { sendDiscordWebhook } from "../../util/webhook";
 import type { AuthenticatedUser, PublicUser } from "@echolotl/types";

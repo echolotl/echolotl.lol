@@ -1,4 +1,5 @@
-import { getReplyCounts, getUserByUserId } from "../db";
+import { getReplyCounts } from "./repository";
+import { getUserByUserId } from "../auth/discord/repository";
 import {
   getAvatarUrl,
   PUBLIC_PROFILE_REFRESH_INTERVAL_MS,

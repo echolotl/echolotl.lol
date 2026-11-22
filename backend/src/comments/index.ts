@@ -12,10 +12,9 @@ import {
   getCommentsByParentId,
   getCommentsByUserId,
   getTopLevelCommentsBySlug,
-  getUserByUserId,
   insertComment,
-  userBySession,
-} from "../db";
+} from "./repository";
+import { getUserByUserId, userBySession } from "../auth/discord/repository";
 import { limit, paginate } from "../util/pagination";
 import {
   notifyCommentEdited,

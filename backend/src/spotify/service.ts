@@ -1,4 +1,4 @@
-import { getSpotifyToken, upsertSpotifyToken } from "../db";
+import { getSpotifyToken, upsertSpotifyToken } from "./repository";
 import { Logger } from "../util/logger";
 import {
   CurrentlyPlayingResponse,
