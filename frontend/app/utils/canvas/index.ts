@@ -1,15 +1,10 @@
 import { CANVAS_COLORS, CANVAS_INPUT_MODES } from "../constants";
 import type { BrushSegment } from "@echolotl/flashish";
+import type { GuestbookCursorMode, Point } from "@echolotl/types";
 import { cameraViewport } from "./camera";
 import type { PicrossInputModeDefinition } from "../picross";
 
-/**
- * Represents a point in 2D space.
- */
-export interface Point {
-  x: number;
-  y: number;
-}
+export type { Point } from "@echolotl/types";
 
 /**
  * Represents the camera's state.
@@ -62,6 +57,24 @@ export interface RenderedPath {
   bounds: Rect;
 }
 
+export interface OtherCursor {
+  userId: string;
+  point: Point | null;
+  mode: GuestbookCursorMode;
+  brushSize: number;
+}
+
+export interface OtherStroke {
+  layer: number;
+  color: string | null;
+  segments: (BrushSegment & { path: Path2D })[];
+}
+
+let cursorImage: HTMLImageElement | null = null;
+let cursorCanvas: OffscreenCanvas | null = null;
+
+const { getUserColor } = useAuth();
+
 /**
  * The state of the canvas renderer and all of the elements it manages.
  */
@@ -87,6 +100,8 @@ interface RenderState {
   brushPosition: Point | null;
   brushSize: number;
   pathDraft: (BrushSegment & { path: Path2D })[];
+  otherCursors: Record<string, OtherCursor>;
+  otherStrokes: Map<string, OtherStroke>;
 }
 
 /**
@@ -118,6 +133,8 @@ export function createCanvasRenderer(getState: () => RenderState) {
       brushPosition,
       brushSize,
       pathDraft,
+      otherCursors,
+      otherStrokes,
     } = getState();
     if (
       !canvas ||
@@ -186,10 +203,14 @@ export function createCanvasRenderer(getState: () => RenderState) {
       activePointer?.mode === "move" ? activePointer.moveOffset : null;
     const selectedIds = new Set(selectedPaths.map(({ id }) => id));
     for (let layer = 1; layer <= layerCount; layer++) {
+      const otherLayerStrokes = Array.from(otherStrokes.values()).filter(
+        (stroke) => stroke.layer === layer,
+      );
       const erasing =
-        layer === activeLayer &&
-        activePointer?.mode === "draw" &&
-        activePointer.inputMode === "erase";
+        (layer === activeLayer &&
+          activePointer?.mode === "draw" &&
+          activePointer.inputMode === "erase") ||
+        otherLayerStrokes.some((stroke) => stroke.color === null);
       let layerContext = context;
       if (erasing) {
         if (!eraseCanvas) eraseCanvas = new OffscreenCanvas(width, height);
@@ -227,9 +248,14 @@ export function createCanvasRenderer(getState: () => RenderState) {
         layerContext.fill(path);
         layerContext.restore();
       }
-      if (layer === activeLayer && activePointer?.mode === "draw") {
-        if (erasing) layerContext.globalCompositeOperation = "destination-out";
-        for (const { path, size, from, to } of pathDraft) {
+      const drawSegments = (
+        segments: (BrushSegment & { path: Path2D })[],
+        color: string | null,
+      ) => {
+        layerContext.save();
+        if (color === null)
+          layerContext.globalCompositeOperation = "destination-out";
+        for (const { path, size, from, to } of segments) {
           const radius = size / 2;
           if (
             !isVisible({
@@ -240,13 +266,22 @@ export function createCanvasRenderer(getState: () => RenderState) {
             })
           )
             continue;
-          layerContext.strokeStyle = activePointer.color;
+          layerContext.strokeStyle = color ?? "#000";
           layerContext.lineWidth = size;
           layerContext.lineCap = "round";
           layerContext.lineJoin = "round";
           layerContext.stroke(path);
         }
-        if (erasing) layerContext.globalCompositeOperation = "source-over";
+        layerContext.restore();
+      };
+      if (layer === activeLayer && activePointer?.mode === "draw") {
+        drawSegments(
+          pathDraft,
+          activePointer.inputMode === "erase" ? null : activePointer.color,
+        );
+      }
+      for (const stroke of otherLayerStrokes) {
+        drawSegments(stroke.segments, stroke.color);
       }
       if (erasing && eraseCanvas) {
         context.save();
@@ -257,6 +292,7 @@ export function createCanvasRenderer(getState: () => RenderState) {
     }
 
     drawInfobox(context, camera);
+    drawOtherCursors(context, camera, otherCursors);
 
     if (
       inputMode === "select" &&
@@ -351,6 +387,66 @@ function drawInfobox(context: CanvasRenderingContext2D, camera: Camera) {
   context.textBaseline = "middle";
   context.fillText("temp", 0, 0);
   context.restore();
+}
+
+function drawOtherCursors(
+  context: CanvasRenderingContext2D,
+  camera: Camera,
+  otherCursors: Record<string, OtherCursor>,
+) {
+  if (!CANVAS_COLORS) return;
+  for (const cursor of Object.values(otherCursors)) {
+    if (!cursor.point) continue;
+    const color = getUserColor(cursor.userId);
+    if (cursor.mode === "brush") {
+      context.save();
+      context.strokeStyle = color;
+      context.lineWidth = 1 / camera.zoom;
+      context.beginPath();
+      context.arc(
+        cursor.point.x,
+        cursor.point.y,
+        cursor.brushSize / 2,
+        0,
+        Math.PI * 2,
+      );
+      context.stroke();
+      context.restore();
+      continue;
+    }
+
+    if (typeof Image === "undefined") continue;
+    if (!cursorImage) {
+      cursorImage = new Image();
+      cursorImage.src = "/images/icons/cursor.webp";
+    }
+    const image = cursorImage;
+    if (!image?.complete || !image.naturalWidth) continue;
+
+    if (
+      !cursorCanvas ||
+      cursorCanvas.width !== image.naturalWidth ||
+      cursorCanvas.height !== image.naturalHeight
+    ) {
+      cursorCanvas = new OffscreenCanvas(
+        image.naturalWidth,
+        image.naturalHeight,
+      );
+    }
+
+    const cursorContext = cursorCanvas.getContext("2d");
+    if (!cursorContext)
+      throw new Error("Unable to create cursor canvas context");
+    cursorContext.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+    cursorContext.globalCompositeOperation = "source-over";
+    cursorContext.drawImage(image, 0, 0);
+    cursorContext.globalCompositeOperation = "source-in";
+    cursorContext.fillStyle = color;
+    cursorContext.fillRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+    cursorContext.globalCompositeOperation = "source-over";
+
+    context.drawImage(cursorCanvas, cursor.point.x, cursor.point.y);
+  }
 }
 
 /**

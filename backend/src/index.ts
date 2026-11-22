@@ -8,6 +8,7 @@ import cors from "@elysiajs/cors";
 import { ALLOWED_ORIGINS } from "./constants";
 import { commentsRouter } from "./comments";
 import { picrossRouter } from "./picross";
+import { guestbookRouter } from "./guestbook";
 import { renderDocs } from "./docs";
 
 const fileRouter = new Elysia().get("/assets/*", ({ params }) => {
@@ -59,6 +60,7 @@ const app = new Elysia()
   .use(fileRouter)
   .use(commentsRouter)
   .use(picrossRouter)
+  .use(guestbookRouter)
   .get(
     "/",
     async () =>

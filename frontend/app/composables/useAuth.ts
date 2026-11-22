@@ -40,6 +40,16 @@ function getAnonymousAvatarUrl(id: string) {
   return `/images/anonymous/${anonymousAvatars[index]}.webp`;
 }
 
+function getUserColor(id: string) {
+  const hex = id.replaceAll("-", "");
+  const msb = BigInt("0x" + hex.slice(0, 16));
+  const lsb = BigInt("0x" + hex.slice(16));
+  const hilo = msb ^ lsb;
+  const hash = ((hilo >> 32n) ^ hilo) & 0xffffffffn;
+  const rgb = Number(hash & 0xffffffn);
+  return "#" + rgb.toString(16).padStart(6, "0");
+}
+
 function getAvatarUrl(user: AuthenticatedUser | PublicUser | null, size = 128) {
   if (!user) return "/images/deletedavatar.webp";
   if (!user.id || !user.avatarHash) return getAnonymousAvatarUrl(user.userId);
@@ -227,6 +237,7 @@ function createAuth() {
     deleteAccount,
     getPublicUser,
     getAvatarUrl,
+    getUserColor,
     getDisplayName,
     publicUser,
   };

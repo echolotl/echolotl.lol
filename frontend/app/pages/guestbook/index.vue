@@ -5,7 +5,7 @@
       :style="canvasStyle"
       aria-label="Guestbook drawing canvas"
       @mousedown.middle.prevent
-      @pointerenter="updateBrushCursor"
+      @pointerenter="handlePointerEnter"
       @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
       @pointerup="handlePointerUp"
@@ -331,6 +331,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    pointer-events: none;
   }
 
   .side-panels {
@@ -342,6 +343,7 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 6px;
+    pointer-events: none;
   }
 
   .vertical-actions {
@@ -360,6 +362,7 @@
     background: var(--surface);
     border-radius: 4px;
     padding: 6px 8px;
+    pointer-events: auto;
     > details summary {
       color: var(--text-secondary);
       text-transform: uppercase;
@@ -410,6 +413,7 @@
     background: var(--surface);
     border-radius: 8px;
     align-items: center;
+    pointer-events: auto;
 
     button {
       background: none;
@@ -446,17 +450,25 @@ canvas {
   gap: 6px;
   color: var(--text-secondary);
   font-size: var(--small-text);
+  pointer-events: none;
 }
 </style>
 
 <script setup lang="ts">
 import { initializeCanvasColors } from "~/utils/constants";
 import { FlashishDrawing, type BrushSegment } from "@echolotl/flashish";
+import type {
+  GuestbookClientMessage,
+  GuestbookServerMessage,
+  GuestbookStrokeMessage,
+} from "@echolotl/types";
 import {
   createCanvasRenderer,
   getCanvasInputModeForKey,
   type Camera,
   type CanvasInputMode,
+  type OtherCursor,
+  type OtherStroke,
   type Point,
   type RenderedPath,
 } from "~/utils/canvas";
@@ -557,6 +569,11 @@ let drawing: FlashishDrawing;
  * The draft paths that are currently being drawn but not yet committed.
  */
 let pathDraft: (BrushSegment & { path: Path2D })[] = [];
+let activeStroke: {
+  strokeId: string;
+  color: string | null;
+  layer: number;
+} | null = null;
 
 /**
  * The committed paths that have been finalized and are part of the drawing.
@@ -654,6 +671,11 @@ const canRedo = ref(false);
 const usePenPressure = ref(false);
 
 const { theme } = useTheme();
+const { isLoggedIn } = useAuth();
+const { backendUrl, backendEnabled } = useRuntimeConfig().public;
+
+let websocket: WebSocket | null = null;
+let websocketClientId: string | null = null;
 
 /**
  * Represents a pointer's state during interaction with the canvas.
@@ -669,6 +691,9 @@ interface Pointer {
   moveOffset: Point;
   marqueeEnd: Point | null;
 }
+
+let otherCursors: Record<string, OtherCursor> = {};
+let otherStrokes = new Map<string, OtherStroke>();
 
 /**
  * The style for the canvas element based on the current pointer state.
@@ -712,11 +737,43 @@ const renderer = createCanvasRenderer(() => ({
   brushPosition: pointer.position && getWorldPosition(pointer.position),
   brushSize: brushSize.value,
   pathDraft,
+  otherCursors,
+  otherStrokes,
 }));
 
 onMounted(() => {
   const canvas = guestbookCanvas.value;
   if (canvas) {
+    // Start the websocket connection for the guestbook
+    watch(
+      isLoggedIn,
+      (loggedIn, _previous, onCleanup) => {
+        if (!loggedIn || !backendEnabled || !backendUrl) return;
+        const url = new URL(
+          `${backendUrl.replace(/\/+$/, "")}/guestbook/ws`,
+          window.location.origin,
+        );
+        url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+        const socket = new WebSocket(url);
+        websocket = socket;
+        websocketClientId = crypto.randomUUID();
+        socket.addEventListener("message", (e) => {
+          if (websocket === socket) handleWebsocketMessage(e);
+        });
+        socket.addEventListener("error", (event) => {
+          console.error("Guestbook WebSocket error:", event);
+        });
+        onCleanup(() => {
+          socket.close();
+          if (websocket === socket) websocket = null;
+          websocketClientId = null;
+          otherCursors = {};
+          otherStrokes.clear();
+          renderer.schedule();
+        });
+      },
+      { immediate: true },
+    );
     camera.x = -canvas.clientWidth / (2 * camera.zoom);
     camera.y = -canvas.clientHeight / (2 * camera.zoom);
     drawing = new FlashishDrawing();
@@ -739,6 +796,11 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  websocket?.close();
+  websocket = null;
+  websocketClientId = null;
+  activeStroke = null;
+  otherStrokes.clear();
   resizeObserver?.disconnect();
   window.removeEventListener("keydown", handleKeys);
   renderer.dispose();
@@ -754,6 +816,7 @@ watch(brushSize, () => renderer.schedule());
 watch(eyedropperActive, () => renderer.schedule());
 
 function handlePointerDown(event: PointerEvent) {
+  sendCursorPosition(event);
   if (event.pointerType === "touch") {
     if (pointer.active && !touches.has(pointer.active.id)) return;
     const canvas = guestbookCanvas.value;
@@ -762,6 +825,14 @@ function handlePointerDown(event: PointerEvent) {
     canvas.setPointerCapture(event.pointerId);
     if (touches.size >= 2) {
       touchGesture.value = true;
+      if (activeStroke && websocketClientId) {
+        sendWebhookMessage({
+          type: "stroke:commit",
+          strokeId: activeStroke.strokeId,
+          cancelled: true,
+        });
+      }
+      activeStroke = null;
       pointer.active = null;
       pointer.position = null;
       pathDraft = [];
@@ -853,14 +924,132 @@ function handlePointerDown(event: PointerEvent) {
     const path = new Path2D();
     path.moveTo(position.x, position.y);
     path.lineTo(position.x, position.y);
-    pathDraft = [
-      { path, from: position, to: position, size: getSegmentSize(event) },
-    ];
+    const firstSegment = {
+      path,
+      from: position,
+      to: position,
+      size: getSegmentSize(event),
+    };
+    pathDraft = [firstSegment];
+    const color =
+      pointer.active.inputMode === "draw" ? pointer.active.color : null;
+    activeStroke = {
+      strokeId: crypto.randomUUID(),
+      color,
+      layer: activeLayer.value,
+    };
+    if (websocketClientId) {
+      sendWebhookMessage({
+        type: "stroke:start",
+        clientId: websocketClientId,
+        ...activeStroke,
+      });
+      sendWebhookMessage({
+        type: "stroke:points",
+        strokeId: activeStroke.strokeId,
+        points: [
+          {
+            from: firstSegment.from,
+            to: firstSegment.to,
+            size: firstSegment.size,
+          },
+        ],
+      });
+    }
   }
+  sendCursorPosition(event);
   renderer.schedule();
 }
 
+function sendWebhookMessage(message: GuestbookClientMessage) {
+  if (!isLoggedIn.value || websocket?.readyState !== WebSocket.OPEN) return;
+  websocket.send(JSON.stringify(message));
+}
+
+function handleWebsocketMessage(event: MessageEvent) {
+  try {
+    const message: GuestbookServerMessage = JSON.parse(event.data);
+    switch (message.type) {
+      case "cursor:move":
+        if (message.clientId === websocketClientId) break;
+        otherCursors[message.userId] = {
+          userId: message.userId,
+          point: message.point,
+          mode: message.mode,
+          brushSize: message.brushSize,
+        };
+        break;
+      case "cursor:leave":
+        if (message.clientId === websocketClientId) break;
+        if (otherCursors[message.userId])
+          otherCursors[message.userId]!.point = null;
+        break;
+      case "stroke:start":
+        if (message.clientId === websocketClientId) break;
+        otherStrokes.set(message.strokeId, {
+          layer: message.layer,
+          color: message.color,
+          segments: [],
+        });
+        break;
+      case "stroke:points": {
+        const stroke = otherStrokes.get(message.strokeId);
+        if (!stroke) break;
+        stroke.segments.push(
+          ...message.points.map((segment) => {
+            const path = new Path2D();
+            path.moveTo(segment.from.x, segment.from.y);
+            path.lineTo(segment.to.x, segment.to.y);
+            return { ...segment, path };
+          }),
+        );
+        break;
+      }
+      case "stroke:commit": {
+        const stroke = otherStrokes.get(message.strokeId);
+        otherStrokes.delete(message.strokeId);
+        if (!stroke || message.cancelled) break;
+        drawing.addStroke(stroke.segments, stroke.color, stroke.layer);
+        syncDrawing();
+        break;
+      }
+    }
+    renderer.schedule();
+  } catch (error) {
+    console.error("Invalid guestbook event:", event.data, error);
+  }
+}
+
+function sendCursorPosition(event: PointerEvent) {
+  const point = getWorldPosition(event);
+  if (!point || !websocketClientId) return;
+  const active = pointer.active;
+  const mode =
+    active?.mode === "pan" || active?.mode === "move"
+      ? "pointer"
+      : (active?.inputMode ?? inputMode.value) === "draw" ||
+          (active?.inputMode ?? inputMode.value) === "erase"
+        ? "brush"
+        : "pointer";
+  sendWebhookMessage({
+    type: "cursor:move",
+    clientId: websocketClientId,
+    point,
+    mode,
+    brushSize:
+      active?.mode === "draw"
+        ? (pathDraft.at(-1)?.size ?? brushSize.value)
+        : brushSize.value,
+  });
+}
+
+function handlePointerEnter(event: PointerEvent) {
+  updateBrushCursor(event);
+  sendCursorPosition(event);
+}
+
 function handlePointerMove(event: PointerEvent) {
+  sendCursorPosition(event);
   if (event.pointerType === "touch" && touches.has(event.pointerId)) {
     const previous = Array.from(touches.values());
     touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -933,6 +1122,14 @@ function updatePointer(event: PointerEvent) {
         to: position,
         size: getSegmentSize(event),
       });
+      if (activeStroke && websocketClientId) {
+        const segment = pathDraft.at(-1)!;
+        sendWebhookMessage({
+          type: "stroke:points",
+          strokeId: activeStroke.strokeId,
+          points: [{ from: segment.from, to: segment.to, size: segment.size }],
+        });
+      }
       pointer.active.lastWorldPosition = position;
     }
   } else if (pointer.active?.mode === "move") {
@@ -1026,6 +1223,12 @@ function updateBrushCursor(event: PointerEvent) {
 
 function hideBrushCursor(event: PointerEvent) {
   if (pointer.active !== null && pointer.active.id !== event.pointerId) return;
+  if (websocketClientId) {
+    sendWebhookMessage({
+      type: "cursor:leave",
+      clientId: websocketClientId,
+    });
+  }
   pointer.position = null;
   renderer.schedule();
 }
@@ -1162,12 +1365,20 @@ function endPointer(event: PointerEvent) {
       canvas.releasePointerCapture(event.pointerId);
     }
     if (pathDraft.length) {
+      const completedStroke = activeStroke;
       drawing.addStroke(
         pathDraft,
         active.inputMode === "draw" ? active.color : null,
         activeLayer.value,
       );
       syncDrawing();
+      if (completedStroke && websocketClientId) {
+        sendWebhookMessage({
+          type: "stroke:commit",
+          strokeId: completedStroke.strokeId,
+        });
+      }
+      activeStroke = null;
     } else if (
       active.mode === "move" &&
       selectedPathIds.value.length &&
@@ -1200,6 +1411,7 @@ function endPointer(event: PointerEvent) {
     }
     pathDraft = [];
     renderer.schedule();
+    sendCursorPosition(event);
   }
 }
 

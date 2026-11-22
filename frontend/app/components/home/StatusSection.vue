@@ -3,7 +3,8 @@
     <div class="status-think-bubble" :style="{ filter: filterUrl }">
       <div
         v-if="status === 'loading'"
-        style="display: flex; align-items: center; gap: 0.25rem">
+        style="display: flex; align-items: center; gap: 0.25rem"
+      >
         <Icon icon="loading" size="32px" />
         Thinking of a status...
       </div>
@@ -32,7 +33,8 @@
           >
           <span
             v-if="status.artists.length > 1"
-            style="color: var(--text-secondary)">
+            style="color: var(--text-secondary)"
+          >
             (+{{ status.artists.length - 1 }} other)</span
           >
           on Spotify
@@ -54,7 +56,8 @@
       title="the thinkerrrr"
       :style="{
         maskImage: `url(${thinkerImage})`,
-      }" />
+      }"
+    />
   </template>
 </template>
 
@@ -188,7 +191,7 @@ const scheduleSpotifyRefetchOnSongEnd = (playback: SpotifyResponse) => {
 const fetchSpotifyStatus: () => Promise<SpotifyResponse | null> = async () => {
   try {
     const fetchStart = Date.now();
-    const data = await fetch(`${backendUrl}/spotify`);
+    const data = await fetch(`http://${backendUrl}/spotify`);
     if (data.status === 204) {
       clearSpotifyRefetchTimeout();
       return null;
@@ -211,7 +214,7 @@ const fetchSpotifyStatus: () => Promise<SpotifyResponse | null> = async () => {
 
 const fetchEcholotlStatus: () => Promise<Status | null> = async () => {
   try {
-    const data = await fetch(`${backendUrl}/status`);
+    const data = await fetch(`http://${backendUrl}/status`);
     if (data.status === 204) {
       return null;
     }
@@ -262,7 +265,7 @@ const startSpotifyPolling = () => {
 };
 
 onMounted(async () => {
-  thinkerImage.value = getRandomThinkerImage();
+  thinkerImage.value = getRandomThinkerImage() ?? null;
   await refreshStatus();
   startSpotifyPolling();
 });
