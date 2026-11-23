@@ -4,17 +4,20 @@
   "module": "src/index.js",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "build": "bun build --compile --minify-whitespace --minify-syntax --target bun-linux-x64 --outfile server src/index.ts",
+    "build": "bun build --compile --minify-whitespace --minify-syntax --target bun-linux-x64 --external jsdom/lib/jsdom/living/generated/utils --outfile server src/index.ts",
     "start": "bun run ./src/index.ts",
     "lint": "oxlint .",
     "format": "oxfmt --write ."
   },
   "dependencies": {
+    "@echolotl/flashish": "workspace:*",
     "@echolotl/picross": "workspace:*",
     "@echolotl/types": "workspace:*",
     "@elysiajs/cors": "^1.4.2",
+    "canvas": "^3.2.3",
     "elysia": "latest",
     "elysia-rate-limit": "^4.6.2",
+    "jsdom": "^28.1.0",
     "shiki": "^4.3.1",
     "zod": "^4.4.3"
   },

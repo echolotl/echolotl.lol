@@ -74,6 +74,29 @@ export interface GuestbookCursorLeaveMessage {
   clientId: string;
 }
 
+export interface GuestbookSelectionPreviewMessage {
+  type: "selection:preview";
+  clientId: string;
+  ids: number[];
+  offset: Point;
+  marquee: { from: Point; to: Point } | null;
+}
+
+export interface GuestbookServerSelectionPreviewMessage
+  extends GuestbookSelectionPreviewMessage {
+  userId: string;
+}
+
+export interface GuestbookServerSelectionLeaveMessage {
+  type: "selection:leave";
+  clientId: string;
+  userId: string;
+}
+
+export interface GuestbookSelectionRequestMessage {
+  type: "selection:request";
+}
+
 export interface GuestbookStrokeSegment {
   from: Point;
   to: Point;
@@ -96,8 +119,80 @@ export interface GuestbookStrokePointsMessage {
 
 export interface GuestbookStrokeCommitMessage {
   type: "stroke:commit";
+  clientId: string;
+  operationId: string;
   strokeId: string;
   cancelled?: boolean;
+  segments?: GuestbookStrokeSegment[];
+  color?: string | null;
+  layer?: number;
+}
+
+export interface GuestbookEditMetadata {
+  clientId: string;
+  operationId: string;
+}
+
+export interface GuestbookFillMessage extends GuestbookEditMetadata {
+  type: "fill:commit";
+  point: Point;
+  color: string;
+  layer: number;
+}
+
+export interface GuestbookFillResultMessage {
+  type: "fill:result";
+  operationId: string;
+  result: "unbounded" | "unchanged";
+}
+
+export interface GuestbookPathsMoveMessage extends GuestbookEditMetadata {
+  type: "paths:move";
+  ids: number[];
+  dx: number;
+  dy: number;
+}
+
+export interface GuestbookPathsFinishMoveMessage extends GuestbookEditMetadata {
+  type: "paths:finish-move";
+  ids: number[];
+}
+
+export interface GuestbookPathsLayerMessage extends GuestbookEditMetadata {
+  type: "paths:layer";
+  ids: number[];
+  direction: -1 | 1;
+}
+
+export interface GuestbookPathsColorMessage extends GuestbookEditMetadata {
+  type: "paths:color";
+  ids: number[];
+  color: string;
+}
+
+export interface GuestbookPathsDeleteMessage extends GuestbookEditMetadata {
+  type: "paths:delete";
+  ids: number[];
+}
+
+export interface GuestbookPathsMergeMessage extends GuestbookEditMetadata {
+  type: "paths:merge";
+  ids: number[];
+}
+
+export interface GuestbookPathsGroupMessage extends GuestbookEditMetadata {
+  type: "paths:group";
+  ids: number[];
+  groupId: string;
+}
+
+export interface GuestbookPathsUngroupMessage extends GuestbookEditMetadata {
+  type: "paths:ungroup";
+  ids: number[];
+}
+
+export interface GuestbookDrawingUndoMessage extends GuestbookEditMetadata {
+  type: "drawing:undo" | "drawing:redo";
 }
 
 export interface GuestbookServerStrokeStartMessage extends GuestbookStrokeStartMessage {
@@ -108,8 +203,29 @@ export interface GuestbookServerStrokePointsMessage extends GuestbookStrokePoint
   userId: string;
 }
 
-export interface GuestbookServerStrokeCommitMessage extends GuestbookStrokeCommitMessage {
+export interface GuestbookServerStrokeCommitMessage
+  extends GuestbookStrokeCommitMessage {
   userId: string;
+}
+
+export interface GuestbookDrawingPath {
+  id: number;
+  ownerId: string;
+  color: string;
+  layer: number;
+  groupId?: string;
+  pathData: string;
+  bounds: { x: number; y: number; width: number; height: number };
+}
+
+export interface GuestbookDrawingStateMessage {
+  type: "drawing:state";
+  epoch: string;
+  revision: number;
+  paths: GuestbookDrawingPath[];
+  undoUserIds: string[];
+  redoUserIds: string[];
+  operation?: { clientId: string; operationId: string; type: string };
 }
 
 export type GuestbookStrokeMessage =
@@ -133,8 +249,24 @@ export interface GuestbookServerCursorLeaveMessage extends GuestbookCursorLeaveM
 export type GuestbookClientMessage =
   | GuestbookCursorMoveMessage
   | GuestbookCursorLeaveMessage
-  | GuestbookStrokeMessage;
+  | GuestbookSelectionPreviewMessage
+  | GuestbookStrokeMessage
+  | GuestbookFillMessage
+  | GuestbookPathsMoveMessage
+  | GuestbookPathsFinishMoveMessage
+  | GuestbookPathsLayerMessage
+  | GuestbookPathsColorMessage
+  | GuestbookPathsDeleteMessage
+  | GuestbookPathsMergeMessage
+  | GuestbookPathsGroupMessage
+  | GuestbookPathsUngroupMessage
+  | GuestbookDrawingUndoMessage;
 export type GuestbookServerMessage =
   | GuestbookServerCursorMoveMessage
   | GuestbookServerCursorLeaveMessage
-  | GuestbookServerStrokeMessage;
+  | GuestbookServerSelectionPreviewMessage
+  | GuestbookServerSelectionLeaveMessage
+  | GuestbookSelectionRequestMessage
+  | GuestbookServerStrokeMessage
+  | GuestbookFillResultMessage
+  | GuestbookDrawingStateMessage;

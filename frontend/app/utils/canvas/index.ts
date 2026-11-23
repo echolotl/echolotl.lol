@@ -51,6 +51,8 @@ export function getCanvasInputModeForKey(
  */
 export interface RenderedPath {
   id: number;
+  ownerId: string;
+  groupId?: string;
   path: Path2D;
   color: string;
   layer: number;
@@ -70,6 +72,18 @@ export interface OtherStroke {
   segments: (BrushSegment & { path: Path2D })[];
 }
 
+export interface SelectionPreview {
+  userId: string;
+  ids: number[];
+  offset: Point;
+  marquee: { from: Point; to: Point } | null;
+}
+
+export interface PendingMove {
+  ids: number[];
+  offset: Point;
+}
+
 let cursorImage: HTMLImageElement | null = null;
 let cursorCanvas: OffscreenCanvas | null = null;
 
@@ -87,10 +101,11 @@ interface RenderState {
   paths: RenderedPath[];
   selectedPaths: RenderedPath[];
   selectionBounds: RenderedPath["bounds"] | null;
+  groupSelectionId: string | null;
   inputMode: CanvasInputMode;
   eyedropperActive: boolean;
   activePointer: {
-    mode: "draw" | "pan" | "move" | "marquee";
+    mode: "draw" | "pan" | "move" | "marquee" | "fill";
     inputMode: CanvasInputMode;
     color: string;
     moveOffset: Point;
@@ -102,6 +117,10 @@ interface RenderState {
   pathDraft: (BrushSegment & { path: Path2D })[];
   otherCursors: Record<string, OtherCursor>;
   otherStrokes: Map<string, OtherStroke>;
+  pendingStrokes: Map<string, OtherStroke>;
+  otherSelections: Map<string, SelectionPreview>;
+  pendingMoves: Map<string, PendingMove>;
+  pendingFinishingMoves: Map<string, number[]>;
 }
 
 /**
@@ -127,6 +146,7 @@ export function createCanvasRenderer(getState: () => RenderState) {
       paths,
       selectedPaths,
       selectionBounds,
+      groupSelectionId,
       inputMode,
       eyedropperActive,
       activePointer,
@@ -135,6 +155,10 @@ export function createCanvasRenderer(getState: () => RenderState) {
       pathDraft,
       otherCursors,
       otherStrokes,
+      pendingStrokes,
+      otherSelections,
+      pendingMoves,
+      pendingFinishingMoves,
     } = getState();
     if (
       !canvas ||
@@ -202,8 +226,19 @@ export function createCanvasRenderer(getState: () => RenderState) {
     const moveOffset =
       activePointer?.mode === "move" ? activePointer.moveOffset : null;
     const selectedIds = new Set(selectedPaths.map(({ id }) => id));
+    const finishingIds = new Set(
+      [...pendingFinishingMoves.values()].flat(),
+    );
+    const pendingMoveList = [...pendingMoves.values()];
+    const remoteSelectionList = [...otherSelections.values()];
+    const offsetForPath = (id: number) => {
+      if (moveOffset && selectedIds.has(id)) return moveOffset;
+      return pendingMoveList.find((move) => move.ids.includes(id))?.offset ??
+        remoteSelectionList.find((selection) => selection.ids.includes(id))?.offset ??
+        null;
+    };
     for (let layer = 1; layer <= layerCount; layer++) {
-      const otherLayerStrokes = Array.from(otherStrokes.values()).filter(
+      const otherLayerStrokes = [...otherStrokes.values(), ...pendingStrokes.values()].filter(
         (stroke) => stroke.layer === layer,
       );
       const erasing =
@@ -232,9 +267,16 @@ export function createCanvasRenderer(getState: () => RenderState) {
         // @ts-ignore-next-line: whatever the canvases are basically the same
         layerContext = eraseContext;
       }
-      for (const { id, path, color, layer: pathLayer, bounds } of paths) {
-        if (layer !== pathLayer) continue;
-        const offset = selectedIds.has(id) ? moveOffset : null;
+      const layerPaths = paths.filter(
+        ({ layer: pathLayer }) => layer === pathLayer,
+      );
+      layerPaths.sort(
+        (left, right) =>
+          Number(selectedIds.has(left.id) || finishingIds.has(left.id)) -
+          Number(selectedIds.has(right.id) || finishingIds.has(right.id)),
+      );
+      for (const { id, path, color, bounds } of layerPaths) {
+        const offset = offsetForPath(id);
         const x = bounds.x + (offset?.x ?? 0);
         const y = bounds.y + (offset?.y ?? 0);
         if (!isVisible({ x, y, width: bounds.width, height: bounds.height }))
@@ -300,10 +342,45 @@ export function createCanvasRenderer(getState: () => RenderState) {
       activePointer?.mode !== "marquee"
     ) {
       context.save();
-      if (moveOffset) context.translate(moveOffset.x, moveOffset.y);
+      const offset = moveOffset ?? pendingMoveList.find((move) =>
+        move.ids.some((id) => selectedIds.has(id)),
+      )?.offset;
+      if (offset) context.translate(offset.x, offset.y);
       const { x, y, width, height } = selectionBounds;
       context.strokeStyle = CANVAS_COLORS.gray;
       context.strokeRect(x, y, width, height);
+      context.restore();
+    }
+    const groupPaths = groupSelectionId
+      ? paths.filter(({ groupId }) => groupId === groupSelectionId)
+      : [];
+    if (
+      inputMode === "select" &&
+      groupPaths.length > selectedPaths.length &&
+      activePointer?.mode !== "marquee"
+    ) {
+      const bounds = groupPaths.map(({ id, bounds }) => {
+        const offset = offsetForPath(id);
+        return {
+          x: bounds.x + (offset?.x ?? 0),
+          y: bounds.y + (offset?.y ?? 0),
+          width: bounds.width,
+          height: bounds.height,
+        };
+      });
+      const left = Math.min(...bounds.map(({ x }) => x));
+      const top = Math.min(...bounds.map(({ y }) => y));
+      const right = Math.max(
+        ...bounds.map(({ x, width }) => x + width),
+      );
+      const bottom = Math.max(
+        ...bounds.map(({ y, height }) => y + height),
+      );
+      context.save();
+      context.strokeStyle = CANVAS_COLORS.gray;
+      context.lineWidth = 1 / camera.zoom;
+      context.setLineDash([6 / camera.zoom, 4 / camera.zoom]);
+      context.strokeRect(left, top, right - left, bottom - top);
       context.restore();
     }
     if (
@@ -320,11 +397,36 @@ export function createCanvasRenderer(getState: () => RenderState) {
       context.strokeRect(from.x, from.y, to.x - from.x, to.y - from.y);
       context.restore();
     }
+    for (const selection of remoteSelectionList) {
+      const selected = paths.filter(({ id }) => selection.ids.includes(id));
+      context.save();
+      context.strokeStyle = getUserColor(selection.userId);
+      context.lineWidth = 1 / camera.zoom;
+      if (selected.length && !selection.marquee) {
+        const left = Math.min(...selected.map(({ bounds }) => bounds.x));
+        const top = Math.min(...selected.map(({ bounds }) => bounds.y));
+        const right = Math.max(...selected.map(({ bounds }) => bounds.x + bounds.width));
+        const bottom = Math.max(...selected.map(({ bounds }) => bounds.y + bounds.height));
+        context.strokeRect(
+          left + selection.offset.x,
+          top + selection.offset.y,
+          right - left,
+          bottom - top,
+        );
+      }
+      if (selection.marquee) {
+        const { from, to } = selection.marquee;
+        context.setLineDash([4 / camera.zoom, 4 / camera.zoom]);
+        context.strokeRect(from.x, from.y, to.x - from.x, to.y - from.y);
+      }
+      context.restore();
+    }
 
     if (
       brushPosition &&
       !eyedropperActive &&
-      (activePointer?.inputMode ?? inputMode) !== "select" &&
+      ((activePointer?.inputMode ?? inputMode) === "draw" ||
+        (activePointer?.inputMode ?? inputMode) === "erase") &&
       activePointer?.mode !== "pan"
     ) {
       context.strokeStyle = CANVAS_COLORS.gray;

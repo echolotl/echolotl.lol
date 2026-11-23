@@ -1,5 +1,11 @@
 <template>
   <div class="guestbook-container">
+    <div v-if="status === 'loading' || connecting" class="guestbook-status">
+      <Icon icon="loading" size="20px" /> Connecting...
+    </div>
+    <div v-else-if="!isLoggedIn">
+      <Icon icon="visible" size="20px" /> Log in to draw or edit.
+    </div>
     <canvas
       ref="guestbookCanvas"
       :style="canvasStyle"
@@ -12,14 +18,32 @@
       @pointerleave="hideBrushCursor"
       @pointercancel="endPointer"
       @lostpointercapture="endPointer"
+      @dblclick="handleDoubleClick"
       @contextmenu.prevent
       @wheel="handleWheel"
     ></canvas>
     <div
-      v-if="inputMode === 'select' && selectedPath && !interactionActive"
+      v-if="
+        isLoggedIn &&
+        inputMode === 'select' &&
+        selectedPath &&
+        !interactionActive
+      "
       class="selection-actions input-modes"
       :style="selectionActionsStyle"
     >
+      <button
+        v-if="showGroupAction"
+        type="button"
+        :aria-label="
+          isGroupedSelection ? 'Ungroup selection' : 'Group selection'
+        "
+        :aria-pressed="isGroupedSelection"
+        :disabled="!canToggleGrouping"
+        @click="toggleSelectionGrouping"
+      >
+        <Icon :icon="isGroupedSelection ? 'separate' : 'merge'" size="20px" />
+      </button>
       <button
         type="button"
         aria-label="Move selection up a layer"
@@ -45,7 +69,7 @@
         <Icon icon="trash" size="20px" />
       </button>
     </div>
-    <div class="side-panels">
+    <div v-if="isLoggedIn" class="side-panels">
       <div class="vertical-actions-row">
         <div
           v-if="inputMode === 'draw' || inputMode === 'erase'"
@@ -121,7 +145,7 @@
       <div class="tool-properties">
         <details open>
           <summary class="lotl-font">Tool Properties</summary>
-          <div v-if="inputMode === 'draw'">
+          <div v-if="inputMode === 'draw' || inputMode === 'fill'">
             <label for="brush-color">Color</label>
             <div style="display: flex; justify-content: center">
               <ColorPicker id="brush-color" v-model="brushColor" horizontal />
@@ -132,7 +156,7 @@
             <div style="display: flex; justify-content: center">
               <ColorPicker
                 id="selection-color"
-                :model-value="selectedPath.color"
+                :model-value="selectionColorPreview ?? selectedPath.color"
                 horizontal
                 @update:model-value="setSelectionColor"
                 @interaction-start="beginSelectionColorChange"
@@ -184,7 +208,7 @@
         ({{ viewportCenter.x.toFixed(2) }}, {{ viewportCenter.y.toFixed(2) }})
       </div>
       <div style="display: flex; gap: 6px">
-        <div class="input-modes">
+        <div v-if="isLoggedIn" class="input-modes">
           <button
             v-for="(definition, mode) in CANVAS_INPUT_MODES"
             :key="mode"
@@ -199,7 +223,7 @@
             <Icon :icon="definition.icon" size="20px" />
           </button>
         </div>
-        <div class="input-modes">
+        <div v-if="isLoggedIn" class="input-modes">
           <button
             type="button"
             class="round"
@@ -272,7 +296,12 @@
             {{ Math.round((camera.rotation * 180) / Math.PI) }}°
           </button>
         </div>
-        <div class="input-modes" role="group" aria-label="Color picking">
+        <div
+          v-if="isLoggedIn"
+          class="input-modes"
+          role="group"
+          aria-label="Color picking"
+        >
           <button
             type="button"
             class="round"
@@ -456,11 +485,13 @@ canvas {
 
 <script setup lang="ts">
 import { initializeCanvasColors } from "~/utils/constants";
-import { FlashishDrawing, type BrushSegment } from "@echolotl/flashish";
+import type {
+  BrushSegment,
+  FlashishDrawing as FlashishDrawingType,
+} from "@echolotl/flashish";
 import type {
   GuestbookClientMessage,
   GuestbookServerMessage,
-  GuestbookStrokeMessage,
 } from "@echolotl/types";
 import {
   createCanvasRenderer,
@@ -469,8 +500,10 @@ import {
   type CanvasInputMode,
   type OtherCursor,
   type OtherStroke,
+  type PendingMove,
   type Point,
   type RenderedPath,
+  type SelectionPreview,
 } from "~/utils/canvas";
 import {
   measureGesture,
@@ -563,7 +596,7 @@ const stabilization = ref(DEFAULT_STABILIZATION);
 /**
  * The current drawing object.
  */
-let drawing: FlashishDrawing;
+let drawing: FlashishDrawingType;
 
 /**
  * The draft paths that are currently being drawn but not yet committed.
@@ -599,14 +632,14 @@ const eyedropperActive = ref(false);
  * The IDs of the currently selected paths.
  */
 const selectedPathIds = ref<number[]>([]);
-/**
- * The original positions of the selected paths before any movement.
- */
-let selectionOrigins = new Map<number, Point>();
+const selectionMovement = new Map<number, Point>();
 /**
  * The color change associated with the current selection, if any.
  */
-let selectionColorChange: { kind: string; token: object } | null = null;
+let selectionColorChange: {
+  kind: string;
+  ids: number[];
+} | null = null;
 
 /**
  * The currently selected paths based on the selected path IDs.
@@ -671,11 +704,16 @@ const canRedo = ref(false);
 const usePenPressure = ref(false);
 
 const { theme } = useTheme();
-const { isLoggedIn } = useAuth();
+const { isLoggedIn, user, status } = useAuth();
 const { backendUrl, backendEnabled } = useRuntimeConfig().public;
+const selectionColorPreview = ref<string | null>(null);
+const activeGroupId = ref<string | null>(null);
 
 let websocket: WebSocket | null = null;
 let websocketClientId: string | null = null;
+let pendingMessages: GuestbookClientMessage[] = [];
+let lastDrawingRevision = -1;
+let drawingEpoch: string | null = null;
 
 /**
  * Represents a pointer's state during interaction with the canvas.
@@ -685,15 +723,54 @@ interface Pointer {
   lastX: number;
   lastY: number;
   lastWorldPosition: Point | null;
-  mode: "draw" | "pan" | "move" | "marquee";
+  mode: "draw" | "pan" | "move" | "marquee" | "fill";
   inputMode: CanvasInputMode;
   color: string;
   moveOffset: Point;
   marqueeEnd: Point | null;
 }
 
+type GuestbookEditPayload =
+  | {
+      type: "stroke:commit";
+      strokeId: string;
+      cancelled?: boolean;
+      segments?: BrushSegment[];
+      color?: string | null;
+      layer?: number;
+    }
+  | { type: "paths:move"; ids: number[]; dx: number; dy: number }
+  | { type: "paths:finish-move"; ids: number[] }
+  | { type: "paths:layer"; ids: number[]; direction: -1 | 1 }
+  | { type: "paths:color"; ids: number[]; color: string }
+  | { type: "paths:delete"; ids: number[] }
+  | { type: "paths:merge"; ids: number[] }
+  | { type: "paths:group"; ids: number[]; groupId: string }
+  | { type: "paths:ungroup"; ids: number[] }
+  | { type: "fill:commit"; point: Point; color: string; layer: number }
+  | { type: "drawing:undo" | "drawing:redo" };
+
 let otherCursors: Record<string, OtherCursor> = {};
 let otherStrokes = new Map<string, OtherStroke>();
+const pendingStrokes = new Map<string, OtherStroke>();
+const otherSelections = new Map<string, SelectionPreview>();
+const pendingMoves = new Map<string, PendingMove>();
+const pendingFinishingMoves = new Map<string, number[]>();
+const connecting = ref(false);
+
+const isGroupedSelection = computed(() => {
+  if (!selectedPaths.value.length) return false;
+  const groupId = activeGroupId.value ?? selectedPaths.value[0]!.groupId;
+  return (
+    !!groupId && selectedPaths.value.every((path) => path.groupId === groupId)
+  );
+});
+const showGroupAction = computed(
+  () => selectedPaths.value.length > 1 || isGroupedSelection.value,
+);
+const canToggleGrouping = computed(
+  () => isGroupedSelection.value || selectedPaths.value.length > 1,
+);
 
 /**
  * The style for the canvas element based on the current pointer state.
@@ -710,11 +787,13 @@ const canvasStyle = computed(() => {
       return {
         cursor: eyedropperActive.value
           ? "crosshair"
-          : (pointer.active?.inputMode ?? inputMode.value) === "select"
-            ? "default"
-            : (pointer.active?.inputMode ?? inputMode.value) === "pan"
-              ? "grab"
-              : "none",
+          : (pointer.active?.inputMode ?? inputMode.value) === "fill"
+            ? "crosshair"
+            : (pointer.active?.inputMode ?? inputMode.value) === "select"
+              ? "default"
+              : (pointer.active?.inputMode ?? inputMode.value) === "pan"
+                ? "grab"
+                : "none",
       };
   }
 });
@@ -731,6 +810,7 @@ const renderer = createCanvasRenderer(() => ({
   paths: committedPaths.value,
   selectedPaths: selectedPaths.value,
   selectionBounds: selectionBounds.value,
+  groupSelectionId: activeGroupId.value,
   inputMode: inputMode.value,
   eyedropperActive: eyedropperActive.value,
   activePointer: pointer.active,
@@ -739,36 +819,81 @@ const renderer = createCanvasRenderer(() => ({
   pathDraft,
   otherCursors,
   otherStrokes,
+  pendingStrokes,
+  otherSelections,
+  pendingMoves,
+  pendingFinishingMoves,
 }));
 
-onMounted(() => {
+onMounted(async () => {
   const canvas = guestbookCanvas.value;
   if (canvas) {
-    // Start the websocket connection for the guestbook
+    const { FlashishDrawing } = await import("@echolotl/flashish");
+    drawing = new FlashishDrawing();
     watch(
-      isLoggedIn,
-      (loggedIn, _previous, onCleanup) => {
-        if (!loggedIn || !backendEnabled || !backendUrl) return;
-        const url = new URL(
-          `${backendUrl.replace(/\/+$/, "")}/guestbook/ws`,
-          window.location.origin,
-        );
-        url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-        const socket = new WebSocket(url);
-        websocket = socket;
-        websocketClientId = crypto.randomUUID();
-        socket.addEventListener("message", (e) => {
-          if (websocket === socket) handleWebsocketMessage(e);
-        });
-        socket.addEventListener("error", (event) => {
-          console.error("Guestbook WebSocket error:", event);
-        });
+      [isLoggedIn, () => user.value?.userId],
+      (_identity, _previous, onCleanup) => {
+        if (!backendEnabled || !backendUrl) return;
+        connecting.value = true;
+        let disposed = false;
+        let retryDelay = 500;
+        let retryTimer: ReturnType<typeof setTimeout> | undefined;
+        let socket: WebSocket | null = null;
+
+        const connect = () => {
+          if (disposed) return;
+          const url = new URL(
+            `${backendUrl.replace(/\/+$/, "")}/guestbook/ws`,
+            window.location.origin,
+          );
+          url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+          socket = new WebSocket(url);
+          websocket = socket;
+          websocketClientId ??= crypto.randomUUID();
+          const currentSocket = socket;
+          currentSocket.addEventListener("open", () => {
+            if (websocket !== currentSocket) return;
+            retryDelay = 500;
+            for (const message of pendingMessages.splice(0)) {
+              currentSocket.send(JSON.stringify(message));
+            }
+            sendSelectionPreview();
+          });
+          currentSocket.addEventListener("message", (event) => {
+            if (websocket === currentSocket) handleWebsocketMessage(event);
+          });
+          currentSocket.addEventListener("error", (event) => {
+            console.error("Guestbook WebSocket error:", event);
+          });
+          currentSocket.addEventListener("close", () => {
+            if (websocket !== currentSocket || disposed) return;
+            websocket = null;
+            connecting.value = false;
+            otherCursors = {};
+            otherStrokes.clear();
+            otherSelections.clear();
+            pendingFinishingMoves.clear();
+            renderer.schedule();
+            retryTimer = setTimeout(connect, retryDelay);
+            retryDelay = Math.min(retryDelay * 2, 15_000);
+          });
+        };
+
+        connect();
+        connecting.value = false;
         onCleanup(() => {
-          socket.close();
+          disposed = true;
+          if (retryTimer) clearTimeout(retryTimer);
+          socket?.close();
           if (websocket === socket) websocket = null;
           websocketClientId = null;
+          pendingMessages = [];
           otherCursors = {};
           otherStrokes.clear();
+          otherSelections.clear();
+          pendingStrokes.clear();
+          pendingMoves.clear();
+          pendingFinishingMoves.clear();
           renderer.schedule();
         });
       },
@@ -776,7 +901,6 @@ onMounted(() => {
     );
     camera.x = -canvas.clientWidth / (2 * camera.zoom);
     camera.y = -canvas.clientHeight / (2 * camera.zoom);
-    drawing = new FlashishDrawing();
     const context = canvas.getContext("2d");
     ctx.value = context;
     initializeCanvasColors();
@@ -801,6 +925,10 @@ onUnmounted(() => {
   websocketClientId = null;
   activeStroke = null;
   otherStrokes.clear();
+  otherSelections.clear();
+  pendingStrokes.clear();
+  pendingMoves.clear();
+  pendingFinishingMoves.clear();
   resizeObserver?.disconnect();
   window.removeEventListener("keydown", handleKeys);
   renderer.dispose();
@@ -826,7 +954,7 @@ function handlePointerDown(event: PointerEvent) {
     if (touches.size >= 2) {
       touchGesture.value = true;
       if (activeStroke && websocketClientId) {
-        sendWebhookMessage({
+        sendEditMessage({
           type: "stroke:commit",
           strokeId: activeStroke.strokeId,
           cancelled: true,
@@ -836,6 +964,7 @@ function handlePointerDown(event: PointerEvent) {
       pointer.active = null;
       pointer.position = null;
       pathDraft = [];
+      sendSelectionPreview();
       renderer.schedule();
       return;
     }
@@ -856,8 +985,11 @@ function handlePointerDown(event: PointerEvent) {
   if (!canvas) return;
 
   const activeInputMode = isEraser ? "erase" : inputMode.value;
-  const pointerInputMode =
-    event.button === 0 || isEraser ? activeInputMode : "pan";
+  const pointerInputMode = !isLoggedIn.value
+    ? "pan"
+    : event.button === 0 || isEraser
+      ? activeInputMode
+      : "pan";
   const isDrawing = pointerInputMode !== "pan";
   const position =
     isDrawing || (eyedropperActive.value && event.button === 0)
@@ -882,13 +1014,45 @@ function handlePointerDown(event: PointerEvent) {
       if (selectedPathIds.value.length) clearSelection();
       mode = "draw";
       break;
+    case "fill":
+      if (selectedPathIds.value.length) clearSelection();
+      mode = "fill";
+      break;
     case "select": {
-      const hit = position ? (findPathAt(position)?.id ?? null) : null;
-      if (position && hit !== null) {
-        if (!selectedPathIds.value.includes(hit)) {
+      const hitPath = position ? findPathAt(position) : null;
+      const hit = hitPath?.id ?? null;
+      if (hitPath) {
+        const groupId = hitPath.groupId ?? null;
+        if (groupId && activeGroupId.value === groupId) {
+          const groupPaths = committedPaths.value.filter(
+            (path) => path.groupId === groupId,
+          );
+          const isSingleMemberSelected =
+            selectedPathIds.value.length === 1 &&
+            selectedPathIds.value[0] === hitPath.id;
+          const groupPathIds = new Set(groupPaths.map(({ id }) => id));
+          const isWholeGroupSelected =
+            selectedPathIds.value.length === groupPaths.length &&
+            selectedPathIds.value.every((id) => groupPathIds.has(id));
+          if (!isSingleMemberSelected && !isWholeGroupSelected) {
+            clearSelection();
+            setSelection(
+              groupPaths.map(({ id }) => id),
+              groupId,
+            );
+          }
+        } else if (groupId) {
           clearSelection();
-          const nextHit = findPathAt(position);
-          setSelection(nextHit === null ? [] : [nextHit.id]);
+          const groupPaths = committedPaths.value.filter(
+            (path) => path.groupId === groupId,
+          );
+          setSelection(
+            groupPaths.map(({ id }) => id),
+            groupId,
+          );
+        } else if (!selectedPathIds.value.includes(hitPath.id)) {
+          clearSelection();
+          setSelection([hitPath.id]);
         }
         if (selectedPaths.value.length === 1 && selectedPath.value)
           activeLayer.value = selectedPath.value.layer;
@@ -958,18 +1122,122 @@ function handlePointerDown(event: PointerEvent) {
     }
   }
   sendCursorPosition(event);
+  sendSelectionPreview();
   renderer.schedule();
 }
 
 function sendWebhookMessage(message: GuestbookClientMessage) {
-  if (!isLoggedIn.value || websocket?.readyState !== WebSocket.OPEN) return;
-  websocket.send(JSON.stringify(message));
+  if (!isLoggedIn.value) return;
+  if (websocket?.readyState === WebSocket.OPEN) {
+    websocket.send(JSON.stringify(message));
+  } else if (
+    message.type !== "cursor:move" &&
+    message.type !== "cursor:leave" &&
+    message.type !== "selection:preview"
+  ) {
+    pendingMessages.push(message);
+  }
+}
+
+function sendEditMessage(message: GuestbookEditPayload) {
+  if (!websocketClientId) return;
+  const clientId = websocketClientId;
+  const operationId =
+    message.type === "stroke:commit" ? message.strokeId : crypto.randomUUID();
+  switch (message.type) {
+    case "stroke:commit":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "fill:commit":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:move":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:finish-move":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:layer":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:color":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:delete":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:merge":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:group":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "paths:ungroup":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+    case "drawing:undo":
+    case "drawing:redo":
+      sendWebhookMessage({ ...message, clientId, operationId });
+      break;
+  }
+  return operationId;
+}
+
+function sendSelectionPreview() {
+  if (!websocketClientId) return;
+  const active = pointer.active;
+  sendWebhookMessage({
+    type: "selection:preview",
+    clientId: websocketClientId,
+    ids: [...selectedPathIds.value],
+    offset: active?.mode === "move" ? active.moveOffset : { x: 0, y: 0 },
+    marquee:
+      active?.mode === "marquee" &&
+      active.lastWorldPosition &&
+      active.marqueeEnd
+        ? { from: active.lastWorldPosition, to: active.marqueeEnd }
+        : null,
+  });
 }
 
 function handleWebsocketMessage(event: MessageEvent) {
   try {
     const message: GuestbookServerMessage = JSON.parse(event.data);
     switch (message.type) {
+      case "fill:result":
+        if (message.result === "unbounded")
+          console.info(
+            "Fill rejected: region is not enclosed on the selected layer.",
+          );
+        break;
+      case "drawing:state":
+        if (drawingEpoch !== message.epoch) {
+          drawingEpoch = message.epoch;
+          lastDrawingRevision = -1;
+        }
+        if (message.revision < lastDrawingRevision) break;
+        lastDrawingRevision = message.revision;
+        if (message.operation) {
+          const { clientId, operationId, type } = message.operation;
+          if (type === "stroke:commit") {
+            pendingStrokes.delete(operationId);
+            otherStrokes.delete(operationId);
+          } else if (type === "paths:move") {
+            pendingMoves.delete(operationId);
+            const selection = otherSelections.get(clientId);
+            if (selection) selection.offset = { x: 0, y: 0 };
+          } else if (type === "paths:finish-move") {
+            pendingFinishingMoves.delete(operationId);
+          }
+        }
+        drawing.replaceDrawingPaths(message.paths);
+        syncDrawing();
+        canUndo.value =
+          !!user.value && message.undoUserIds.includes(user.value.userId);
+        canRedo.value =
+          !!user.value && message.redoUserIds.includes(user.value.userId);
+        selectionColorPreview.value = null;
+        break;
       case "cursor:move":
         if (message.clientId === websocketClientId) break;
         otherCursors[message.userId] = {
@@ -983,6 +1251,21 @@ function handleWebsocketMessage(event: MessageEvent) {
         if (message.clientId === websocketClientId) break;
         if (otherCursors[message.userId])
           otherCursors[message.userId]!.point = null;
+        break;
+      case "selection:preview":
+        if (message.clientId === websocketClientId) break;
+        otherSelections.set(message.clientId, {
+          userId: message.userId,
+          ids: message.ids,
+          offset: message.offset,
+          marquee: message.marquee,
+        });
+        break;
+      case "selection:leave":
+        otherSelections.delete(message.clientId);
+        break;
+      case "selection:request":
+        sendSelectionPreview();
         break;
       case "stroke:start":
         if (message.clientId === websocketClientId) break;
@@ -1006,11 +1289,7 @@ function handleWebsocketMessage(event: MessageEvent) {
         break;
       }
       case "stroke:commit": {
-        const stroke = otherStrokes.get(message.strokeId);
-        otherStrokes.delete(message.strokeId);
-        if (!stroke || message.cancelled) break;
-        drawing.addStroke(stroke.segments, stroke.color, stroke.layer);
-        syncDrawing();
+        if (message.cancelled) otherStrokes.delete(message.strokeId);
         break;
       }
     }
@@ -1140,9 +1419,11 @@ function updatePointer(event: PointerEvent) {
         x: position.x - start.x,
         y: position.y - start.y,
       };
+      sendSelectionPreview();
     }
   } else if (pointer.active?.mode === "marquee") {
     pointer.active.marqueeEnd = getWorldPosition(event);
+    sendSelectionPreview();
   } else if (pointer.active?.mode === "pan") {
     const dx = event.clientX - pointer.active.lastX;
     const dy = event.clientY - pointer.active.lastY;
@@ -1164,15 +1445,19 @@ function findPathAt(position: Point): RenderedPath | null {
   context.save();
   context.setTransform(1, 0, 0, 1, 0, 0);
   let hit: RenderedPath | undefined;
+  const elevatedIds = new Set([
+    ...selectedPathIds.value,
+    ...[...pendingFinishingMoves.values()].flat(),
+  ]);
   for (let layer = LAYER_COUNT; layer >= 1 && !hit; layer--) {
     hit = committedPaths.value
-      .slice()
+      .filter((path) => path.layer === layer)
+      .sort(
+        (left, right) =>
+          Number(elevatedIds.has(left.id)) - Number(elevatedIds.has(right.id)),
+      )
       .reverse()
-      .find(
-        (path) =>
-          path.layer === layer &&
-          context.isPointInPath(path.path, position.x, position.y),
-      );
+      .find((path) => context.isPointInPath(path.path, position.x, position.y));
   }
   context.restore();
   return hit ?? null;
@@ -1366,31 +1651,61 @@ function endPointer(event: PointerEvent) {
     }
     if (pathDraft.length) {
       const completedStroke = activeStroke;
-      drawing.addStroke(
-        pathDraft,
-        active.inputMode === "draw" ? active.color : null,
-        activeLayer.value,
-      );
-      syncDrawing();
       if (completedStroke && websocketClientId) {
-        sendWebhookMessage({
+        pendingStrokes.set(completedStroke.strokeId, {
+          layer: completedStroke.layer,
+          color: completedStroke.color,
+          segments: pathDraft,
+        });
+        sendEditMessage({
           type: "stroke:commit",
           strokeId: completedStroke.strokeId,
+          segments: pathDraft.map(({ from, to, size }) => ({
+            from,
+            to,
+            size,
+          })),
+          color: completedStroke.color,
+          layer: completedStroke.layer,
         });
       }
       activeStroke = null;
+    } else if (
+      active.mode === "fill" &&
+      active.lastWorldPosition &&
+      event.type === "pointerup"
+    ) {
+      sendEditMessage({
+        type: "fill:commit",
+        point: active.lastWorldPosition,
+        color: active.color,
+        layer: activeLayer.value,
+      });
     } else if (
       active.mode === "move" &&
       selectedPathIds.value.length &&
       event.type !== "pointercancel" &&
       event.type !== "lostpointercapture"
     ) {
-      selectedPathIds.value = drawing.movePaths(
-        selectedPathIds.value,
-        active.moveOffset.x,
-        active.moveOffset.y,
-      );
-      syncDrawing();
+      const operationId = sendEditMessage({
+        type: "paths:move",
+        ids: [...selectedPathIds.value],
+        dx: active.moveOffset.x,
+        dy: active.moveOffset.y,
+      });
+      if (operationId) {
+        for (const id of selectedPathIds.value) {
+          const previous = selectionMovement.get(id) ?? { x: 0, y: 0 };
+          selectionMovement.set(id, {
+            x: previous.x + active.moveOffset.x,
+            y: previous.y + active.moveOffset.y,
+          });
+        }
+        pendingMoves.set(operationId, {
+          ids: [...selectedPathIds.value],
+          offset: active.moveOffset,
+        });
+      }
     } else if (
       active.mode === "marquee" &&
       active.lastWorldPosition &&
@@ -1410,6 +1725,12 @@ function endPointer(event: PointerEvent) {
       );
     }
     pathDraft = [];
+    if (
+      active.mode !== "move" ||
+      event.type === "pointercancel" ||
+      event.type === "lostpointercapture"
+    )
+      sendSelectionPreview();
     renderer.schedule();
     sendCursorPosition(event);
   }
@@ -1417,53 +1738,61 @@ function endPointer(event: PointerEvent) {
 
 function syncDrawing() {
   committedPaths.value = drawing.paths.map(
-    ({ id, color, layer, pathData, bounds }) => ({
+    ({ id, ownerId, color, layer, groupId, pathData, bounds }) => ({
       id,
+      ownerId,
       color,
       layer,
+      groupId,
       path: new Path2D(pathData),
       bounds,
     }),
   );
+  if (
+    activeGroupId.value &&
+    !committedPaths.value.some((path) => path.groupId === activeGroupId.value)
+  ) {
+    activeGroupId.value = null;
+  }
   selectedPathIds.value = selectedPathIds.value.filter((id) =>
     committedPaths.value.some((path) => path.id === id),
   );
   if (selectedPaths.value.length === 1 && selectedPath.value) {
     activeLayer.value = selectedPath.value.layer;
   }
-  canUndo.value = drawing.canUndo;
-  canRedo.value = drawing.canRedo;
   renderer.schedule();
 }
 
-function setSelection(ids: number[]) {
+function setSelection(ids: number[], groupId?: string | null) {
   selectedPathIds.value = ids;
-  const selected = new Set(ids);
-  selectionOrigins = new Map(
-    drawing.paths
-      .filter(({ id }) => selected.has(id))
-      .map(({ id, bounds }) => [id, { x: bounds.x, y: bounds.y }]),
-  );
+  activeGroupId.value =
+    groupId ??
+    (ids.length === 1
+      ? (committedPaths.value.find((path) => path.id === ids[0])?.groupId ??
+        null)
+      : null);
+  selectionMovement.clear();
+  selectionColorPreview.value = null;
+  sendSelectionPreview();
 }
 
 function clearSelection() {
-  const selected = new Set(selectedPathIds.value);
-  const moved = drawing.paths
-    .filter(({ id, bounds }) => {
-      const origin = selectionOrigins.get(id);
-      return (
-        selected.has(id) &&
-        origin &&
-        (bounds.x !== origin.x || bounds.y !== origin.y)
-      );
-    })
-    .map(({ id }) => id);
+  const moved = selectedPathIds.value.filter((id) => {
+    const offset = selectionMovement.get(id);
+    return offset && (offset.x !== 0 || offset.y !== 0);
+  });
   selectedPathIds.value = [];
-  selectionOrigins.clear();
+  activeGroupId.value = null;
+  selectionMovement.clear();
+  selectionColorPreview.value = null;
   if (moved.length) {
-    drawing.mergeMovedPaths(moved);
-    syncDrawing();
+    const operationId = sendEditMessage({
+      type: "paths:finish-move",
+      ids: moved,
+    });
+    if (operationId) pendingFinishingMoves.set(operationId, moved);
   }
+  sendSelectionPreview();
 }
 
 function setInputMode(mode: CanvasInputMode) {
@@ -1480,44 +1809,110 @@ function selectLayer(layer: number) {
 }
 
 function moveSelectionLayer(direction: -1 | 1) {
-  if (!selectedPathIds.value.length || interactionActive.value) return;
-  selectedPathIds.value = drawing.movePathsByLayer(
-    selectedPathIds.value,
-    direction,
-  );
-  syncDrawing();
+  if (
+    !isLoggedIn.value ||
+    !selectedPathIds.value.length ||
+    interactionActive.value
+  )
+    return;
+  const ids = [...selectedPathIds.value];
+  sendEditMessage({ type: "paths:layer", ids, direction });
+}
+
+function toggleSelectionGrouping() {
+  if (!isLoggedIn.value || !canToggleGrouping.value || interactionActive.value)
+    return;
+  const ids = [...selectedPathIds.value];
+  if (isGroupedSelection.value) {
+    const groupIds = new Set(
+      selectedPaths.value.flatMap(({ groupId }) => (groupId ? [groupId] : [])),
+    );
+    const selectedIds = new Set(ids);
+    const operationId = sendEditMessage({ type: "paths:ungroup", ids });
+    if (!operationId) return;
+    const singleMemberGroupIds = new Set(
+      [...groupIds].filter(
+        (groupId) =>
+          committedPaths.value.filter(
+            (path) =>
+              path.groupId === groupId && !selectedIds.has(path.id),
+          ).length === 1,
+      ),
+    );
+    committedPaths.value = committedPaths.value.map((path) =>
+      path.groupId &&
+      ((selectedIds.has(path.id) && groupIds.has(path.groupId)) ||
+        singleMemberGroupIds.has(path.groupId))
+        ? { ...path, groupId: undefined }
+        : path,
+    );
+    activeGroupId.value = null;
+  } else {
+    if (ids.length < 2) return;
+    const groupId = crypto.randomUUID();
+    const existingGroupIds = new Set(
+      selectedPaths.value.flatMap(({ groupId: selectedGroupId }) =>
+        selectedGroupId ? [selectedGroupId] : [],
+      ),
+    );
+    const affectedIds = new Set(
+      committedPaths.value
+        .filter(
+          (path) =>
+            ids.includes(path.id) ||
+            (!!path.groupId && existingGroupIds.has(path.groupId)),
+        )
+        .map(({ id }) => id),
+    );
+    const operationId = sendEditMessage({
+      type: "paths:group",
+      ids,
+      groupId,
+    });
+    if (!operationId) return;
+    committedPaths.value = committedPaths.value.map((path) =>
+      affectedIds.has(path.id) ? { ...path, groupId } : path,
+    );
+    activeGroupId.value = groupId;
+  }
+  renderer.schedule();
 }
 
 function setSelectionColor(color: string) {
-  if (!selectedPathIds.value.length || interactionActive.value) return;
-  selectedPathIds.value = drawing.setPathsColor(
-    selectedPathIds.value,
-    color,
-    selectionColorChange?.token,
-  );
-  syncDrawing();
+  if (
+    !isLoggedIn.value ||
+    !selectedPathIds.value.length ||
+    interactionActive.value
+  )
+    return;
+  selectionColorPreview.value = color;
 }
 
 function beginSelectionColorChange(kind: string) {
   if (selectionColorChange?.kind !== kind || kind !== "keyboard") {
-    selectionColorChange = { kind, token: {} };
+    selectionColorChange = {
+      kind,
+      ids: [...selectedPathIds.value],
+    };
   }
 }
 
 function endSelectionColorChange(kind: string) {
-  if (selectionColorChange?.kind === kind) selectionColorChange = null;
+  if (selectionColorChange?.kind !== kind) return;
+  const ids = selectionColorChange.ids;
+  const color = selectionColorPreview.value;
+  if (ids.length && color) sendEditMessage({ type: "paths:color", ids, color });
+  selectionColorChange = null;
 }
 
 function undo() {
-  if (interactionActive.value || !drawing.canUndo) return;
-  drawing.undo();
-  syncDrawing();
+  if (interactionActive.value || !canUndo.value) return;
+  sendEditMessage({ type: "drawing:undo" });
 }
 
 function redo() {
-  if (interactionActive.value || !drawing.canRedo) return;
-  drawing.redo();
-  syncDrawing();
+  if (interactionActive.value || !canRedo.value) return;
+  sendEditMessage({ type: "drawing:redo" });
 }
 
 function handleKeys(event: KeyboardEvent) {
@@ -1559,11 +1954,38 @@ function handlePointerUp(event: PointerEvent) {
   }
   endPointer(event);
 }
+
+function handleDoubleClick(event: MouseEvent) {
+  if (
+    !isLoggedIn.value ||
+    inputMode.value !== "select" ||
+    !activeGroupId.value ||
+    event.button !== 0
+  )
+    return;
+  const position = getWorldPosition(event);
+  const hitPath = position ? findPathAt(position) : null;
+  if (!hitPath || hitPath.groupId !== activeGroupId.value) return;
+  if (
+    selectedPathIds.value.length === 1 &&
+    selectedPathIds.value[0] === hitPath.id
+  )
+    return;
+
+  clearSelection();
+  setSelection([hitPath.id], hitPath.groupId);
+  activeLayer.value = hitPath.layer;
+  renderer.schedule();
+}
+
 function deleteSelection() {
-  if (!selectedPathIds.value.length || interactionActive.value) return;
-  drawing.deletePaths(selectedPathIds.value);
-  selectedPathIds.value = [];
-  selectionOrigins.clear();
-  syncDrawing();
+  if (
+    !isLoggedIn.value ||
+    !selectedPathIds.value.length ||
+    interactionActive.value
+  )
+    return;
+  const ids = [...selectedPathIds.value];
+  sendEditMessage({ type: "paths:delete", ids });
 }
 </script>

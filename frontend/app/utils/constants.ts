@@ -159,6 +159,7 @@ const CANVAS_INPUT_MODES = {
   erase: { icon: "erase", keys: ["KeyE", "Digit2"] },
   select: { icon: "select", keys: ["KeyV", "Digit3"] },
   pan: { icon: "grab", keys: ["KeyH", "Digit4"] },
+  fill: { icon: "fill", keys: ["KeyG", "Digit5"] },
 } as const satisfies Record<string, CanvasInputModeDefinition>;
 
 //#endregion GUESTBOOK CONSTANTS
