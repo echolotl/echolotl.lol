@@ -14,7 +14,7 @@ export interface BrushSegment {
  */
 interface Fill {
   id: number;
-  ownerId: string;
+  ownerId: string | null;
   color: string;
   layer: number;
   groupId?: string;
@@ -23,7 +23,7 @@ interface Fill {
 
 export interface DrawingPath {
   id: number;
-  ownerId: string;
+  ownerId: string | null;
   color: string;
   layer: number;
   groupId?: string;
@@ -45,6 +45,12 @@ interface FillChange {
 interface StrokeChange {
   removed: FillChange[];
   added: FillChange[];
+}
+
+export class PathOwnershipError extends Error {
+  constructor() {
+    super("You cannot edit paths owned by another user.");
+  }
 }
 
 /**
@@ -234,12 +240,43 @@ export class FlashishDrawing {
   }
 
   private clearChangedOwnerHistories(fills: Fill[], actorId: string) {
-    for (const ownerId of new Set(fills.map(({ ownerId }) => ownerId))) {
-      if (ownerId === actorId) continue;
-      this.undoStack.delete(ownerId);
-      this.redoStack.delete(ownerId);
-      if (this.colorChange?.actorId === ownerId) this.colorChange = null;
+    const changedIds = new Set(fills.map(({ id }) => id));
+    const actors = new Set([...this.undoStack.keys(), ...this.redoStack.keys()]);
+    for (const otherActor of actors) {
+      if (otherActor === actorId) continue;
+      const touchesChangedPath = (change: StrokeChange) =>
+        [...change.added, ...change.removed].some(({ fill }) => changedIds.has(fill.id));
+      if (
+        this.undoStack.get(otherActor)?.some(touchesChangedPath) ||
+        this.redoStack.get(otherActor)?.some(touchesChangedPath)
+      ) {
+        this.undoStack.delete(otherActor);
+        this.redoStack.delete(otherActor);
+        if (this.colorChange?.actorId === otherActor) this.colorChange = null;
+      }
     }
+  }
+
+  private assertEditable(fills: Fill[], actorId: string) {
+    if (fills.some(({ ownerId }) => ownerId !== null && ownerId !== actorId))
+      throw new PathOwnershipError();
+  }
+
+  private selectedFills(ids: number[], actorId: string) {
+    const selected = this.fills.filter(({ id }) => ids.includes(id));
+    this.assertEditable(selected, actorId);
+    return selected;
+  }
+
+  setPathsLocked(ids: number[], locked: boolean, actorId: string) {
+    const selected = this.selectedFills(ids, actorId);
+    if (selected.some(({ ownerId }) => locked ? ownerId !== null : ownerId !== actorId))
+      throw new PathOwnershipError();
+    if (!selected.length) return false;
+    const before = this.fills.slice();
+    this.replacePaths(ids, (fill) => ({ ...fill, ownerId: locked ? actorId : null }));
+    this.recordChange(before, actorId);
+    return true;
   }
 
   clearHistory(actorIds: string[]) {
@@ -357,6 +394,7 @@ export class FlashishDrawing {
    * @param ids The IDs of the moved fills.
    */
   mergeMovedPaths(ids: number[], actorId = "local") {
+    this.selectedFills(ids, actorId);
     const before = this.fills.slice();
     const moved = new Set(ids);
     const orderedIds = this.fills.filter((fill) => moved.has(fill.id)).map((fill) => fill.id);
@@ -399,6 +437,7 @@ export class FlashishDrawing {
    * @returns The IDs of the moved fills.
    */
   movePaths(ids: number[], dx: number, dy: number, actorId = "local") {
+    this.selectedFills(ids, actorId);
     if ((!dx && !dy) || !ids.length) return ids;
     const before = this.fills.slice();
     const result = this.replacePaths(ids, (fill) => {
@@ -417,7 +456,7 @@ export class FlashishDrawing {
    * @returns The IDs of the moved fills.
    */
   movePathsByLayer(ids: number[], direction: -1 | 1, actorId = "local") {
-    const selected = this.fills.filter((fill) => ids.includes(fill.id));
+    const selected = this.selectedFills(ids, actorId);
     if (
       !selected.length ||
       selected.some(
@@ -442,6 +481,7 @@ export class FlashishDrawing {
    * @returns The IDs of the fills that were colored.
    */
   setPathsColor(ids: number[], color: string, token?: object, actorId = "local") {
+    this.selectedFills(ids, actorId);
     const ongoing = this.colorChange;
     let originalIds = ids;
     let previousRedo = this.redoStack.get(actorId) ?? [];
@@ -482,6 +522,7 @@ export class FlashishDrawing {
    * @param ids The IDs of the fills to delete.
    */
   deletePaths(ids: number[], actorId = "local") {
+    this.selectedFills(ids, actorId);
     const before = this.fills.slice();
     const selected = new Set(ids);
     this.fills = this.fills.filter((fill) => !selected.has(fill.id));
@@ -491,7 +532,7 @@ export class FlashishDrawing {
   groupPaths(ids: number[], groupId: string, actorId: string) {
     if (!groupId || ids.length < 2) return false;
     const selectedIds = new Set(ids);
-    const selected = this.fills.filter(({ id }) => selectedIds.has(id));
+    const selected = this.selectedFills(ids, actorId);
     if (selected.length < 2) return false;
 
     const existingGroupIds = new Set(
@@ -502,8 +543,9 @@ export class FlashishDrawing {
     const members = this.fills.filter(
       ({ id, groupId: existingGroupId }) =>
         selectedIds.has(id) ||
-        (!!existingGroupId && existingGroupIds.has(existingGroupId)),
+        (!!existingGroupId && (existingGroupIds.has(existingGroupId) || existingGroupId === groupId)),
     );
+    this.assertEditable(members, actorId);
     if (members.every((fill) => fill.groupId === groupId)) return false;
 
     const before = this.fills.slice();
@@ -516,6 +558,7 @@ export class FlashishDrawing {
   }
 
   ungroupPaths(ids: number[], actorId: string) {
+    this.selectedFills(ids, actorId);
     const selectedIds = new Set(ids);
     const groupIds = new Set(
       this.fills.flatMap(({ id, groupId }) =>
@@ -525,6 +568,10 @@ export class FlashishDrawing {
     if (!groupIds.size) return false;
 
     const before = this.fills.slice();
+    const affected = this.fills.filter(
+      (fill) => fill.groupId && groupIds.has(fill.groupId),
+    );
+    this.assertEditable(affected, actorId);
     this.fills = this.fills.map((fill) =>
       selectedIds.has(fill.id) && fill.groupId && groupIds.has(fill.groupId)
         ? { ...fill, groupId: undefined }
@@ -548,11 +595,12 @@ export class FlashishDrawing {
   }
 
   mergePaths(ids: number[], actorId: string) {
-    const selected = this.fills.filter((fill) => ids.includes(fill.id));
+    const selected = this.selectedFills(ids, actorId);
     if (
       selected.length < 2 ||
       selected.some(
-        (fill) => fill.color !== selected[0]!.color || fill.layer !== selected[0]!.layer,
+        (fill) => fill.color !== selected[0]!.color || fill.layer !== selected[0]!.layer ||
+          fill.ownerId !== selected[0]!.ownerId,
       )
     )
       return false;
@@ -567,7 +615,7 @@ export class FlashishDrawing {
     this.fills = this.fills.filter((fill) => !selectedSet.has(fill));
     this.fills.splice(index, 0, {
       id: this.nextId++,
-      ownerId: actorId,
+      ownerId: selected[0]!.ownerId,
       color: selected[0]!.color,
       layer: selected[0]!.layer,
       groupId: selected.every(
@@ -629,6 +677,7 @@ export class FlashishDrawing {
    * @param dy The delta in the y direction.
    */
   movePath(id: number, dx: number, dy: number, actorId = "local") {
+    this.selectedFills([id], actorId);
     if (!dx && !dy) return;
     const index = this.fills.findIndex((fill) => fill.id === id);
     if (index === -1) return;
@@ -647,6 +696,7 @@ export class FlashishDrawing {
    * @param layer The target layer.
    */
   movePathToLayer(id: number, layer: number, actorId = "local") {
+    this.selectedFills([id], actorId);
     this.validateLayer(layer);
     const index = this.fills.findIndex((fill) => fill.id === id);
     if (index === -1) return;
@@ -666,6 +716,7 @@ export class FlashishDrawing {
    * @param token An optional token to track ongoing color changes.
    */
   setPathColor(id: number, color: string, token?: object, actorId = "local") {
+    this.selectedFills([id], actorId);
     const index = this.fills.findIndex((fill) => fill.id === id);
     if (index === -1) return;
     let fill = this.fills[index]!;
@@ -708,6 +759,7 @@ export class FlashishDrawing {
     const position = new this.scope.Point(point);
     const hit = layerFills.slice().reverse().find((fill) => fill.shape.contains(position));
     if (hit) {
+      this.assertEditable([hit], actorId);
       if (hit.color === color) return "unchanged";
       this.setPathColor(hit.id, color, undefined, actorId);
       return "filled";
@@ -747,6 +799,7 @@ export class FlashishDrawing {
    * @param id The ID of the fill to delete.
    */
   deletePath(id: number, actorId = "local") {
+    this.selectedFills([id], actorId);
     const index = this.fills.findIndex((fill) => fill.id === id);
     if (index === -1) return;
     const before = this.fills.slice();
@@ -798,7 +851,7 @@ export class FlashishDrawing {
     const remaining: Fill[] = [];
     for (const fill of this.fills) {
       if (
-        fill.ownerId !== actorId ||
+        (fill.ownerId !== null && fill.ownerId !== actorId) ||
         fill.layer !== layer ||
         (color !== null && fill.color === color) ||
         !this.overlaps(fill.shape, stroke)

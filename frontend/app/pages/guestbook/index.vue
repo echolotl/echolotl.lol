@@ -1,10 +1,23 @@
 <template>
   <div class="guestbook-container">
-    <div v-if="status === 'loading' || connecting" class="guestbook-status">
-      <Icon icon="loading" size="20px" /> Connecting...
-    </div>
-    <div v-else-if="!isLoggedIn">
-      <Icon icon="visible" size="20px" /> Log in to draw or edit.
+    <div class="guestbook-notices">
+      <div v-if="status === 'loading' || connecting" class="guestbook-status">
+        <Icon icon="loading" size="20px" /> Connecting...
+      </div>
+      <div v-if="toastMessage" class="guestbook-status" role="alert">
+        <Icon
+          :icon="toastMessage?.type === 'error' ? 'error' : 'info'"
+          size="20px"
+        />
+        {{ toastMessage?.message }}
+      </div>
+      <div v-if="!isLoggedIn" class="guestbook-status">
+        <Icon icon="view" size="20px" />
+        <span
+          ><button class="link" @click="login">Login</button> to draw or
+          edit.</span
+        >
+      </div>
     </div>
     <canvas
       ref="guestbookCanvas"
@@ -33,13 +46,29 @@
       :style="selectionActionsStyle"
     >
       <button
+        v-if="selectedPaths.some((path) => path.ownerId === null)"
+        type="button"
+        aria-label="Lock unowned paths in selection"
+        @click="setSelectionLocked(true)"
+      >
+        <Icon icon="lock" size="20px" />
+      </button>
+      <button
+        v-if="selectedPaths.some((path) => path.ownerId === user?.userId)"
+        type="button"
+        aria-label="Unlock your paths in selection"
+        @click="setSelectionLocked(false)"
+      >
+        <Icon icon="unlock" size="20px" />
+      </button>
+      <button
         v-if="showGroupAction"
         type="button"
         :aria-label="
           isGroupedSelection ? 'Ungroup selection' : 'Group selection'
         "
         :aria-pressed="isGroupedSelection"
-        :disabled="!canToggleGrouping"
+        :disabled="!canEditSelection || !canToggleGrouping"
         @click="toggleSelectionGrouping"
       >
         <Icon :icon="isGroupedSelection ? 'separate' : 'merge'" size="20px" />
@@ -47,7 +76,10 @@
       <button
         type="button"
         aria-label="Move selection up a layer"
-        :disabled="selectedPaths.some((path) => path.layer === LAYER_COUNT)"
+        :disabled="
+          !canEditSelection ||
+          selectedPaths.some((path) => path.layer === LAYER_COUNT)
+        "
         @click="moveSelectionLayer(1)"
       >
         <Icon icon="layer-up" size="20px" />
@@ -55,7 +87,9 @@
       <button
         type="button"
         aria-label="Move selection down a layer"
-        :disabled="selectedPaths.some((path) => path.layer === 1)"
+        :disabled="
+          !canEditSelection || selectedPaths.some((path) => path.layer === 1)
+        "
         @click="moveSelectionLayer(-1)"
       >
         <Icon icon="layer-down" size="20px" />
@@ -63,7 +97,7 @@
       <button
         type="button"
         aria-label="Delete selection"
-        :disabled="!selectedPath"
+        :disabled="!canEditSelection"
         @click="deleteSelection"
       >
         <Icon icon="trash" size="20px" />
@@ -151,7 +185,11 @@
               <ColorPicker id="brush-color" v-model="brushColor" horizontal />
             </div>
           </div>
-          <div v-else-if="inputMode === 'select' && selectedPath">
+          <div
+            v-else-if="
+              inputMode === 'select' && selectedPath && canEditSelection
+            "
+          >
             <label for="selection-color">Selection color</label>
             <div style="display: flex; justify-content: center">
               <ColorPicker
@@ -163,6 +201,9 @@
                 @interaction-end="endSelectionColorChange"
               />
             </div>
+          </div>
+          <div v-else-if="inputMode === 'select' && selectedPath">
+            <p>This selection contains paths owned by another user.</p>
           </div>
           <div v-else-if="inputMode === 'select'">
             <p>Nothing selected.</p>
@@ -210,7 +251,7 @@
       <div style="display: flex; gap: 6px">
         <div v-if="isLoggedIn" class="input-modes">
           <button
-            v-for="(definition, mode) in CANVAS_INPUT_MODES"
+            v-for="(definition, mode) in GUESTBOOK_INPUT_MODES"
             :key="mode"
             type="button"
             class="round"
@@ -326,11 +367,18 @@
   height: 100vh;
   overflow: hidden;
 
-  .guestbook-status {
+  .guestbook-notices {
     position: absolute;
     top: 64px;
     left: 8px;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .guestbook-status {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -489,31 +537,30 @@ import type {
   BrushSegment,
   FlashishDrawing as FlashishDrawingType,
 } from "@echolotl/flashish";
-import type {
-  GuestbookClientMessage,
-  GuestbookServerMessage,
-} from "@echolotl/types";
+import type { GuestbookServerMessage, Point } from "@echolotl/types";
+import { type Camera } from "~/utils/canvas";
 import {
-  createCanvasRenderer,
-  getCanvasInputModeForKey,
-  type Camera,
-  type CanvasInputMode,
+  getGuestbookInputModeForKey,
+  type GuestbookInputMode,
   type OtherCursor,
   type OtherStroke,
   type PendingMove,
-  type Point,
   type RenderedPath,
   type SelectionPreview,
-} from "~/utils/canvas";
+} from "~/utils/guestbook";
 import {
   measureGesture,
   screenToWorld,
-  updateCameraAt,
   worldToScreen,
 } from "~/utils/canvas/camera";
+import { GuestbookCamera } from "~/utils/guestbook/camera";
+import { GuestbookSocket } from "~/utils/guestbook/socket";
+import { GuestbookSelection } from "~/utils/guestbook/selection";
+import { GuestbookRenderer } from "~/utils/guestbook/renderer";
 import Icon from "~/components/ui/Icon.vue";
 import ColorPicker from "~/components/ui/ColorPicker.vue";
 
+//#region STATE
 /**
  * Reference to the guestbook canvas element.
  */
@@ -621,7 +668,7 @@ const activeLayer = ref(2);
 /**
  * The currently selected input mode for interacting with the canvas.
  */
-const inputMode = ref<CanvasInputMode>("draw");
+const inputMode = ref<GuestbookInputMode>("draw");
 
 /**
  * Whether the eyedropper tool is currently active.
@@ -633,14 +680,7 @@ const eyedropperActive = ref(false);
  */
 const selectedPathIds = ref<number[]>([]);
 const selectionMovement = new Map<number, Point>();
-/**
- * The color change associated with the current selection, if any.
- */
-let selectionColorChange: {
-  kind: string;
-  ids: number[];
-} | null = null;
-
+const pendingMoves = reactive(new Map<string, PendingMove>());
 /**
  * The currently selected paths based on the selected path IDs.
  */
@@ -675,14 +715,16 @@ const selectionBounds = computed(() => {
 const selectionActionsStyle = computed(() => {
   const bounds = selectionBounds.value;
   if (!bounds) return {};
+  const offset = [...pendingMoves.values()].find((move) =>
+    move.ids.some((id) => selectedPathIds.value.includes(id)),
+  )?.offset;
+  const x = bounds.x + (offset?.x ?? 0);
+  const y = bounds.y + (offset?.y ?? 0);
   const corners = [
-    worldToScreen({ x: bounds.x, y: bounds.y }, camera),
-    worldToScreen({ x: bounds.x + bounds.width, y: bounds.y }, camera),
-    worldToScreen({ x: bounds.x, y: bounds.y + bounds.height }, camera),
-    worldToScreen(
-      { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
-      camera,
-    ),
+    worldToScreen({ x, y }, camera),
+    worldToScreen({ x: x + bounds.width, y }, camera),
+    worldToScreen({ x, y: y + bounds.height }, camera),
+    worldToScreen({ x: x + bounds.width, y: y + bounds.height }, camera),
   ];
   return {
     left: `${Math.max(...corners.map((point) => point.x)) + 6}px`,
@@ -702,18 +744,39 @@ const canRedo = ref(false);
  * Whether pen pressure is being used for drawing.
  */
 const usePenPressure = ref(false);
+//#endregion STATE
 
+//#region CLIENT STATE
 const { theme } = useTheme();
-const { isLoggedIn, user, status } = useAuth();
+const { isLoggedIn, user, status, getPublicUser, login } = useAuth();
 const { backendUrl, backendEnabled } = useRuntimeConfig().public;
+const toastMessage = ref<Toast | null>(null);
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+let toastRequest = 0;
+const otherSelections = reactive(new Map<string, SelectionPreview>());
+const isSelectedByAnother = (id: number) =>
+  [...otherSelections.values()].some((selection) => selection.ids.includes(id));
+const canSelectPath = (path: RenderedPath) =>
+  (path.ownerId === null || path.ownerId === user.value?.userId) &&
+  !isSelectedByAnother(path.id);
+const canEditSelection = computed(
+  () =>
+    selectedPaths.value.length > 0 && selectedPaths.value.every(canSelectPath),
+);
+
 const selectionColorPreview = ref<string | null>(null);
 const activeGroupId = ref<string | null>(null);
 
-let websocket: WebSocket | null = null;
-let websocketClientId: string | null = null;
-let pendingMessages: GuestbookClientMessage[] = [];
 let lastDrawingRevision = -1;
 let drawingEpoch: string | null = null;
+let selectionSequence = 0;
+
+type Toast = {
+  message: string;
+  type: "info" | "success" | "error";
+  duration?: number;
+  closeable?: boolean;
+};
 
 /**
  * Represents a pointer's state during interaction with the canvas.
@@ -724,37 +787,15 @@ interface Pointer {
   lastY: number;
   lastWorldPosition: Point | null;
   mode: "draw" | "pan" | "move" | "marquee" | "fill";
-  inputMode: CanvasInputMode;
+  inputMode: GuestbookInputMode;
   color: string;
   moveOffset: Point;
   marqueeEnd: Point | null;
 }
 
-type GuestbookEditPayload =
-  | {
-      type: "stroke:commit";
-      strokeId: string;
-      cancelled?: boolean;
-      segments?: BrushSegment[];
-      color?: string | null;
-      layer?: number;
-    }
-  | { type: "paths:move"; ids: number[]; dx: number; dy: number }
-  | { type: "paths:finish-move"; ids: number[] }
-  | { type: "paths:layer"; ids: number[]; direction: -1 | 1 }
-  | { type: "paths:color"; ids: number[]; color: string }
-  | { type: "paths:delete"; ids: number[] }
-  | { type: "paths:merge"; ids: number[] }
-  | { type: "paths:group"; ids: number[]; groupId: string }
-  | { type: "paths:ungroup"; ids: number[] }
-  | { type: "fill:commit"; point: Point; color: string; layer: number }
-  | { type: "drawing:undo" | "drawing:redo" };
-
 let otherCursors: Record<string, OtherCursor> = {};
 let otherStrokes = new Map<string, OtherStroke>();
 const pendingStrokes = new Map<string, OtherStroke>();
-const otherSelections = new Map<string, SelectionPreview>();
-const pendingMoves = new Map<string, PendingMove>();
 const pendingFinishingMoves = new Map<string, number[]>();
 const connecting = ref(false);
 
@@ -769,7 +810,16 @@ const showGroupAction = computed(
   () => selectedPaths.value.length > 1 || isGroupedSelection.value,
 );
 const canToggleGrouping = computed(
-  () => isGroupedSelection.value || selectedPaths.value.length > 1,
+  () =>
+    (isGroupedSelection.value || selectedPaths.value.length > 1) &&
+    !committedPaths.value.some(
+      (path) =>
+        path.groupId &&
+        selectedPaths.value.some(
+          (selected) => selected.groupId === path.groupId,
+        ) &&
+        !canSelectPath(path),
+    ),
 );
 
 /**
@@ -784,6 +834,7 @@ const canvasStyle = computed(() => {
         cursor: "grabbing",
       };
     default:
+      if (!isLoggedIn.value) return { cursor: "grab" };
       return {
         cursor: eyedropperActive.value
           ? "crosshair"
@@ -797,11 +848,13 @@ const canvasStyle = computed(() => {
       };
   }
 });
+//#endregion CLIENT STATE
 
+//#region CLIENT SERVICES
 /**
  * The renderer responsible for drawing the canvas content.
  */
-const renderer = createCanvasRenderer(() => ({
+const renderer = new GuestbookRenderer(() => ({
   canvas: guestbookCanvas.value,
   context: ctx.value,
   camera,
@@ -814,7 +867,10 @@ const renderer = createCanvasRenderer(() => ({
   inputMode: inputMode.value,
   eyedropperActive: eyedropperActive.value,
   activePointer: pointer.active,
-  brushPosition: pointer.position && getWorldPosition(pointer.position),
+  brushPosition:
+    isLoggedIn.value && pointer.position
+      ? getWorldPosition(pointer.position)
+      : null,
   brushSize: brushSize.value,
   pathDraft,
   otherCursors,
@@ -825,6 +881,68 @@ const renderer = createCanvasRenderer(() => ({
   pendingFinishingMoves,
 }));
 
+const {
+  getWorldPosition,
+  panCamera,
+  handleWheel,
+  getCameraAnchor,
+  zoomFromWheel,
+  zoom,
+  rotateCamera,
+  flipCamera,
+} = new GuestbookCamera(guestbookCanvas, camera, canvasSize, inputMode, () =>
+  renderer.schedule(),
+);
+
+const guestbookSocket = new GuestbookSocket({
+  backendUrl,
+  enabled: backendEnabled,
+  onOpen: () => sendSelectionPreview(),
+  onMessage: handleWebsocketMessage,
+  onClose: () => {
+    connecting.value = false;
+    otherCursors = {};
+    otherStrokes.clear();
+    otherSelections.clear();
+    pendingFinishingMoves.clear();
+    selectedPathIds.value = [];
+    activeGroupId.value = null;
+    selectionMovement.clear();
+    selectionColorPreview.value = null;
+    renderer.schedule();
+  },
+});
+const {
+  setSelection,
+  clearSelection,
+  moveSelectionLayer,
+  toggleSelectionGrouping,
+  setSelectionColor,
+  beginSelectionColorChange,
+  endSelectionColorChange,
+  deleteSelection,
+  setSelectionLocked,
+} = new GuestbookSelection({
+  selectedPathIds,
+  selectedPaths,
+  committedPaths,
+  activeGroupId,
+  selectionColorPreview,
+  selectionMovement,
+  pendingFinishingMoves,
+  canSelectPath,
+  canEditSelection,
+  canToggleGrouping,
+  isGroupedSelection,
+  interactionActive,
+  getUserId: () => user.value?.userId,
+  sendEdit: guestbookSocket.sendEdit,
+  sendPreview: () => sendSelectionPreview(),
+  schedule: () => renderer.schedule(),
+});
+//#endregion CLIENT SERVICES
+
+//#region VUE LIFECYCLE
 onMounted(async () => {
   const canvas = guestbookCanvas.value;
   if (canvas) {
@@ -832,68 +950,22 @@ onMounted(async () => {
     drawing = new FlashishDrawing();
     watch(
       [isLoggedIn, () => user.value?.userId],
-      (_identity, _previous, onCleanup) => {
-        if (!backendEnabled || !backendUrl) return;
+      (_, __, onCleanup) => {
         connecting.value = true;
-        let disposed = false;
-        let retryDelay = 500;
-        let retryTimer: ReturnType<typeof setTimeout> | undefined;
-        let socket: WebSocket | null = null;
-
-        const connect = () => {
-          if (disposed) return;
-          const url = new URL(
-            `${backendUrl.replace(/\/+$/, "")}/guestbook/ws`,
-            window.location.origin,
-          );
-          url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-          socket = new WebSocket(url);
-          websocket = socket;
-          websocketClientId ??= crypto.randomUUID();
-          const currentSocket = socket;
-          currentSocket.addEventListener("open", () => {
-            if (websocket !== currentSocket) return;
-            retryDelay = 500;
-            for (const message of pendingMessages.splice(0)) {
-              currentSocket.send(JSON.stringify(message));
-            }
-            sendSelectionPreview();
-          });
-          currentSocket.addEventListener("message", (event) => {
-            if (websocket === currentSocket) handleWebsocketMessage(event);
-          });
-          currentSocket.addEventListener("error", (event) => {
-            console.error("Guestbook WebSocket error:", event);
-          });
-          currentSocket.addEventListener("close", () => {
-            if (websocket !== currentSocket || disposed) return;
-            websocket = null;
-            connecting.value = false;
-            otherCursors = {};
-            otherStrokes.clear();
-            otherSelections.clear();
-            pendingFinishingMoves.clear();
-            renderer.schedule();
-            retryTimer = setTimeout(connect, retryDelay);
-            retryDelay = Math.min(retryDelay * 2, 15_000);
-          });
-        };
-
-        connect();
+        const disconnect = guestbookSocket.connect();
         connecting.value = false;
         onCleanup(() => {
-          disposed = true;
-          if (retryTimer) clearTimeout(retryTimer);
-          socket?.close();
-          if (websocket === socket) websocket = null;
-          websocketClientId = null;
-          pendingMessages = [];
+          disconnect();
           otherCursors = {};
           otherStrokes.clear();
           otherSelections.clear();
           pendingStrokes.clear();
           pendingMoves.clear();
           pendingFinishingMoves.clear();
+          selectedPathIds.value = [];
+          activeGroupId.value = null;
+          selectionMovement.clear();
+          selectionColorPreview.value = null;
           renderer.schedule();
         });
       },
@@ -920,9 +992,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  websocket?.close();
-  websocket = null;
-  websocketClientId = null;
+  dismissToast();
+  guestbookSocket.close();
   activeStroke = null;
   otherStrokes.clear();
   otherSelections.clear();
@@ -942,7 +1013,10 @@ watch([theme], () => {
 
 watch(brushSize, () => renderer.schedule());
 watch(eyedropperActive, () => renderer.schedule());
+watch(isLoggedIn, () => renderer.schedule());
+//#endregion VUE LIFECYCLE
 
+//#region POINTER EVENTS
 function handlePointerDown(event: PointerEvent) {
   sendCursorPosition(event);
   if (event.pointerType === "touch") {
@@ -953,8 +1027,8 @@ function handlePointerDown(event: PointerEvent) {
     canvas.setPointerCapture(event.pointerId);
     if (touches.size >= 2) {
       touchGesture.value = true;
-      if (activeStroke && websocketClientId) {
-        sendEditMessage({
+      if (activeStroke && guestbookSocket.clientId) {
+        guestbookSocket.sendEdit({
           type: "stroke:commit",
           strokeId: activeStroke.strokeId,
           cancelled: true,
@@ -1019,13 +1093,28 @@ function handlePointerDown(event: PointerEvent) {
       mode = "fill";
       break;
     case "select": {
+      if (!guestbookSocket.isOpen) {
+        showToast({ message: "Connect to select a drawing.", type: "info" });
+        return;
+      }
       const hitPath = position ? findPathAt(position) : null;
       const hit = hitPath?.id ?? null;
       if (hitPath) {
+        if (!canSelectPath(hitPath)) {
+          if (isSelectedByAnother(hitPath.id)) {
+            showToast({
+              message: "This drawing is selected by another user.",
+              type: "info",
+            });
+          } else if (hitPath.ownerId !== null) {
+            showOwnershipToast(hitPath.ownerId);
+          }
+          return;
+        }
         const groupId = hitPath.groupId ?? null;
         if (groupId && activeGroupId.value === groupId) {
           const groupPaths = committedPaths.value.filter(
-            (path) => path.groupId === groupId,
+            (path) => path.groupId === groupId && canSelectPath(path),
           );
           const isSingleMemberSelected =
             selectedPathIds.value.length === 1 &&
@@ -1044,7 +1133,7 @@ function handlePointerDown(event: PointerEvent) {
         } else if (groupId) {
           clearSelection();
           const groupPaths = committedPaths.value.filter(
-            (path) => path.groupId === groupId,
+            (path) => path.groupId === groupId && canSelectPath(path),
           );
           setSelection(
             groupPaths.map(({ id }) => id),
@@ -1102,13 +1191,13 @@ function handlePointerDown(event: PointerEvent) {
       color,
       layer: activeLayer.value,
     };
-    if (websocketClientId) {
-      sendWebhookMessage({
+    if (guestbookSocket.clientId) {
+      guestbookSocket.send({
         type: "stroke:start",
-        clientId: websocketClientId,
+        clientId: guestbookSocket.clientId,
         ...activeStroke,
       });
-      sendWebhookMessage({
+      guestbookSocket.send({
         type: "stroke:points",
         strokeId: activeStroke.strokeId,
         points: [
@@ -1125,70 +1214,16 @@ function handlePointerDown(event: PointerEvent) {
   sendSelectionPreview();
   renderer.schedule();
 }
+//#endregion POINTER EVENTS
 
-function sendWebhookMessage(message: GuestbookClientMessage) {
-  if (!isLoggedIn.value) return;
-  if (websocket?.readyState === WebSocket.OPEN) {
-    websocket.send(JSON.stringify(message));
-  } else if (
-    message.type !== "cursor:move" &&
-    message.type !== "cursor:leave" &&
-    message.type !== "selection:preview"
-  ) {
-    pendingMessages.push(message);
-  }
-}
-
-function sendEditMessage(message: GuestbookEditPayload) {
-  if (!websocketClientId) return;
-  const clientId = websocketClientId;
-  const operationId =
-    message.type === "stroke:commit" ? message.strokeId : crypto.randomUUID();
-  switch (message.type) {
-    case "stroke:commit":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "fill:commit":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:move":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:finish-move":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:layer":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:color":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:delete":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:merge":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:group":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "paths:ungroup":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-    case "drawing:undo":
-    case "drawing:redo":
-      sendWebhookMessage({ ...message, clientId, operationId });
-      break;
-  }
-  return operationId;
-}
-
+//#region WEBSOCKET HANDLERS
 function sendSelectionPreview() {
-  if (!websocketClientId) return;
+  if (!guestbookSocket.clientId) return;
   const active = pointer.active;
-  sendWebhookMessage({
+  guestbookSocket.send({
     type: "selection:preview",
-    clientId: websocketClientId,
+    clientId: guestbookSocket.clientId,
+    sequence: ++selectionSequence,
     ids: [...selectedPathIds.value],
     offset: active?.mode === "move" ? active.moveOffset : { x: 0, y: 0 },
     marquee:
@@ -1204,6 +1239,9 @@ function handleWebsocketMessage(event: MessageEvent) {
   try {
     const message: GuestbookServerMessage = JSON.parse(event.data);
     switch (message.type) {
+      case "error":
+        showToast({ message: message.message, type: "error" });
+        break;
       case "fill:result":
         if (message.result === "unbounded")
           console.info(
@@ -1239,8 +1277,8 @@ function handleWebsocketMessage(event: MessageEvent) {
         selectionColorPreview.value = null;
         break;
       case "cursor:move":
-        if (message.clientId === websocketClientId) break;
-        otherCursors[message.userId] = {
+        if (message.clientId === guestbookSocket.clientId) break;
+        otherCursors[message.clientId] = {
           userId: message.userId,
           point: message.point,
           mode: message.mode,
@@ -1248,12 +1286,31 @@ function handleWebsocketMessage(event: MessageEvent) {
         };
         break;
       case "cursor:leave":
-        if (message.clientId === websocketClientId) break;
-        if (otherCursors[message.userId])
-          otherCursors[message.userId]!.point = null;
+        if (message.clientId === guestbookSocket.clientId) break;
+        if (otherCursors[message.clientId])
+          otherCursors[message.clientId]!.point = null;
         break;
       case "selection:preview":
-        if (message.clientId === websocketClientId) break;
+        if (message.clientId === guestbookSocket.clientId) {
+          if (message.sequence !== selectionSequence) break;
+          const accepted = new Set(message.ids);
+          const rejected = selectedPathIds.value.filter(
+            (id) => !accepted.has(id),
+          );
+          if (rejected.length) {
+            selectedPathIds.value = selectedPathIds.value.filter((id) =>
+              accepted.has(id),
+            );
+            for (const id of rejected) selectionMovement.delete(id);
+            if (!selectedPathIds.value.length) activeGroupId.value = null;
+            selectionColorPreview.value = null;
+            showToast({
+              message: "Some drawings are no longer available for selection.",
+              type: "info",
+            });
+          }
+          break;
+        }
         otherSelections.set(message.clientId, {
           userId: message.userId,
           ids: message.ids,
@@ -1261,14 +1318,18 @@ function handleWebsocketMessage(event: MessageEvent) {
           marquee: message.marquee,
         });
         break;
-      case "selection:leave":
-        otherSelections.delete(message.clientId);
+      case "user:leave":
+        for (const clientId of message.clientIds) {
+          delete otherCursors[clientId];
+          otherSelections.delete(clientId);
+        }
+        for (const strokeId of message.strokeIds) otherStrokes.delete(strokeId);
         break;
       case "selection:request":
         sendSelectionPreview();
         break;
       case "stroke:start":
-        if (message.clientId === websocketClientId) break;
+        if (message.clientId === guestbookSocket.clientId) break;
         otherStrokes.set(message.strokeId, {
           layer: message.layer,
           color: message.color,
@@ -1301,18 +1362,18 @@ function handleWebsocketMessage(event: MessageEvent) {
 
 function sendCursorPosition(event: PointerEvent) {
   const point = getWorldPosition(event);
-  if (!point || !websocketClientId) return;
+  if (!point || !guestbookSocket.clientId) return;
   const active = pointer.active;
   const mode =
-    active?.mode === "pan" || active?.mode === "move"
+    !isLoggedIn.value || active?.mode === "pan" || active?.mode === "move"
       ? "pointer"
       : (active?.inputMode ?? inputMode.value) === "draw" ||
           (active?.inputMode ?? inputMode.value) === "erase"
         ? "brush"
         : "pointer";
-  sendWebhookMessage({
+  guestbookSocket.send({
     type: "cursor:move",
-    clientId: websocketClientId,
+    clientId: guestbookSocket.clientId,
     point,
     mode,
     brushSize:
@@ -1321,7 +1382,9 @@ function sendCursorPosition(event: PointerEvent) {
         : brushSize.value,
   });
 }
+//#endregion WEBSOCKET HANDLERS
 
+//#region POINTER EVENTS
 function handlePointerEnter(event: PointerEvent) {
   updateBrushCursor(event);
   sendCursorPosition(event);
@@ -1370,6 +1433,9 @@ function handlePointerMove(event: PointerEvent) {
     updatePointer(sample);
   }
 }
+//#endregion POINTER EVENTS
+
+//#region POINTER UPDATE
 
 /**
  * When a pointer event occurs, update the pointer state accordingly.
@@ -1401,9 +1467,9 @@ function updatePointer(event: PointerEvent) {
         to: position,
         size: getSegmentSize(event),
       });
-      if (activeStroke && websocketClientId) {
+      if (activeStroke && guestbookSocket.clientId) {
         const segment = pathDraft.at(-1)!;
-        sendWebhookMessage({
+        guestbookSocket.send({
           type: "stroke:points",
           strokeId: activeStroke.strokeId,
           points: [{ from: segment.from, to: segment.to, size: segment.size }],
@@ -1411,7 +1477,7 @@ function updatePointer(event: PointerEvent) {
       }
       pointer.active.lastWorldPosition = position;
     }
-  } else if (pointer.active?.mode === "move") {
+  } else if (pointer.active?.mode === "move" && canEditSelection.value) {
     const position = getWorldPosition(event);
     const start = pointer.active.lastWorldPosition;
     if (position && start && selectedPathIds.value.length) {
@@ -1508,116 +1574,13 @@ function updateBrushCursor(event: PointerEvent) {
 
 function hideBrushCursor(event: PointerEvent) {
   if (pointer.active !== null && pointer.active.id !== event.pointerId) return;
-  if (websocketClientId) {
-    sendWebhookMessage({
+  if (guestbookSocket.clientId) {
+    guestbookSocket.send({
       type: "cursor:leave",
-      clientId: websocketClientId,
+      clientId: guestbookSocket.clientId,
     });
   }
   pointer.position = null;
-  renderer.schedule();
-}
-
-/**
- * Gets the world position of the pointer event relative to the canvas.
- * @param event The pointer event to get the world position from.
- * @returns The world position, or null if the canvas is not available.
- */
-function getWorldPosition(event: { clientX: number; clientY: number }) {
-  const canvas = guestbookCanvas.value;
-  if (!canvas) return null;
-  const rect = canvas.getBoundingClientRect();
-  if (!rect.width || !rect.height) return null;
-  return screenToWorld(
-    {
-      x: ((event.clientX - rect.left) * canvas.clientWidth) / rect.width,
-      y: ((event.clientY - rect.top) * canvas.clientHeight) / rect.height,
-    },
-    camera,
-  );
-}
-
-/**
- * Pans the camera by the given delta values.
- * @param dx The change in the x-coordinate.
- * @param dy The change in the y-coordinate.
- */
-function panCamera(dx: number, dy: number) {
-  const position = screenToWorld({ x: dx, y: dy }, camera);
-  camera.x = position.x;
-  camera.y = position.y;
-}
-
-function handleWheel(event: WheelEvent) {
-  const canvas = guestbookCanvas.value;
-  if (!canvas) return;
-
-  const zoomWithWheel =
-    (event.button === 0 && event.ctrlKey) || (event.buttons & 4) !== 0;
-  if (!zoomWithWheel && inputMode.value !== "pan") return;
-
-  event.preventDefault();
-  if (zoomWithWheel) {
-    zoomFromWheel(event.deltaY, { x: event.clientX, y: event.clientY });
-  } else {
-    panCamera(event.deltaX, event.deltaY);
-    renderer.schedule();
-  }
-}
-
-function getCameraAnchor(center?: Point): Point | null {
-  const canvas = guestbookCanvas.value;
-  if (!canvas) return null;
-  const rect = canvas.getBoundingClientRect();
-  if (!rect.width || !rect.height) return null;
-  const x = center
-    ? ((center.x - rect.left) * canvas.clientWidth) / rect.width
-    : canvas.clientWidth / 2;
-  const y = center
-    ? ((center.y - rect.top) * canvas.clientHeight) / rect.height
-    : canvas.clientHeight / 2;
-  return { x, y };
-}
-
-function zoomFromWheel(delta: number, center?: Point) {
-  let target = Math.min(
-    MAX_ZOOM,
-    Math.max(MIN_ZOOM, camera.zoom * Math.exp(-delta * 0.001)),
-  );
-  if ((camera.zoom < 1 && target >= 1) || (camera.zoom > 1 && target <= 1)) {
-    target = 1;
-  }
-  zoom(target - camera.zoom, center);
-}
-
-function zoom(amount: number, center?: Point) {
-  const anchor = getCameraAnchor(center);
-  if (!anchor) return;
-  const target = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, camera.zoom + amount));
-  updateCameraAt(camera, anchor, { zoom: target });
-  renderer.schedule();
-}
-
-function rotateCamera(amount: number, center?: Point) {
-  const anchor = getCameraAnchor(center);
-  if (!anchor) return;
-  let rotation = camera.rotation + amount;
-  if (rotation >= Math.PI || rotation < -Math.PI) {
-    rotation =
-      ((((rotation + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) -
-      Math.PI;
-  }
-  updateCameraAt(camera, anchor, { rotation });
-  renderer.schedule();
-}
-
-function flipCamera(axis: "horizontal" | "vertical") {
-  const anchor = { x: canvasSize.width / 2, y: canvasSize.height / 2 };
-  updateCameraAt(
-    camera,
-    anchor,
-    axis === "horizontal" ? { flipX: !camera.flipX } : { flipY: !camera.flipY },
-  );
   renderer.schedule();
 }
 
@@ -1651,13 +1614,13 @@ function endPointer(event: PointerEvent) {
     }
     if (pathDraft.length) {
       const completedStroke = activeStroke;
-      if (completedStroke && websocketClientId) {
+      if (completedStroke && guestbookSocket.clientId) {
         pendingStrokes.set(completedStroke.strokeId, {
           layer: completedStroke.layer,
           color: completedStroke.color,
           segments: pathDraft,
         });
-        sendEditMessage({
+        guestbookSocket.sendEdit({
           type: "stroke:commit",
           strokeId: completedStroke.strokeId,
           segments: pathDraft.map(({ from, to, size }) => ({
@@ -1675,7 +1638,7 @@ function endPointer(event: PointerEvent) {
       active.lastWorldPosition &&
       event.type === "pointerup"
     ) {
-      sendEditMessage({
+      guestbookSocket.sendEdit({
         type: "fill:commit",
         point: active.lastWorldPosition,
         color: active.color,
@@ -1683,11 +1646,12 @@ function endPointer(event: PointerEvent) {
       });
     } else if (
       active.mode === "move" &&
+      canEditSelection.value &&
       selectedPathIds.value.length &&
       event.type !== "pointercancel" &&
       event.type !== "lostpointercapture"
     ) {
-      const operationId = sendEditMessage({
+      const operationId = guestbookSocket.sendEdit({
         type: "paths:move",
         ids: [...selectedPathIds.value],
         dx: active.moveOffset.x,
@@ -1735,7 +1699,9 @@ function endPointer(event: PointerEvent) {
     sendCursorPosition(event);
   }
 }
+//#endregion POINTER UPDATE
 
+//#region DRAWING SYNC
 function syncDrawing() {
   committedPaths.value = drawing.paths.map(
     ({ id, ownerId, color, layer, groupId, pathData, bounds }) => ({
@@ -1754,48 +1720,57 @@ function syncDrawing() {
   ) {
     activeGroupId.value = null;
   }
-  selectedPathIds.value = selectedPathIds.value.filter((id) =>
-    committedPaths.value.some((path) => path.id === id),
+  const selectableIds = new Set(
+    committedPaths.value.filter(canSelectPath).map(({ id }) => id),
   );
+  const previousIds = selectedPathIds.value;
+  selectedPathIds.value = previousIds.filter((id) => selectableIds.has(id));
+  if (selectedPathIds.value.length !== previousIds.length) {
+    for (const id of previousIds) {
+      if (!selectableIds.has(id)) selectionMovement.delete(id);
+    }
+    if (!selectedPathIds.value.length) activeGroupId.value = null;
+    sendSelectionPreview();
+  }
   if (selectedPaths.value.length === 1 && selectedPath.value) {
     activeLayer.value = selectedPath.value.layer;
   }
   renderer.schedule();
 }
+//#endregion DRAWING SYNC
 
-function setSelection(ids: number[], groupId?: string | null) {
-  selectedPathIds.value = ids;
-  activeGroupId.value =
-    groupId ??
-    (ids.length === 1
-      ? (committedPaths.value.find((path) => path.id === ids[0])?.groupId ??
-        null)
-      : null);
-  selectionMovement.clear();
-  selectionColorPreview.value = null;
-  sendSelectionPreview();
+//#region TOAST NOTIFICATIONS
+function dismissToast() {
+  toastRequest++;
+  clearTimeout(toastTimer);
+  toastMessage.value = null;
 }
 
-function clearSelection() {
-  const moved = selectedPathIds.value.filter((id) => {
-    const offset = selectionMovement.get(id);
-    return offset && (offset.x !== 0 || offset.y !== 0);
-  });
-  selectedPathIds.value = [];
-  activeGroupId.value = null;
-  selectionMovement.clear();
-  selectionColorPreview.value = null;
-  if (moved.length) {
-    const operationId = sendEditMessage({
-      type: "paths:finish-move",
-      ids: moved,
+function showToast(message: Toast) {
+  dismissToast();
+  toastMessage.value = message;
+  toastTimer = setTimeout(dismissToast, 4000);
+  return toastRequest;
+}
+
+async function showOwnershipToast(ownerId: string) {
+  const owner = await getPublicUser(ownerId);
+  if (owner) {
+    showToast({
+      message: `This drawing is owned by ${owner.displayName}, ask them to unlock it`,
+      type: "info",
     });
-    if (operationId) pendingFinishingMoves.set(operationId, moved);
+  } else {
+    showToast({
+      message: "This drawing is owned by another user, ask them to unlock it!",
+      type: "info",
+    });
   }
-  sendSelectionPreview();
 }
+//#endregion TOAST NOTIFICATIONS
 
-function setInputMode(mode: CanvasInputMode) {
+//#region TOOLS AND KEYBOARD SHORTCUTS
+function setInputMode(mode: GuestbookInputMode) {
   eyedropperActive.value = false;
   if (inputMode.value === "select" && mode !== "select") clearSelection();
   inputMode.value = mode;
@@ -1808,111 +1783,14 @@ function selectLayer(layer: number) {
   renderer.schedule();
 }
 
-function moveSelectionLayer(direction: -1 | 1) {
-  if (
-    !isLoggedIn.value ||
-    !selectedPathIds.value.length ||
-    interactionActive.value
-  )
-    return;
-  const ids = [...selectedPathIds.value];
-  sendEditMessage({ type: "paths:layer", ids, direction });
-}
-
-function toggleSelectionGrouping() {
-  if (!isLoggedIn.value || !canToggleGrouping.value || interactionActive.value)
-    return;
-  const ids = [...selectedPathIds.value];
-  if (isGroupedSelection.value) {
-    const groupIds = new Set(
-      selectedPaths.value.flatMap(({ groupId }) => (groupId ? [groupId] : [])),
-    );
-    const selectedIds = new Set(ids);
-    const operationId = sendEditMessage({ type: "paths:ungroup", ids });
-    if (!operationId) return;
-    const singleMemberGroupIds = new Set(
-      [...groupIds].filter(
-        (groupId) =>
-          committedPaths.value.filter(
-            (path) =>
-              path.groupId === groupId && !selectedIds.has(path.id),
-          ).length === 1,
-      ),
-    );
-    committedPaths.value = committedPaths.value.map((path) =>
-      path.groupId &&
-      ((selectedIds.has(path.id) && groupIds.has(path.groupId)) ||
-        singleMemberGroupIds.has(path.groupId))
-        ? { ...path, groupId: undefined }
-        : path,
-    );
-    activeGroupId.value = null;
-  } else {
-    if (ids.length < 2) return;
-    const groupId = crypto.randomUUID();
-    const existingGroupIds = new Set(
-      selectedPaths.value.flatMap(({ groupId: selectedGroupId }) =>
-        selectedGroupId ? [selectedGroupId] : [],
-      ),
-    );
-    const affectedIds = new Set(
-      committedPaths.value
-        .filter(
-          (path) =>
-            ids.includes(path.id) ||
-            (!!path.groupId && existingGroupIds.has(path.groupId)),
-        )
-        .map(({ id }) => id),
-    );
-    const operationId = sendEditMessage({
-      type: "paths:group",
-      ids,
-      groupId,
-    });
-    if (!operationId) return;
-    committedPaths.value = committedPaths.value.map((path) =>
-      affectedIds.has(path.id) ? { ...path, groupId } : path,
-    );
-    activeGroupId.value = groupId;
-  }
-  renderer.schedule();
-}
-
-function setSelectionColor(color: string) {
-  if (
-    !isLoggedIn.value ||
-    !selectedPathIds.value.length ||
-    interactionActive.value
-  )
-    return;
-  selectionColorPreview.value = color;
-}
-
-function beginSelectionColorChange(kind: string) {
-  if (selectionColorChange?.kind !== kind || kind !== "keyboard") {
-    selectionColorChange = {
-      kind,
-      ids: [...selectedPathIds.value],
-    };
-  }
-}
-
-function endSelectionColorChange(kind: string) {
-  if (selectionColorChange?.kind !== kind) return;
-  const ids = selectionColorChange.ids;
-  const color = selectionColorPreview.value;
-  if (ids.length && color) sendEditMessage({ type: "paths:color", ids, color });
-  selectionColorChange = null;
-}
-
 function undo() {
   if (interactionActive.value || !canUndo.value) return;
-  sendEditMessage({ type: "drawing:undo" });
+  guestbookSocket.sendEdit({ type: "drawing:undo" });
 }
 
 function redo() {
   if (interactionActive.value || !canRedo.value) return;
-  sendEditMessage({ type: "drawing:redo" });
+  guestbookSocket.sendEdit({ type: "drawing:redo" });
 }
 
 function handleKeys(event: KeyboardEvent) {
@@ -1943,10 +1821,12 @@ function handleKeys(event: KeyboardEvent) {
     deleteSelection();
   }
   if (event.code === "KeyI") eyedropperActive.value = true;
-  const mode = getCanvasInputModeForKey(event.code);
+  const mode = getGuestbookInputModeForKey(event.code);
   if (mode) setInputMode(mode);
 }
+//#endregion TOOLS AND KEYBOARD SHORTCUTS
 
+//#region POINTER UP AND DOUBLE-CLICK
 function handlePointerUp(event: PointerEvent) {
   if (pointer.active?.id === event.pointerId) {
     updatePointer(event);
@@ -1966,6 +1846,7 @@ function handleDoubleClick(event: MouseEvent) {
   const position = getWorldPosition(event);
   const hitPath = position ? findPathAt(position) : null;
   if (!hitPath || hitPath.groupId !== activeGroupId.value) return;
+  if (!canSelectPath(hitPath)) return;
   if (
     selectedPathIds.value.length === 1 &&
     selectedPathIds.value[0] === hitPath.id
@@ -1977,15 +1858,5 @@ function handleDoubleClick(event: MouseEvent) {
   activeLayer.value = hitPath.layer;
   renderer.schedule();
 }
-
-function deleteSelection() {
-  if (
-    !isLoggedIn.value ||
-    !selectedPathIds.value.length ||
-    interactionActive.value
-  )
-    return;
-  const ids = [...selectedPathIds.value];
-  sendEditMessage({ type: "paths:delete", ids });
-}
+//#endregion POINTER UP AND DOUBLE-CLICK
 </script>

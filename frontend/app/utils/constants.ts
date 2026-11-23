@@ -1,7 +1,7 @@
 //#region PICROSS CONSTANTS
 
 import type { PicrossInputMode, PicrossInputModeDefinition } from "./picross";
-import type { CanvasInputModeDefinition } from "./canvas";
+import type { GuestbookInputModeDefinition } from "./guestbook";
 import { toggleTo } from "./picross";
 import {
   MIN_BOARD_SIZE,
@@ -154,13 +154,13 @@ const DEFAULT_BRUSH_SIZE = 5;
 /**
  * The available input modes for interacting with the canvas.
  */
-const CANVAS_INPUT_MODES = {
+const GUESTBOOK_INPUT_MODES = {
   draw: { icon: "edit", keys: ["KeyB", "Digit1"] },
   erase: { icon: "erase", keys: ["KeyE", "Digit2"] },
   select: { icon: "select", keys: ["KeyV", "Digit3"] },
   pan: { icon: "grab", keys: ["KeyH", "Digit4"] },
   fill: { icon: "fill", keys: ["KeyG", "Digit5"] },
-} as const satisfies Record<string, CanvasInputModeDefinition>;
+} as const satisfies Record<string, GuestbookInputModeDefinition>;
 
 //#endregion GUESTBOOK CONSTANTS
 
@@ -191,7 +191,7 @@ export {
   DEFAULT_BOARD_SIZE,
   PICROSS_INPUT_MODES,
   INPUT_MODE_DEFINITIONS,
-  CANVAS_INPUT_MODES,
+  GUESTBOOK_INPUT_MODES,
   MAGIC_HEADER,
   CURRENT_MAJOR_VERSION,
   CURRENT_MINOR_VERSION,

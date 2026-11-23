@@ -5,7 +5,7 @@ import { db } from "../db";
 const pathsSchema = z.array(
   z.object({
     id: z.number().int(),
-    ownerId: z.string(),
+    ownerId: z.string().nullable(),
     color: z.string(),
     layer: z.number().int(),
     groupId: z.string().optional(),

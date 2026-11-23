@@ -87,6 +87,12 @@ button {
   &:not(.disabled):active {
     transform: translateY(1px);
   }
+  &.link {
+    color: var(--primary);
+    padding: 0;
+    border: none;
+    background-color: transparent;
+  }
   &.filled {
     background-color: var(--primary);
     border: 2px solid color.scale($primary, $lightness: 20%);

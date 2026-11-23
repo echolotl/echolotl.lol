@@ -1,4 +1,5 @@
-import type { Camera, Point, Rect } from "./index";
+import type { Camera, Rect } from "./index";
+import type { Point } from "@echolotl/types";
 
 /**
  * Converts a point from screen coordinates to world coordinates based on the camera's state.
@@ -12,12 +13,9 @@ export function screenToWorld(point: Point, camera: Camera): Point {
   const flipX = camera.flipX ? -1 : 1;
   const flipY = camera.flipY ? -1 : 1;
   return {
-    x:
-      camera.x +
-      (point.x * flipX * cos + point.y * flipY * sin) / camera.zoom,
+    x: camera.x + (point.x * flipX * cos + point.y * flipY * sin) / camera.zoom,
     y:
-      camera.y +
-      (-point.x * flipX * sin + point.y * flipY * cos) / camera.zoom,
+      camera.y + (-point.x * flipX * sin + point.y * flipY * cos) / camera.zoom,
   };
 }
 
@@ -61,23 +59,28 @@ export function updateCameraAt(
 /**
  * Measures the incremental pan, scale and rotation between two touch pairs.
  */
-export function measureGesture(previous: [Point, Point], current: [Point, Point]) {
+export function measureGesture(
+  previous: [Point, Point],
+  current: [Point, Point],
+) {
   const previousDx = previous[1].x - previous[0].x;
   const previousDy = previous[1].y - previous[0].y;
   const currentDx = current[1].x - current[0].x;
   const currentDy = current[1].y - current[0].y;
   const previousDistance = Math.hypot(previousDx, previousDy);
   const currentDistance = Math.hypot(currentDx, currentDy);
-  const angle = Math.atan2(currentDy, currentDx) - Math.atan2(previousDy, previousDx);
+  const angle =
+    Math.atan2(currentDy, currentDx) - Math.atan2(previousDy, previousDx);
   return {
     pan: {
       x: (current[0].x + current[1].x - previous[0].x - previous[1].x) / 2,
       y: (current[0].y + current[1].y - previous[0].y - previous[1].y) / 2,
     },
     scale: previousDistance ? currentDistance / previousDistance : 1,
-    rotation: previousDistance && currentDistance
-      ? Math.atan2(Math.sin(angle), Math.cos(angle))
-      : 0,
+    rotation:
+      previousDistance && currentDistance
+        ? Math.atan2(Math.sin(angle), Math.cos(angle))
+        : 0,
   };
 }
 

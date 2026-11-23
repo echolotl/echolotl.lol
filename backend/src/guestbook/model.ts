@@ -61,6 +61,7 @@ export const ClientMessage = t.Union([
   t.Object({
     type: t.Literal("selection:preview"),
     clientId: t.String(),
+    sequence: t.Integer({ minimum: 0 }),
     ids: t.Array(t.Number()),
     offset: Point,
     marquee: t.Union([t.Object({ from: Point, to: Point }), t.Null()]),
@@ -118,6 +119,11 @@ export const ClientMessage = t.Union([
   t.Object({
     ...EditMetadata,
     type: t.Literal("paths:ungroup"),
+    ids: PathIds,
+  }),
+  t.Object({
+    ...EditMetadata,
+    type: t.Union([t.Literal("paths:lock"), t.Literal("paths:unlock")]),
     ids: PathIds,
   }),
   t.Object({

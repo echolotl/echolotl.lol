@@ -1,4 +1,5 @@
 import Elysia, { t } from "elysia";
+import { PathOwnershipError } from "@echolotl/flashish";
 import type {
   GuestbookClientMessage,
   GuestbookServerMessage,
@@ -11,12 +12,15 @@ import {
   activeStrokes,
   broadcastDrawingState,
   connections,
+  conflictsWithSelection,
   drawing,
   drawingState,
   incrementRevision,
   isDuplicate,
   operationIds,
   strokeKey,
+  userCount,
+  updateSelection,
 } from "./service";
 
 export const guestbookRouter = new Elysia({ prefix: "/guestbook" })
@@ -30,10 +34,20 @@ export const guestbookRouter = new Elysia({ prefix: "/guestbook" })
     body: ClientMessage,
     open(ws) {
       ws.subscribe(SUBSCRIBE);
-      connections.set(ws.raw, { clientIds: new Set(), strokeKeys: new Set() });
+      connections.set(ws.raw, {
+        userId: ws.data.user?.userId ?? null,
+        clientIds: new Set(),
+        strokeKeys: new Set(),
+        selection: null,
+      });
       ws.send(JSON.stringify(drawingState()));
+      for (const connection of connections.values()) {
+        if (connection.selection) ws.send(JSON.stringify(connection.selection));
+      }
       ws.publish(SUBSCRIBE, {
-        type: "selection:request",
+        type: "user:enter",
+        userId: ws.data.user?.userId ?? null,
+        userCount: userCount(),
       } satisfies GuestbookServerMessage);
     },
     message(ws, msg) {
@@ -52,21 +66,53 @@ export const guestbookRouter = new Elysia({ prefix: "/guestbook" })
         return;
       }
       try {
+        if ("ids" in message && message.type !== "selection:preview") {
+          let affectedIds = message.ids;
+          if (message.type === "paths:group" || message.type === "paths:ungroup") {
+            const ids = new Set(message.ids);
+            const groupIds = new Set(
+              drawing.paths.flatMap((path) =>
+                ids.has(path.id) && path.groupId ? [path.groupId] : [],
+              ),
+            );
+            if (message.type === "paths:group") groupIds.add(message.groupId);
+            affectedIds = drawing.paths
+              .filter((path) => ids.has(path.id) || (path.groupId && groupIds.has(path.groupId)))
+              .map((path) => path.id);
+          }
+          if (conflictsWithSelection(connections.values(), connection, affectedIds)) {
+            ws.send(JSON.stringify({
+              type: "error",
+              message: "This drawing is selected by another user.",
+            } satisfies GuestbookServerMessage));
+            broadcastDrawingState(ws, message);
+            return;
+          }
+        }
         switch (message.type) {
           case "cursor:move":
           case "cursor:leave":
-          case "selection:preview":
             connection.clientIds.add(message.clientId);
             ws.publish(SUBSCRIBE, {
               ...message,
               userId,
             } satisfies GuestbookServerMessage);
             break;
+          case "selection:preview": {
+            connection.clientIds.add(message.clientId);
+            const selection = updateSelection(
+              connections.values(), connection, message, userId, drawing.paths,
+            );
+            ws.publish(SUBSCRIBE, selection);
+            ws.send(JSON.stringify(selection));
+            break;
+          }
           case "stroke:start": {
             const key = strokeKey(userId, message.clientId, message.strokeId);
             connection.strokeKeys.add(key);
             activeStrokes.set(key, {
               clientId: message.clientId,
+              strokeId: message.strokeId,
               segments: [],
               color: message.color,
               layer: message.layer,
@@ -208,6 +254,16 @@ export const guestbookRouter = new Elysia({ prefix: "/guestbook" })
               broadcastDrawingState(ws, message);
             }
             break;
+          case "paths:lock":
+          case "paths:unlock":
+            if (isDuplicate(ws, message)) break;
+            if (drawing.setPathsLocked(message.ids, message.type === "paths:lock", userId)) {
+              incrementRevision();
+              broadcastDrawingState(ws, message);
+            } else {
+              broadcastDrawingState(ws, message);
+            }
+            break;
           case "drawing:undo":
             if (isDuplicate(ws, message)) break;
             drawing.undo(userId);
@@ -222,6 +278,14 @@ export const guestbookRouter = new Elysia({ prefix: "/guestbook" })
             break;
         }
       } catch (error) {
+        if (error instanceof PathOwnershipError) {
+          ws.send(JSON.stringify({
+            type: "error",
+            message: error.message,
+          } satisfies GuestbookServerMessage));
+          if ("operationId" in message) broadcastDrawingState(ws, message);
+          return;
+        }
         if (!(error instanceof SnapshotPersistenceError)) throw error;
         console.error(error.message, error.originalError);
         if ("operationId" in message) {
@@ -240,34 +304,22 @@ export const guestbookRouter = new Elysia({ prefix: "/guestbook" })
     },
     close(ws) {
       ws.unsubscribe(SUBSCRIBE);
-      const userId = ws.data.user?.userId;
-      if (!userId) return;
       const connection = connections.get(ws.raw);
       if (!connection) return;
-      for (const clientId of connection.clientIds) {
-        ws.publish(SUBSCRIBE, {
-          type: "cursor:leave",
-          clientId,
-          userId,
-        } satisfies GuestbookServerMessage);
-        ws.publish(SUBSCRIBE, {
-          type: "selection:leave",
-          clientId,
-          userId,
-        } satisfies GuestbookServerMessage);
-      }
+      connections.delete(ws.raw);
+      const strokeIds: string[] = [];
       for (const key of connection.strokeKeys) {
         const stroke = activeStrokes.get(key);
         if (!stroke) continue;
         activeStrokes.delete(key);
-        ws.publish(SUBSCRIBE, {
-          type: "stroke:commit",
-          clientId: stroke.clientId,
-          operationId: crypto.randomUUID(),
-          strokeId: key.slice(key.lastIndexOf(":") + 1),
-          cancelled: true,
-          userId,
-        } satisfies GuestbookServerMessage);
+        strokeIds.push(stroke.strokeId);
       }
+      ws.publish(SUBSCRIBE, {
+        type: "user:leave",
+        userId: connection.userId,
+        userCount: userCount(),
+        clientIds: [...connection.clientIds],
+        strokeIds,
+      } satisfies GuestbookServerMessage);
     },
   });

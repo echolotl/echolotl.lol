@@ -1,5 +1,6 @@
 import { clamp } from "~/utils";
 import { MIN_BOARD_SIZE, MAX_BOARD_SIZE } from "~/utils/constants";
+import type { BaseInputModeDefinition } from "../canvas";
 
 /** The state of a single Picross tile. */
 export type PicrossTileState = "empty" | "filled" | "marked";
@@ -64,9 +65,7 @@ export type PicrossTileChange = {
 /**
  * Definition of an input mode for interacting with Picross tiles.
  */
-export type PicrossInputModeDefinition = {
-  icon: string;
-  keys: KeyboardEvent["code"][];
+export type PicrossInputModeDefinition = BaseInputModeDefinition & {
   optIn?: true; // Hidden from the controls unless a parent lists it in `addModes`
   resolve: (
     current: PicrossTile,

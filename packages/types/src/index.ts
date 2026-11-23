@@ -77,6 +77,7 @@ export interface GuestbookCursorLeaveMessage {
 export interface GuestbookSelectionPreviewMessage {
   type: "selection:preview";
   clientId: string;
+  sequence: number;
   ids: number[];
   offset: Point;
   marquee: { from: Point; to: Point } | null;
@@ -87,10 +88,18 @@ export interface GuestbookServerSelectionPreviewMessage
   userId: string;
 }
 
-export interface GuestbookServerSelectionLeaveMessage {
-  type: "selection:leave";
-  clientId: string;
-  userId: string;
+export interface GuestbookUserEnterMessage {
+  type: "user:enter";
+  userId: string | null;
+  userCount: number;
+}
+
+export interface GuestbookUserLeaveMessage {
+  type: "user:leave";
+  userId: string | null;
+  userCount: number;
+  clientIds: string[];
+  strokeIds: string[];
 }
 
 export interface GuestbookSelectionRequestMessage {
@@ -191,6 +200,16 @@ export interface GuestbookPathsUngroupMessage extends GuestbookEditMetadata {
   ids: number[];
 }
 
+export interface GuestbookPathsOwnershipMessage extends GuestbookEditMetadata {
+  type: "paths:lock" | "paths:unlock";
+  ids: number[];
+}
+
+export interface GuestbookErrorMessage {
+  type: "error";
+  message: string;
+}
+
 export interface GuestbookDrawingUndoMessage extends GuestbookEditMetadata {
   type: "drawing:undo" | "drawing:redo";
 }
@@ -210,7 +229,7 @@ export interface GuestbookServerStrokeCommitMessage
 
 export interface GuestbookDrawingPath {
   id: number;
-  ownerId: string;
+  ownerId: string | null;
   color: string;
   layer: number;
   groupId?: string;
@@ -222,6 +241,7 @@ export interface GuestbookDrawingStateMessage {
   type: "drawing:state";
   epoch: string;
   revision: number;
+  userCount: number;
   paths: GuestbookDrawingPath[];
   undoUserIds: string[];
   redoUserIds: string[];
@@ -260,13 +280,16 @@ export type GuestbookClientMessage =
   | GuestbookPathsMergeMessage
   | GuestbookPathsGroupMessage
   | GuestbookPathsUngroupMessage
+  | GuestbookPathsOwnershipMessage
   | GuestbookDrawingUndoMessage;
 export type GuestbookServerMessage =
   | GuestbookServerCursorMoveMessage
   | GuestbookServerCursorLeaveMessage
   | GuestbookServerSelectionPreviewMessage
-  | GuestbookServerSelectionLeaveMessage
+  | GuestbookUserEnterMessage
+  | GuestbookUserLeaveMessage
   | GuestbookSelectionRequestMessage
   | GuestbookServerStrokeMessage
   | GuestbookFillResultMessage
+  | GuestbookErrorMessage
   | GuestbookDrawingStateMessage;
