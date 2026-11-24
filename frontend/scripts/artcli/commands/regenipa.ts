@@ -55,7 +55,7 @@ export async function regenIPA(args: string[]) {
   if (context.noLog && !context.shouldExit) {
     Logger.noLogBypass(() =>
       Logger.statement(
-        `${Logger.fmtReverse(Logger.fmtBold(" ARTCLI ")) + Logger.fmtHexBg("#744780", `${Logger.fmtHex("#000000", " regenipa ")}`)} Generated ${generated} pronunciations${generated !== 1 ? "s" : ""} for ${selected} character${selected !== 1 ? "s" : ""}. ${Logger.fmtDim(`(skipped ${skipped})`)}`,
+        `${Logger.fmtPackage("ARTCLI", "regenipa", "#744780")} Generated ${generated} pronunciations${generated !== 1 ? "s" : ""} for ${selected} character${selected !== 1 ? "s" : ""}. ${Logger.fmtDim(`(skipped ${skipped})`)}`,
       ),
     );
   }

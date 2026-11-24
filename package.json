@@ -5,6 +5,7 @@
   "workspaces": [
     "backend",
     "frontend",
+    "packages/logger",
     "packages/types",
     "packages/picross",
     "packages/flashish"
@@ -23,5 +24,9 @@
     "build:backend": "bun run --bun --filter @echolotl/backend build",
     "lint": "bun run --bun --filter @echolotl/frontend --filter @echolotl/backend lint",
     "format": "bun run --bun --filter @echolotl/frontend --filter @echolotl/backend format"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.5",
+    "@types/node": "^26.6.7"
   }
 }

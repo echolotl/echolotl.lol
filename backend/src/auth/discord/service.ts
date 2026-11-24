@@ -3,7 +3,7 @@ import {
   destroySession as removeSession,
   updateUser,
 } from "./repository";
-import { Logger } from "../../util/logger";
+import { Logger } from "@echolotl/logger";
 import { sendDiscordWebhook } from "../../util/webhook";
 import type { AuthenticatedUser, PublicUser } from "@echolotl/types";
 import { DISCORD_TOKEN_URL } from "./model";

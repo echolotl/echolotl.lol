@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
-import { Logger } from "../../util/logger";
+import { Logger } from "@echolotl/logger";
 import {
   DiscordUserResponse,
   type DiscordTokenResponse,

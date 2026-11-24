@@ -19,7 +19,7 @@ dislikes:
   - Fire
 enemies:
   - slug: nautilus
-    name: '"That machine"'
+    name: "\"That machine\""
 category: Main
 short_description: an anthropomorphic spider with golden rings
 theme_color: "#e23c3c"

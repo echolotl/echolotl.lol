@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@echolotl/flashish": "workspace:*",
+    "@echolotl/logger": "workspace:*",
     "@echolotl/picross": "workspace:*",
     "@echolotl/types": "workspace:*",
     "@elysiajs/cors": "^1.4.2",

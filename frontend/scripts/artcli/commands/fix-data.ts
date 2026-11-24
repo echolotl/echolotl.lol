@@ -236,7 +236,7 @@ export async function fixdata(): Promise<void> {
   if (context.noLog && !context.shouldExit) {
     Logger.noLogBypass(() =>
       Logger.statement(
-        `${Logger.fmtReverse(Logger.fmtBold(" ARTCLI ")) + Logger.fmtHexBg("#744780", `${Logger.fmtHex("#000000", " fixdata ")}`)} ${summary}`,
+        `${Logger.fmtPackage("ARTCLI", "fixdata", "#744780")} ${summary}`,
       ),
     );
   } else {

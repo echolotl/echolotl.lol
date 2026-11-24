@@ -15,26 +15,20 @@
   },
   "dependencies": {
     "@echolotl/flashish": "workspace:*",
+    "@echolotl/logger": "workspace:*",
     "@echolotl/picross": "workspace:*",
     "@echolotl/types": "workspace:*",
     "@nuxt/content": "^3.16.2",
     "@nuxtjs/mdc": "^0.22.2",
     "@nuxtjs/robots": "^6.2.4",
     "@nuxtjs/sitemap": "^8.6.2",
-    "@types/js-yaml": "^4.0.9",
-    "baseline-browser-mapping": "^2.11.30",
-    "better-sqlite3": "^12.11.1",
-    "caniuse-lite": "^1.0.30001817",
     "dotenv": "^17.4.2",
-    "esbuild": "^0.28.2",
     "espeak-ng": "^1.0.2",
     "js-yaml": "^4.3.2",
     "nuxt": "^4.6.2",
-    "rehype": "^13.0.2",
     "rehype-external-links": "^3.0.0",
     "rehype-sanitize": "^6.0.0",
     "rehype-stringify": "^10.0.1",
-    "remark": "^15.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "sass": "^1.106.0",
@@ -42,11 +36,11 @@
     "sharp": "^0.35.5",
     "slot-text": "^0.3.4",
     "unified": "^11.0.5",
-    "unist-util-visit": "^5.1.0",
     "vue": "^3.5.44",
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "oxlint": "^1.89.0"
   }
 }

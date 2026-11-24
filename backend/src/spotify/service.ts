@@ -1,5 +1,5 @@
 import { getSpotifyToken, upsertSpotifyToken } from "./repository";
-import { Logger } from "../util/logger";
+import { Logger } from "@echolotl/logger";
 import {
   CurrentlyPlayingResponse,
   SPOTIFY_CURRENT_PLAYBACK_URL,

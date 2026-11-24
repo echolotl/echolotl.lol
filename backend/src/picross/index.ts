@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import { FIRST_GAME_DATE, getDateKey } from "@echolotl/picross/daily";
 import { getDailyPuzzle } from "./service";
-import { Logger } from "../util/logger";
+import { Logger } from "@echolotl/logger";
 
 function validDate(key: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return false;

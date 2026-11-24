@@ -70,7 +70,7 @@ export async function regenpalette(args: string[]) {
   if (context.noLog && !context.shouldExit) {
     Logger.noLogBypass(() =>
       Logger.statement(
-        `${Logger.fmtReverse(Logger.fmtBold(" ARTCLI ")) + Logger.fmtHexBg("#744780", `${Logger.fmtHex("#000000", " regenpalette ")}`)} Generated ${generated} palette${generated !== 1 ? "s" : ""} for ${selected} character${selected !== 1 ? "s" : ""}. ${Logger.fmtDim(`(skipped ${skipped})`)}`,
+        `${Logger.fmtPackage("ARTCLI", "regenpalette", "#744780")} Generated ${generated} palette${generated !== 1 ? "s" : ""} for ${selected} character${selected !== 1 ? "s" : ""}. ${Logger.fmtDim(`(skipped ${skipped})`)}`,
       ),
     );
   }

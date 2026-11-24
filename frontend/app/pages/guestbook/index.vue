@@ -103,261 +103,263 @@
         <Icon icon="trash" size="20px" />
       </button>
     </div>
-    <div v-if="isLoggedIn" class="side-panels">
-      <div class="vertical-actions-row">
-        <div
-          v-if="inputMode === 'draw' || inputMode === 'erase'"
-          class="vertical-actions input-modes"
-          role="group"
-          aria-label="Drawing layer"
-        >
-          <button
-            type="button"
-            class="round"
-            aria-label="Use Pen Pressure"
-            :disabled="interactionActive"
-            :class="{ active: usePenPressure }"
-            @click="usePenPressure = !usePenPressure"
+    <div class="ui-layer">
+      <div v-if="isLoggedIn" class="side-panels">
+        <div class="vertical-actions-row">
+          <div
+            v-if="inputMode === 'draw' || inputMode === 'erase'"
+            class="vertical-actions input-modes"
+            role="group"
+            aria-label="Drawing layer"
           >
-            <Icon icon="pen-pressure" size="20px" />
-          </button>
-        </div>
-        <div
-          class="vertical-actions input-modes"
-          role="group"
-          aria-label="Flip Camera"
-        >
-          <button
-            type="button"
-            class="round"
-            aria-label="Flip Horizontally"
-            :aria-pressed="camera.flipX"
-            :class="{ active: camera.flipX }"
-            :disabled="interactionActive"
-            @click="flipCamera('horizontal')"
-          >
-            <Icon icon="flip-h" size="20px" />
-          </button>
-          <button
-            type="button"
-            class="round"
-            aria-label="Flip Vertically"
-            :aria-pressed="camera.flipY"
-            :class="{ active: camera.flipY }"
-            :disabled="interactionActive"
-            @click="flipCamera('vertical')"
-          >
-            <Icon icon="flip-v" size="20px" />
-          </button>
-        </div>
-        <div
-          v-if="inputMode !== 'pan'"
-          class="vertical-actions input-modes"
-          role="group"
-          aria-label="Drawing layer"
-        >
-          <button
-            v-for="index in LAYER_COUNT"
-            :key="index"
-            type="button"
-            :class="{ active: activeLayer === LAYER_COUNT - index + 1 }"
-            :aria-label="`Layer ${LAYER_COUNT - index + 1}`"
-            :aria-pressed="activeLayer === LAYER_COUNT - index + 1"
-            :disabled="interactionActive"
-            @click="selectLayer(LAYER_COUNT - index + 1)"
-          >
-            <Icon
-              v-if="LAYER_COUNT - index + 1 <= 3"
-              :icon="`layer-${LAYER_COUNT - index + 1}`"
-              size="20px"
-            />
-            <span v-else>{{ LAYER_COUNT - index + 1 }}</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="tool-properties">
-        <details open>
-          <summary class="lotl-font">Tool Properties</summary>
-          <div v-if="inputMode === 'draw' || inputMode === 'fill'">
-            <label for="brush-color">Color</label>
-            <div style="display: flex; justify-content: center">
-              <ColorPicker id="brush-color" v-model="brushColor" horizontal />
-            </div>
+            <button
+              type="button"
+              class="round"
+              aria-label="Use Pen Pressure"
+              :disabled="interactionActive"
+              :class="{ active: usePenPressure }"
+              @click="usePenPressure = !usePenPressure"
+            >
+              <Icon icon="pen-pressure" size="20px" />
+            </button>
           </div>
           <div
-            v-else-if="
-              inputMode === 'select' && selectedPath && canEditSelection
-            "
+            class="vertical-actions input-modes"
+            role="group"
+            aria-label="Flip Camera"
           >
-            <label for="selection-color">Selection color</label>
-            <div style="display: flex; justify-content: center">
-              <ColorPicker
-                id="selection-color"
-                :model-value="selectionColorPreview ?? selectedPath.color"
-                horizontal
-                @update:model-value="setSelectionColor"
-                @interaction-start="beginSelectionColorChange"
-                @interaction-end="endSelectionColorChange"
+            <button
+              type="button"
+              class="round"
+              aria-label="Flip Horizontally"
+              :aria-pressed="camera.flipX"
+              :class="{ active: camera.flipX }"
+              :disabled="interactionActive"
+              @click="flipCamera('horizontal')"
+            >
+              <Icon icon="flip-h" size="20px" />
+            </button>
+            <button
+              type="button"
+              class="round"
+              aria-label="Flip Vertically"
+              :aria-pressed="camera.flipY"
+              :class="{ active: camera.flipY }"
+              :disabled="interactionActive"
+              @click="flipCamera('vertical')"
+            >
+              <Icon icon="flip-v" size="20px" />
+            </button>
+          </div>
+          <div
+            v-if="inputMode !== 'pan'"
+            class="vertical-actions input-modes"
+            role="group"
+            aria-label="Drawing layer"
+          >
+            <button
+              v-for="index in LAYER_COUNT"
+              :key="index"
+              type="button"
+              :class="{ active: activeLayer === LAYER_COUNT - index + 1 }"
+              :aria-label="`Layer ${LAYER_COUNT - index + 1}`"
+              :aria-pressed="activeLayer === LAYER_COUNT - index + 1"
+              :disabled="interactionActive"
+              @click="selectLayer(LAYER_COUNT - index + 1)"
+            >
+              <Icon
+                v-if="LAYER_COUNT - index + 1 <= 3"
+                :icon="`layer-${LAYER_COUNT - index + 1}`"
+                size="20px"
               />
+              <span v-else>{{ LAYER_COUNT - index + 1 }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="tool-properties">
+          <details open>
+            <summary class="lotl-font">Tool Properties</summary>
+            <div v-if="inputMode === 'draw' || inputMode === 'fill'">
+              <label for="brush-color">Color</label>
+              <div style="display: flex; justify-content: center">
+                <ColorPicker id="brush-color" v-model="brushColor" horizontal />
+              </div>
             </div>
-          </div>
-          <div v-else-if="inputMode === 'select' && selectedPath">
-            <p>This selection contains paths owned by another user.</p>
-          </div>
-          <div v-else-if="inputMode === 'select'">
-            <p>Nothing selected.</p>
-          </div>
-          <div v-if="inputMode === 'draw' || inputMode === 'erase'">
-            <label for="brush-size">Brush size</label>
-            <div class="property">
-              <output for="brush-size" class="lotl-font">{{
-                brushSize
-              }}</output>
-              <input
-                id="brush-size"
-                v-model.number="brushSize"
-                type="range"
-                min="1"
-                max="100"
-                :disabled="interactionActive"
-              />
+            <div
+              v-else-if="
+                inputMode === 'select' && selectedPath && canEditSelection
+              "
+            >
+              <label for="selection-color">Selection color</label>
+              <div style="display: flex; justify-content: center">
+                <ColorPicker
+                  id="selection-color"
+                  :model-value="selectionColorPreview ?? selectedPath.color"
+                  horizontal
+                  @update:model-value="setSelectionColor"
+                  @interaction-start="beginSelectionColorChange"
+                  @interaction-end="endSelectionColorChange"
+                />
+              </div>
             </div>
-            <label for="brush-stabilization">Stabilization</label>
-            <div class="property">
-              <output
-                for="brush-stabilization"
-                class="lotl-font stabilization-value"
-                >{{ stabilization }}%</output
-              >
-              <input
-                id="brush-stabilization"
-                v-model.number="stabilization"
-                type="range"
-                :min="MIN_STABILIZATION"
-                :max="MAX_STABILIZATION"
-                step="5"
-                :disabled="interactionActive"
-              />
+            <div v-else-if="inputMode === 'select' && selectedPath">
+              <p>This selection contains paths owned by another user.</p>
             </div>
-          </div>
-        </details>
+            <div v-else-if="inputMode === 'select'">
+              <p>Nothing selected.</p>
+            </div>
+            <div v-if="inputMode === 'draw' || inputMode === 'erase'">
+              <label for="brush-size">Brush size</label>
+              <div class="property">
+                <output for="brush-size" class="lotl-font">{{
+                  brushSize
+                }}</output>
+                <input
+                  id="brush-size"
+                  v-model.number="brushSize"
+                  type="range"
+                  min="1"
+                  max="100"
+                  :disabled="interactionActive"
+                />
+              </div>
+              <label for="brush-stabilization">Stabilization</label>
+              <div class="property">
+                <output
+                  for="brush-stabilization"
+                  class="lotl-font stabilization-value"
+                  >{{ stabilization }}%</output
+                >
+                <input
+                  id="brush-stabilization"
+                  v-model.number="stabilization"
+                  type="range"
+                  :min="MIN_STABILIZATION"
+                  :max="MAX_STABILIZATION"
+                  step="5"
+                  :disabled="interactionActive"
+                />
+              </div>
+            </div>
+          </details>
+        </div>
       </div>
-    </div>
-    <div class="toolbar">
-      <div class="coordinates lotl-font">
-        ({{ viewportCenter.x.toFixed(2) }}, {{ viewportCenter.y.toFixed(2) }})
-      </div>
-      <div style="display: flex; gap: 6px">
-        <div v-if="isLoggedIn" class="input-modes">
-          <button
-            v-for="(definition, mode) in GUESTBOOK_INPUT_MODES"
-            :key="mode"
-            type="button"
-            class="round"
-            :class="{ active: inputMode === mode }"
-            :aria-label="`${mode.charAt(0).toUpperCase()}${mode.slice(1)} mode`"
-            :aria-pressed="inputMode === mode"
-            :disabled="interactionActive"
-            @click="setInputMode(mode)"
-          >
-            <Icon :icon="definition.icon" size="20px" />
-          </button>
+      <div class="toolbar">
+        <div class="coordinates lotl-font">
+          ({{ viewportCenter.x.toFixed(2) }}, {{ viewportCenter.y.toFixed(2) }})
         </div>
-        <div v-if="isLoggedIn" class="input-modes">
-          <button
-            type="button"
-            class="round"
-            aria-label="Undo"
-            :disabled="!canUndo || interactionActive"
-            @click="undo"
+        <div style="display: flex; gap: 6px">
+          <div v-if="isLoggedIn" class="input-modes">
+            <button
+              v-for="(definition, mode) in GUESTBOOK_INPUT_MODES"
+              :key="mode"
+              type="button"
+              class="round"
+              :class="{ active: inputMode === mode }"
+              :aria-label="`${mode.charAt(0).toUpperCase()}${mode.slice(1)} mode`"
+              :aria-pressed="inputMode === mode"
+              :disabled="interactionActive"
+              @click="setInputMode(mode)"
+            >
+              <Icon :icon="definition.icon" size="20px" />
+            </button>
+          </div>
+          <div v-if="isLoggedIn" class="input-modes">
+            <button
+              type="button"
+              class="round"
+              aria-label="Undo"
+              :disabled="!canUndo || interactionActive"
+              @click="undo"
+            >
+              <Icon icon="undo" size="20px" />
+            </button>
+            <button
+              type="button"
+              class="round"
+              aria-label="Redo"
+              :disabled="!canRedo || interactionActive"
+              @click="redo"
+            >
+              <Icon icon="redo" size="20px" />
+            </button>
+          </div>
+          <div class="input-modes" role="group" aria-label="Zoom">
+            <button
+              type="button"
+              :disabled="interactionActive || camera.zoom === MAX_ZOOM"
+              aria-label="Zoom in"
+              @click="zoomFromWheel(-200)"
+            >
+              <Icon icon="zoom-in" size="20px" />
+            </button>
+            <button
+              type="button"
+              :disabled="interactionActive || camera.zoom === MIN_ZOOM"
+              aria-label="Zoom out"
+              @click="zoomFromWheel(200)"
+            >
+              <Icon icon="zoom-out" size="20px" />
+            </button>
+            <button
+              class="zoom-level lotl-font"
+              :disabled="interactionActive || camera.zoom === 1"
+              aria-label="Reset zoom"
+              @click="zoom(1 - camera.zoom)"
+              @wheel.prevent="zoomFromWheel($event.deltaY)"
+            >
+              {{ (camera.zoom * 100).toFixed(0) }}%
+            </button>
+          </div>
+          <div class="input-modes" role="group" aria-label="Canvas rotation">
+            <button
+              type="button"
+              :disabled="interactionActive"
+              aria-label="Rotate canvas counterclockwise"
+              @click="rotateCamera(-Math.PI / 12)"
+            >
+              <Icon icon="rotate-ccw" size="20px" />
+            </button>
+            <button
+              type="button"
+              :disabled="interactionActive"
+              aria-label="Rotate canvas clockwise"
+              @click="rotateCamera(Math.PI / 12)"
+            >
+              <Icon icon="rotate-cw" size="20px" />
+            </button>
+            <button
+              type="button"
+              class="zoom-level lotl-font"
+              :disabled="interactionActive || camera.rotation === 0"
+              aria-label="Reset canvas rotation"
+              @click="rotateCamera(-camera.rotation)"
+              @wheel.prevent="
+                rotateCamera($event.deltaY > 0 ? Math.PI / 90 : -Math.PI / 90)
+              "
+            >
+              {{ Math.round((camera.rotation * 180) / Math.PI) }}°
+            </button>
+          </div>
+          <div
+            v-if="isLoggedIn"
+            class="input-modes"
+            role="group"
+            aria-label="Color picking"
           >
-            <Icon icon="undo" size="20px" />
-          </button>
-          <button
-            type="button"
-            class="round"
-            aria-label="Redo"
-            :disabled="!canRedo || interactionActive"
-            @click="redo"
-          >
-            <Icon icon="redo" size="20px" />
-          </button>
-        </div>
-        <div class="input-modes" role="group" aria-label="Zoom">
-          <button
-            type="button"
-            :disabled="interactionActive || camera.zoom === MAX_ZOOM"
-            aria-label="Zoom in"
-            @click="zoomFromWheel(-200)"
-          >
-            <Icon icon="zoom-in" size="20px" />
-          </button>
-          <button
-            type="button"
-            :disabled="interactionActive || camera.zoom === MIN_ZOOM"
-            aria-label="Zoom out"
-            @click="zoomFromWheel(200)"
-          >
-            <Icon icon="zoom-out" size="20px" />
-          </button>
-          <button
-            class="zoom-level lotl-font"
-            :disabled="interactionActive || camera.zoom === 1"
-            aria-label="Reset zoom"
-            @click="zoom(1 - camera.zoom)"
-            @wheel.prevent="zoomFromWheel($event.deltaY)"
-          >
-            {{ (camera.zoom * 100).toFixed(0) }}%
-          </button>
-        </div>
-        <div class="input-modes" role="group" aria-label="Canvas rotation">
-          <button
-            type="button"
-            :disabled="interactionActive"
-            aria-label="Rotate canvas counterclockwise"
-            @click="rotateCamera(-Math.PI / 12)"
-          >
-            <Icon icon="rotate-ccw" size="20px" />
-          </button>
-          <button
-            type="button"
-            :disabled="interactionActive"
-            aria-label="Rotate canvas clockwise"
-            @click="rotateCamera(Math.PI / 12)"
-          >
-            <Icon icon="rotate-cw" size="20px" />
-          </button>
-          <button
-            type="button"
-            class="zoom-level lotl-font"
-            :disabled="interactionActive || camera.rotation === 0"
-            aria-label="Reset canvas rotation"
-            @click="rotateCamera(-camera.rotation)"
-            @wheel.prevent="
-              rotateCamera($event.deltaY > 0 ? Math.PI / 90 : -Math.PI / 90)
-            "
-          >
-            {{ Math.round((camera.rotation * 180) / Math.PI) }}°
-          </button>
-        </div>
-        <div
-          v-if="isLoggedIn"
-          class="input-modes"
-          role="group"
-          aria-label="Color picking"
-        >
-          <button
-            type="button"
-            class="round"
-            :class="{ active: eyedropperActive }"
-            aria-label="Pick color from canvas"
-            :aria-pressed="eyedropperActive"
-            :disabled="interactionActive"
-            @click="eyedropperActive = !eyedropperActive"
-          >
-            <Icon icon="eyedropper" size="20px" />
-          </button>
+            <button
+              type="button"
+              class="round"
+              :class="{ active: eyedropperActive }"
+              aria-label="Pick color from canvas"
+              :aria-pressed="eyedropperActive"
+              :disabled="interactionActive"
+              @click="eyedropperActive = !eyedropperActive"
+            >
+              <Icon icon="eyedropper" size="20px" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

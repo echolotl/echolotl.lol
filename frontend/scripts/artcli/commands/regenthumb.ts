@@ -218,7 +218,7 @@ export async function regenthumb(args: string[]) {
   if (context.noLog && !context.shouldExit) {
     Logger.noLogBypass(() =>
       Logger.statement(
-        `${Logger.fmtReverse(Logger.fmtBold(" ARTCLI ")) + Logger.fmtHexBg("#744780", `${Logger.fmtHex("#000000", " regenthumb ")}`)} Regenerated ${regenerated.length} thumbnail${regenerated.length !== 1 ? "s" : ""} in ${Math.round(duration)}ms. ${Logger.fmtDim(`(skipped ${skipped}, failed ${failed})`)}`,
+        `${Logger.fmtPackage("ARTCLI", "regenthumb", "#744780")} Regenerated ${regenerated.length} thumbnail${regenerated.length !== 1 ? "s" : ""} in ${Math.round(duration)}ms. ${Logger.fmtDim(`(skipped ${skipped}, failed ${failed})`)}`,
       ),
     );
   } else {

@@ -7,7 +7,7 @@ import {
   toPublicUser,
 } from "../auth/discord/service";
 import { type User } from "../auth/discord/model";
-import { Logger } from "../util/logger";
+import { Logger } from "@echolotl/logger";
 import { sendDiscordWebhook } from "../util/webhook";
 import { FRONTEND_URL } from "../constants";
 import type { CommentNode } from "@echolotl/types";
