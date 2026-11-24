@@ -1,6 +1,6 @@
 import { CANVAS_COLORS } from "../constants";
 import type { BrushSegment } from "@echolotl/flashish";
-import { cameraViewport } from "../canvas/camera";
+import { cameraViewport, worldToScreen } from "../canvas/camera";
 import type { Camera, Rect } from "../canvas";
 
 import type {
@@ -444,40 +444,59 @@ function drawOtherCursors(
       );
       context.stroke();
       context.restore();
-      continue;
+    } else if (typeof Image !== "undefined") {
+      if (!cursorImage) {
+        cursorImage = new Image();
+        cursorImage.src = "/images/icons/cursor.webp";
+      }
+      const image = cursorImage;
+      if (image.complete && image.naturalWidth) {
+        if (
+          !cursorCanvas ||
+          cursorCanvas.width !== image.naturalWidth ||
+          cursorCanvas.height !== image.naturalHeight
+        ) {
+          cursorCanvas = new OffscreenCanvas(
+            image.naturalWidth,
+            image.naturalHeight,
+          );
+        }
+
+        const cursorContext = cursorCanvas.getContext("2d");
+        if (!cursorContext)
+          throw new Error("Unable to create cursor canvas context");
+        cursorContext.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+        cursorContext.globalCompositeOperation = "source-over";
+        cursorContext.drawImage(image, 0, 0);
+        cursorContext.globalCompositeOperation = "source-in";
+        cursorContext.fillStyle = color;
+        cursorContext.fillRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+        cursorContext.globalCompositeOperation = "source-over";
+
+        context.drawImage(cursorCanvas, cursor.point.x, cursor.point.y);
+      }
     }
 
-    if (typeof Image === "undefined") continue;
-    if (!cursorImage) {
-      cursorImage = new Image();
-      cursorImage.src = "/images/icons/cursor.webp";
-    }
-    const image = cursorImage;
-    if (!image?.complete || !image.naturalWidth) continue;
-
-    if (
-      !cursorCanvas ||
-      cursorCanvas.width !== image.naturalWidth ||
-      cursorCanvas.height !== image.naturalHeight
-    ) {
-      cursorCanvas = new OffscreenCanvas(
-        image.naturalWidth,
-        image.naturalHeight,
-      );
-    }
-
-    const cursorContext = cursorCanvas.getContext("2d");
-    if (!cursorContext)
-      throw new Error("Unable to create cursor canvas context");
-    cursorContext.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
-    cursorContext.globalCompositeOperation = "source-over";
-    cursorContext.drawImage(image, 0, 0);
-    cursorContext.globalCompositeOperation = "source-in";
-    cursorContext.fillStyle = color;
-    cursorContext.fillRect(0, 0, cursorCanvas.width, cursorCanvas.height);
-    cursorContext.globalCompositeOperation = "source-over";
-
-    context.drawImage(cursorCanvas, cursor.point.x, cursor.point.y);
+    const point = worldToScreen(cursor.point, camera);
+    const offset =
+      cursor.mode === "brush" ? (cursor.brushSize * camera.zoom) / 2 + 5 : 11;
+    const scaleX = context.canvas.width / context.canvas.clientWidth;
+    const scaleY = context.canvas.height / context.canvas.clientHeight;
+    context.save();
+    context.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+    context.font = "12px Lotl";
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    const width = Math.min(context.measureText(cursor.displayName).width, 150);
+    const x = point.x + offset;
+    const y = point.y + 10;
+    context.fillStyle = color;
+    context.beginPath();
+    context.roundRect(x, y, width + 10, 20, 4);
+    context.fill();
+    context.fillStyle = rgbToHex(getContrastColor(hexToRgb(color)));
+    context.fillText(cursor.displayName, x + 5, y + 10, 150);
+    context.restore();
   }
 }
 

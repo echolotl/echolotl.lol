@@ -42,6 +42,7 @@ export interface RenderedPath {
 
 export interface OtherCursor {
   userId: string;
+  displayName: string;
   point: Point | null;
   mode: GuestbookCursorMode;
   brushSize: number;

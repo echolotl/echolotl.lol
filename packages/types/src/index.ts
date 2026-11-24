@@ -260,6 +260,7 @@ export type GuestbookServerStrokeMessage =
 
 export interface GuestbookServerCursorMoveMessage extends GuestbookCursorMoveMessage {
   userId: string;
+  displayName: string;
 }
 
 export interface GuestbookServerCursorLeaveMessage extends GuestbookCursorLeaveMessage {

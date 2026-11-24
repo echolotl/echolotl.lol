@@ -5,6 +5,7 @@ import type {
   GuestbookServerMessage,
 } from "@echolotl/types";
 import { userBySession } from "../auth/discord/repository";
+import { toPublicUser } from "../auth/discord/service";
 import { ClientMessage } from "./model";
 import {
   SUBSCRIBE,
@@ -91,6 +92,16 @@ export const guestbookRouter = new Elysia({ prefix: "/guestbook" })
         }
         switch (message.type) {
           case "cursor:move":
+            connection.clientIds.add(message.clientId);
+            {
+              const publicUser = toPublicUser(user);
+              ws.publish(SUBSCRIBE, {
+                ...message,
+                userId,
+                displayName: publicUser.displayName || publicUser.username,
+              } satisfies GuestbookServerMessage);
+            }
+            break;
           case "cursor:leave":
             connection.clientIds.add(message.clientId);
             ws.publish(SUBSCRIBE, {

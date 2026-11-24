@@ -306,6 +306,7 @@
             :disabled="interactionActive || camera.zoom === 1"
             aria-label="Reset zoom"
             @click="zoom(1 - camera.zoom)"
+            @wheel.prevent="zoomFromWheel($event.deltaY)"
           >
             {{ (camera.zoom * 100).toFixed(0) }}%
           </button>
@@ -333,6 +334,9 @@
             :disabled="interactionActive || camera.rotation === 0"
             aria-label="Reset canvas rotation"
             @click="rotateCamera(-camera.rotation)"
+            @wheel.prevent="
+              rotateCamera($event.deltaY > 0 ? Math.PI / 90 : -Math.PI / 90)
+            "
           >
             {{ Math.round((camera.rotation * 180) / Math.PI) }}°
           </button>
@@ -1271,6 +1275,7 @@ function handleWebsocketMessage(event: MessageEvent) {
         if (message.clientId === guestbookSocket.clientId) break;
         otherCursors[message.clientId] = {
           userId: message.userId,
+          displayName: message.displayName,
           point: message.point,
           mode: message.mode,
           brushSize: message.brushSize,
