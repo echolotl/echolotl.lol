@@ -22,10 +22,7 @@
             maskImage: `url(/images/characters/${character.slug}/banner.png)`,
           }" />
       </div>
-      <div
-        class="title"
-        :style="{ filter: filterUrl }"
-      >
+      <div class="title" :style="{ filter: filterUrl }">
         <h1 class="title-image">
           {{ character.name }}
         </h1>
@@ -159,11 +156,7 @@ const bannerVariant = computed(() => {
   width: 100%;
   height: 100%;
   z-index: -1;
-  background: linear-gradient(
-    to bottom,
-    var(--theme-color),
-    transparent 100%
-  );
+  background: linear-gradient(to bottom, var(--theme-color), transparent 100%);
   transition:
     background-color 0.2s ease-out,
     color 0.2s ease-out,

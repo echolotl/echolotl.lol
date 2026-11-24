@@ -9,8 +9,7 @@
     }"
     :role="alt ? 'img' : undefined"
     :aria-hidden="alt ? undefined : 'true'"
-    :aria-label="alt || undefined"
-  />
+    :aria-label="alt || undefined" />
 </template>
 
 <script setup lang="ts">

@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "app",
+      "name": "@echolotl/backend",
       "dependencies": {
         "@elysiajs/cors": "^1.4.2",
         "elysia": "latest",

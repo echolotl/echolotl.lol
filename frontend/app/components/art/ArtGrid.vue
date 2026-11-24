@@ -7,18 +7,15 @@
       :show-metadata="showMetadata"
       :show-character-badge="showCharacterBadge"
       :outline-color="outlineColor"
-      @age-gate="openAgeGate(artwork.slug)"
-    />
+      @age-gate="openAgeGate(artwork.slug)" />
     <AgeGateModal
       v-model="ageGateOpen"
       @confirm="onAgeConfirmed"
-      @deny="pendingSlug = null"
-    />
+      @deny="pendingSlug = null" />
   </div>
   <p
     v-else
-    style="color: var(--text-secondary); text-align: center; width: 100%"
-  >
+    style="color: var(--text-secondary); text-align: center; width: 100%">
     No artworks found! Try adjusting your filters?
   </p>
 </template>

@@ -20,14 +20,12 @@
     <p
       v-if="game"
       class="daily-info text-secondary lotl-font"
-      :style="{ color: game.isCompleted ? 'var(--primary)' : undefined }"
-    >
+      :style="{ color: game.isCompleted ? 'var(--primary)' : undefined }">
       <span v-if="game.isCompleted && !gaveUp">
         <Icon
           icon="crown"
           size="16px"
-          :style="{ color: 'var(--orange)' }"
-        ></Icon>
+          :style="{ color: 'var(--orange)' }"></Icon>
       </span>
       <span>
         <Icon icon="time" size="16px" />
@@ -37,15 +35,13 @@
         <Icon icon="moves" size="16px" />
         <SlotText
           :text="String(game?.moves ?? 0)"
-          :options="{ skipUnchanged: true }"
-        />
+          :options="{ skipUnchanged: true }" />
       </span>
       <span>
         <Icon icon="tip" size="16px" />
         <SlotText
           :text="String(game?.hintsUsed ?? 0)"
-          :options="{ skipUnchanged: true }"
-        />
+          :options="{ skipUnchanged: true }" />
       </span>
       <span>
         <Icon icon="size" size="16px" />
@@ -63,15 +59,13 @@
       <b>
         <SlotText
           :text="`${timeTillNextGameDisplay}`"
-          :options="{ skipUnchanged: true }"
-        />
+          :options="{ skipUnchanged: true }" />
       </b>
     </p>
     <div v-if="game && started && !game.isCompleted" class="game-actions">
       <PicrossInputControls
         :grid="grid"
-        :disabled="!game || game.isCompleted"
-      />
+        :disabled="!game || game.isCompleted" />
       <button @click="clearDailyBoard" class="round">
         <Icon icon="trash" size="20px" />
         Clear

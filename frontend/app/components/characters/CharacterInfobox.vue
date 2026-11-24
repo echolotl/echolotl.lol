@@ -11,8 +11,7 @@
           style="
             font-size: var(--very-small-text);
             color: var(--text-secondary);
-          "
-        >
+          ">
           /{{ character.ipa }}/
         </span>
         <button
@@ -20,8 +19,7 @@
           type="button"
           class="audio-button"
           :title="`Play ${character.name}'s pronunciation`"
-          @click="playPronunciation"
-        >
+          @click="playPronunciation">
           <Icon icon="sound" size="16px" alt="" />
         </button>
       </span>
@@ -31,8 +29,7 @@
       <div v-if="character.image" class="header">
         <figure
           style="text-align: center; margin: 0"
-          v-if="characterImage[0] == false"
-        >
+          v-if="characterImage[0] == false">
           <img
             :src="characterImage[1]"
             :alt="character.image_description || character.name"
@@ -40,8 +37,7 @@
               character.image?.type == 'artwork'
                 ? navigateTo(`/art/${character.image?.slug}`)
                 : null
-            "
-          />
+            " />
           <figcaption style="color: var(--text-secondary)">
             <i>{{
               character.image_description || "no description available"
@@ -55,16 +51,14 @@
       <hr />
       <div
         v-if="character.color_palette"
-        class="character-color-palette-container"
-      >
+        class="character-color-palette-container">
         <Icon
           :icon="paletteIcon"
           size="24px"
           @mouseenter="isPaletteIconHovered = true"
           @mouseleave="isPaletteIconHovered = false"
           @click="openPaletteImage"
-          style="cursor: pointer"
-        />
+          style="cursor: pointer" />
         <div class="character-color-palette">
           <div
             v-for="color in character.color_palette"
@@ -78,8 +72,7 @@
             }"
             @click="copyColorToClipboard(color)"
             @mouseenter="hoveredColor = color"
-            @mouseleave="hoveredColor = null"
-          ></div>
+            @mouseleave="hoveredColor = null"></div>
         </div>
       </div>
       <table class="table">

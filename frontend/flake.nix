@@ -12,17 +12,15 @@
       pkgs = import nixpkgs { inherit system; };
     in pkgs.mkShell {
       packages = with pkgs; [
-        nodejs
-        pnpm
+        bun
       ];
 
       shellHook = ''
         printf "\x1b[0;95m\x1b[1mecholotl.lol [FRONTEND]\x1b[0m --\n"
         echo "  Branch: `git rev-parse --abbrev-ref HEAD`"
         echo "  Commit: $(git rev-parse HEAD | cut -c1-7)"
-        echo "  Node:   `node --version`"
-        echo "  PNPM:   `pnpm -v`"
-        pnpm i -s && echo "PNPM dependencies installed, ready to go!"
+        echo "  Bun:    `bun --version`"
+        bun install --silent && echo "Bun dependencies installed, ready to go!"
       '';
     };
   };

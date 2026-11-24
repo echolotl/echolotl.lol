@@ -7,8 +7,7 @@
       :min="MIN_BOARD_SIZE"
       :max="MAX_BOARD_SIZE"
       aria-label="Board width"
-      @change="commit"
-    />
+      @change="commit" />
     <span aria-hidden="true">⨯</span>
     <input
       v-model.number="draft.height"
@@ -16,8 +15,7 @@
       :min="MIN_BOARD_SIZE"
       :max="MAX_BOARD_SIZE"
       aria-label="Board height"
-      @change="commit"
-    />
+      @change="commit" />
   </div>
 </template>
 

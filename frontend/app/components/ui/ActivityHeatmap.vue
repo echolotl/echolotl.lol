@@ -9,8 +9,7 @@
               v-for="month in monthHeaders"
               :key="month.key"
               :colspan="month.span"
-              scope="colgroup"
-            >
+              scope="colgroup">
               <span class="month-label">{{ month.label }}</span>
             </th>
           </tr>
@@ -29,8 +28,7 @@
                   :style="
                     getActivityStyle(dateKey(cellDate(weekStart, row - 1)))
                   "
-                  :title="dateKey(cellDate(weekStart, row - 1))"
-                ></div>
+                  :title="dateKey(cellDate(weekStart, row - 1))"></div>
                 <template #text>
                   <div style="display: flex; align-items: center">
                     <span class="text-secondary tooltip-text"
@@ -52,12 +50,10 @@
           <span
             v-for="(count, unit) in numberOfItemsPerTypeWithinRange"
             :key="unit"
-            class="activity-type-legend-item"
-          >
+            class="activity-type-legend-item">
             <span
               class="activity-type-legend-color"
-              :style="{ backgroundColor: getActivityColor(unit) }"
-            ></span>
+              :style="{ backgroundColor: getActivityColor(unit) }"></span>
             {{ pluralize(count, unit) }} in the past
             {{ formatTimeSpan(oldestDate) }}
           </span>

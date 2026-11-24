@@ -2,8 +2,7 @@
   <div
     v-if="character"
     class="character-page"
-    :style="{ '--theme-color': themeColor }"
-  >
+    :style="{ '--theme-color': themeColor }">
     <CharacterBanner :character="character" />
     <div class="character-content">
       <div class="character-main-content">
@@ -23,15 +22,13 @@
         v-if="characterArtworks && characterArtworks.length > 0"
         :artworks="characterArtworks"
         show-metadata
-        :outline-color="themeColor"
-      />
+        :outline-color="themeColor" />
       <div v-else class="no-artwork">
         <p>No artwork found for this character yet.</p>
       </div>
       <div
         v-if="characterArtworks && characterArtworks.length > 0"
-        style="display: flex; justify-content: center; margin: 0.5rem 0"
-      >
+        style="display: flex; justify-content: center; margin: 0.5rem 0">
         <ActivityHeatmap :data="activityData" />
       </div>
     </div>

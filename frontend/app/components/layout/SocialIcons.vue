@@ -5,8 +5,7 @@
       target="_blank"
       rel="noopener noreferrer"
       class="link tumblr-link"
-      aria-label="Go to echolotl's Tumblr"
-    >
+      aria-label="Go to echolotl's Tumblr">
       <Icon icon="socials/tumblr" :size="iconSize" />
     </a>
     <div class="twitter">
@@ -16,8 +15,7 @@
         target="_blank"
         rel="noopener noreferrer"
         class="link"
-        aria-label="Go to echolotl's X (formerly Twitter)"
-      >
+        aria-label="Go to echolotl's X (formerly Twitter)">
         <Icon icon="socials/x" :size="iconSize" />
       </a>
       <a
@@ -26,8 +24,7 @@
         target="_blank"
         rel="noopener noreferrer"
         class="link twitter-link"
-        aria-label="Go to echolotl's Twitter"
-      >
+        aria-label="Go to echolotl's Twitter">
         <Icon icon="socials/twitter" :size="iconSize" />
       </a>
     </div>
@@ -36,8 +33,7 @@
       target="_blank"
       rel="noopener noreferrer"
       class="link newgrounds-link"
-      aria-label="Go to echolotl's Newgrounds"
-    >
+      aria-label="Go to echolotl's Newgrounds">
       <Icon icon="socials/newgrounds" :size="iconSize" />
     </a>
     <a
@@ -45,8 +41,7 @@
       target="_blank"
       rel="noopener noreferrer"
       class="link bluesky-link"
-      aria-label="Go to echolotl's Bluesky"
-    >
+      aria-label="Go to echolotl's Bluesky">
       <Icon icon="socials/bluesky" :size="iconSize" />
     </a>
     <a
@@ -54,8 +49,7 @@
       target="_blank"
       rel="noopener noreferrer"
       class="link github-link"
-      aria-label="Go to echolotl's GitHub"
-    >
+      aria-label="Go to echolotl's GitHub">
       <Icon icon="socials/github" :size="iconSize" />
     </a>
     <div class="discord-container">
@@ -63,15 +57,13 @@
         type="button"
         class="discord-icon discord-link"
         @click="copyDiscordToClipboard"
-        aria-label="Copy echolotl's Discord username"
-      >
+        aria-label="Copy echolotl's Discord username">
         <Icon icon="socials/discord" :size="iconSize" />
       </button>
       <span
         v-if="showCopiedText"
         class="copied-text lotl-font"
-        :class="{ 'float-up': showCopiedText }"
-      >
+        :class="{ 'float-up': showCopiedText }">
         @echolotl
       </span>
       <span class="sr-only" role="status">{{ copyStatus }}</span>
@@ -81,8 +73,7 @@
       target="_blank"
       rel="noopener noreferrer"
       class="link youtube-link"
-      aria-label="Go to echolotl's YouTube channel"
-    >
+      aria-label="Go to echolotl's YouTube channel">
       <Icon icon="socials/youtube" :size="iconSize" />
     </a>
     <a
@@ -90,8 +81,7 @@
       target="_blank"
       rel="noopener noreferrer"
       class="link instagram-link"
-      aria-label="Go to echolotl's Instagram"
-    >
+      aria-label="Go to echolotl's Instagram">
       <Icon icon="socials/instagram" :size="iconSize" />
     </a>
   </div>

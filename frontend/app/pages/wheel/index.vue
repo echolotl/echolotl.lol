@@ -15,8 +15,7 @@
               color: var(--text-secondary);
               margin-top: 0.5rem;
               font-size: var(--small-text);
-            "
-          >
+            ">
             {{ spinningSplashText }}
           </p>
         </template>
@@ -33,8 +32,7 @@
               color: var(--text-secondary);
               margin-top: 0.5rem;
               font-size: var(--small-text);
-            "
-          >
+            ">
             A
             <b
               >1 in
@@ -53,8 +51,7 @@
       </p>
       <div
         class="gradient-bg"
-        :class="{ 'is-flashing': isBackgroundFlashing }"
-      />
+        :class="{ 'is-flashing': isBackgroundFlashing }" />
       <div class="wheel-container">
         <svg viewBox="0 0 400 400" width="800" height="800">
           <circle
@@ -65,8 +62,7 @@
             stroke="var(--background)"
             fill="none"
             stroke-width="4"
-            :filter="wheelFilterUrl"
-          />
+            :filter="wheelFilterUrl" />
           <circle
             v-else
             cx="200"
@@ -74,12 +70,10 @@
             r="180"
             stroke="var(--background)"
             fill="none"
-            stroke-width="16"
-          />
+            stroke-width="16" />
           <g
             class="wheel-spin-layer"
-            :style="{ transform: `rotate(${wheelRotation}deg)` }"
-          >
+            :style="{ transform: `rotate(${wheelRotation}deg)` }">
             <template v-if="wheelSlices.length >= 1">
               <circle
                 cx="200"
@@ -87,18 +81,15 @@
                 r="180"
                 fill="none"
                 stroke="var(--surface)"
-                stroke-width="3"
-              />
+                stroke-width="3" />
               <template
                 v-for="(slice, index) in wheelRenderSlices"
-                :key="index"
-              >
+                :key="index">
                 <!-- Full circle if one slice !-->
                 <g v-if="slice.isFullCircle">
                   <circle cx="200" cy="200" r="180" :fill="slice.color" />
                   <g
-                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`"
-                  >
+                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`">
                     <text
                       :x="175"
                       y="
@@ -108,8 +99,7 @@
                       dominant-baseline="middle"
                       :fill="slice.textColor"
                       font-size="16"
-                      font-family="Lotl"
-                    >
+                      font-family="Lotl">
                       {{ slice.title }}
                     </text>
                   </g>
@@ -118,8 +108,7 @@
                 <g v-else>
                   <path :d="slice.slicePath" :fill="slice.color" />
                   <g
-                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`"
-                  >
+                    :transform="`translate(200, 200) rotate(${(slice.startAngle + slice.endAngle) / 2 - 90})`">
                     <text
                       :x="175"
                       y="
@@ -129,8 +118,7 @@
                       dominant-baseline="middle"
                       :fill="slice.textColor"
                       font-size="16"
-                      font-family="Lotl"
-                    >
+                      font-family="Lotl">
                       {{ slice.title }}
                     </text>
                   </g>
@@ -143,8 +131,7 @@
                 fill="none"
                 stroke="var(--distant)"
                 stroke-width="3"
-                vector-effect="non-scaling-stroke"
-              />
+                vector-effect="non-scaling-stroke" />
             </template>
             <template v-else>
               <circle
@@ -155,8 +142,7 @@
                 fill="none"
                 stroke-dasharray="16 8"
                 stroke-linecap="round"
-                stroke-width="3"
-              />
+                stroke-width="3" />
             </template>
           </g>
 
@@ -167,8 +153,7 @@
               r="12"
               fill="var(--surface)"
               stroke="rgba(from var(--surface) r g b / 0.5)"
-              stroke-width="5"
-            />
+              stroke-width="5" />
           </g>
         </svg>
       </div>
@@ -178,8 +163,7 @@
           <button
             class="wheel-button filled round"
             @click="spinToSlice"
-            :disabled="wheelSlices.length === 0"
-          >
+            :disabled="wheelSlices.length === 0">
             Spin Again
           </button>
         </template>
@@ -198,8 +182,7 @@
             width: 200px;
             justify-content: center;
             text-transform: uppercase;
-          "
-        >
+          ">
           Spin
         </button>
       </div>
@@ -210,13 +193,11 @@
           <select
             id="wheel-preset"
             v-model="selectedPreset"
-            class="preset-select"
-          >
+            class="preset-select">
             <option
               v-for="preset in Object.keys(presets)"
               :key="preset"
-              :value="preset"
-            >
+              :value="preset">
               {{ preset }}
             </option>
           </select>
@@ -231,8 +212,7 @@
               gap: 0.25rem;
               justify-content: center;
               text-transform: uppercase;
-            "
-          >
+            ">
             <Icon icon="download" size="24px" />
             Load Preset
           </button>
@@ -251,8 +231,7 @@
               "
               class="action-button add-slice"
               aria-label="Add slice"
-              title="Add slice"
-            >
+              title="Add slice">
               <Icon icon="add" size="16px" />
             </button>
           </div>
@@ -260,8 +239,7 @@
             <div
               v-for="(slice, index) in slices"
               :key="index"
-              class="slice-item"
-            >
+              class="slice-item">
               <label class="sr-only" :for="`slice-title-${index}`">
                 Slice {{ index + 1 }} title
               </label>
@@ -273,8 +251,7 @@
                     gap: 0.5rem;
                     align-items: center;
                     width: 100%;
-                  "
-                >
+                  ">
                   <input
                     :id="`slice-percent-${index}`"
                     type="number"
@@ -282,8 +259,7 @@
                     max="100"
                     step="0.1"
                     placeholder="%"
-                    v-model.number="slice.percent"
-                  />
+                    v-model.number="slice.percent" />
                   <label class="sr-only" :for="`slice-percent-${index}`">
                     Slice {{ index + 1 }} percentage
                   </label>
@@ -292,8 +268,7 @@
                       type="button"
                       class="slice-color-swatch"
                       :aria-label="`Choose color for ${slice.title || `slice ${index + 1}`}`"
-                      :style="{ '--slice-editor-color': slice.color }"
-                    ></button>
+                      :style="{ '--slice-editor-color': slice.color }"></button>
                     <template #text>
                       <ColorPicker v-model="slice.color" />
                     </template>
@@ -309,8 +284,7 @@
                       }
                     "
                     class="action-button delete"
-                    :aria-label="`Remove ${slice.title || `slice ${index + 1}`}`"
-                  >
+                    :aria-label="`Remove ${slice.title || `slice ${index + 1}`}`">
                     <Icon icon="close" />
                   </button>
                 </div>

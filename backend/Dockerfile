@@ -6,7 +6,7 @@ COPY package.json bun.lock ./
 COPY backend/package.json ./backend/package.json
 COPY frontend/package.json ./frontend/package.json
 COPY packages ./packages
-RUN bun install --frozen-lockfile --filter app --production
+RUN bun install --frozen-lockfile --filter @echolotl/backend --production
 
 COPY backend ./backend
 WORKDIR /app/backend

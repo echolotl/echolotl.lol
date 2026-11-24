@@ -7,8 +7,7 @@
     v-else-if="clickable"
     type="button"
     :class="tagClasses"
-    :style="customStyles"
-  >
+    :style="customStyles">
     <Icon v-if="icon" :icon="icon" :color="iconColor" />
     <slot></slot>
   </button>

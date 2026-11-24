@@ -5,19 +5,16 @@
     :class="{ interacted: hasInteracted }"
     :style="{ '--filter-url': filterUrl }"
     @mouseenter="hasInteracted = true"
-    @focusin="hasInteracted = true"
-  >
+    @focusin="hasInteracted = true">
     <NuxtLink :to="`/characters/${props.character.slug}`" class="image">
       <div class="image-bg"></div>
 
       <div
         class="image-icon"
-        :style="{ backgroundImage: characterImage }"
-      ></div>
+        :style="{ backgroundImage: characterImage }"></div>
       <div
         class="image-icon-hover"
-        :style="{ backgroundImage: characterHoverImage }"
-      ></div>
+        :style="{ backgroundImage: characterHoverImage }"></div>
     </NuxtLink>
     <span class="name lotl-font" style="font-size: 1.5rem">{{
       props.character.name

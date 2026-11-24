@@ -2,8 +2,7 @@
   <div
     style="position: relative; display: flex; justify-content: center"
     class="art-item-container"
-    :style="{ '--filter-url': filterUrl }"
-  >
+    :style="{ '--filter-url': filterUrl }">
     <nuxt-link
       :to="`/art/${artwork.slug}`"
       class="art-item"
@@ -11,8 +10,7 @@
       :aria-label="`View Artwork: ${artwork.title}`"
       @click="onClick"
       @mouseenter="hasInteracted = true"
-      @focusin="hasInteracted = true"
-    >
+      @focusin="hasInteracted = true">
       <div
         class="image"
         :class="{ blurred: artwork.nsfw }"
@@ -20,14 +18,12 @@
           '--art-bg': `url(${artwork.images[0]?.thumbnail_url})`,
           backgroundImage: artwork.nsfw ? 'none' : 'var(--art-bg)',
         }"
-        :title="artwork.title"
-      >
+        :title="artwork.title">
         <div v-if="showMetadata" class="metadata">
           <div
             v-if="artwork.character && showCharacterBadge"
             class="metadata-icon"
-            title="Character"
-          >
+            title="Character">
             <Icon icon="character" />
           </div>
           <div v-if="artwork.pinned" class="metadata-icon" title="Pinned">
@@ -42,15 +38,13 @@
           <div
             v-if="hasMultipleImages"
             class="metadata-icon"
-            title="Multiple Images"
-          >
+            title="Multiple Images">
             <Icon icon="images" />
           </div>
           <div
             v-if="!isEcholotlArtwork(props.artwork)"
             class="metadata-icon"
-            title="Non-echolotl Artwork"
-          >
+            title="Non-echolotl Artwork">
             <Icon icon="other" />
           </div>
           <div v-if="artwork.nsfw" class="metadata-icon" title="NSFW Content">

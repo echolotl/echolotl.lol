@@ -21,8 +21,7 @@
       <button
         type="button"
         class="link how-to-play"
-        @click="showHowToPlay = true"
-      >
+        @click="showHowToPlay = true">
         <Icon icon="help" size="20px" />How To Play
       </button>
     </div>

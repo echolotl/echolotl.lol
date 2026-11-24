@@ -19,10 +19,7 @@
       </template>
       <template v-else>
         <span class="emoji"
-          ><Icon
-            icon="music-note"
-            size="54px"
-            style="color: var(--primary)"
+          ><Icon icon="music-note" size="54px" style="color: var(--primary)"
         /></span>
         <span>
           Listening to

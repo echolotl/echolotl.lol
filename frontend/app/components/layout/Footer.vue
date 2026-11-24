@@ -66,8 +66,7 @@
       <img
         class="under-construction-text"
         src="/images/underconstructiontxt.png"
-        alt="Under Construction"
-      />
+        alt="Under Construction" />
     </div>
   </footer>
 </template>

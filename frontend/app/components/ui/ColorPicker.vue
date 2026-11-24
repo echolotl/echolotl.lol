@@ -4,8 +4,7 @@
       ref="colorWheel"
       :width="WHEEL_SIZE"
       :height="WHEEL_SIZE"
-      :style="{ filter: `brightness(${color.v})` }"
-    ></canvas>
+      :style="{ filter: `brightness(${color.v})` }"></canvas>
     <svg
       class="color-chooser-overlay"
       :width="WHEEL_SIZE + 2 * WHEEL_OFFSET"
@@ -22,8 +21,7 @@
       @pointercancel="handlePointerUp"
       @keydown="handleWheelKeydown"
       @blur="usingPointer = false"
-      :class="{ dragging, 'pointer-focus': usingPointer }"
-    >
+      :class="{ dragging, 'pointer-focus': usingPointer }">
       <circle
         class="wheel-hit-area"
         :cx="WHEEL_SIZE / 2 + WHEEL_OFFSET"
@@ -31,8 +29,7 @@
         :r="WHEEL_SIZE / 2"
         fill="transparent"
         stroke="var(--distant)"
-        stroke-width="3"
-      />
+        stroke-width="3" />
       <circle
         class="chooser-handle"
         :cx="chooserCenter.x"
@@ -40,8 +37,7 @@
         r="7.5"
         :fill="hexColor"
         stroke="var(--distant)"
-        stroke-width="3"
-      />
+        stroke-width="3" />
     </svg>
     <div
       class="brightness-slider"
@@ -58,13 +54,11 @@
       @pointermove="handleSliderPointerMove"
       @pointerup="handleSliderPointerUp"
       @pointercancel="handleSliderPointerUp"
-      @keydown="handleBrightnessKeydown"
-    >
+      @keydown="handleBrightnessKeydown">
       <div class="track" :style="{ background: trackGradient }"></div>
       <div
         class="thumb"
-        :style="{ left: color.v * 100 + '%', background: hexColor }"
-      ></div>
+        :style="{ left: color.v * 100 + '%', background: hexColor }"></div>
     </div>
     <input
       class="color-input"
@@ -74,8 +68,7 @@
       aria-label="Color hex value"
       :value="draft"
       @input="handleHexInput"
-      @blur="handleHexBlur"
-    />
+      @blur="handleHexBlur" />
   </div>
 </template>
 

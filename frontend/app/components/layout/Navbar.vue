@@ -9,16 +9,14 @@
         <NuxtLink
           to="/art"
           class="nav-link primary-nav-link lotl-font"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="art_brush" size="1.25lh" />
           Artchive
         </NuxtLink>
         <NuxtLink
           to="/characters"
           class="nav-link primary-nav-link lotl-font"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="character" size="1.25lh" />
           Characters
         </NuxtLink>
@@ -28,16 +26,14 @@
           popovertarget="navigation-menu"
           aria-controls="navigation-menu"
           aria-label="Open navigation menu"
-          :aria-expanded="popoverOpen"
-        >
+          :aria-expanded="popoverOpen">
           <Icon :icon="popoverOpen ? 'close' : 'hamburger'" size="1.25lh" />
         </button>
         <button
           type="button"
           class="nav-link theme-toggle lotl-font"
           @click="toggleTheme"
-          aria-label="Toggle theme"
-        >
+          aria-label="Toggle theme">
           <Icon :icon="theme ? 'sun' : 'moon'" size="1.25lh" />
         </button>
       </div>
@@ -46,22 +42,19 @@
       id="navigation-menu"
       class="menu"
       popover="auto"
-      :style="`filter: ${filterUrl}`"
-    >
+      :style="`filter: ${filterUrl}`">
       <div class="link-grid mobile-menu-links">
         <NuxtLink
           to="/art"
           class="nav-link lotl-font"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="art_brush" size="1.25lh" />
           Artchive
         </NuxtLink>
         <NuxtLink
           to="/characters"
           class="nav-link lotl-font"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="character" size="1.25lh" />
           Characters
         </NuxtLink>
@@ -71,32 +64,28 @@
         <NuxtLink
           to="/picross"
           class="nav-link lotl-font"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="picross" size="1.25lh" />
           Picross
         </NuxtLink>
         <NuxtLink
           to="/wheel"
           class="nav-link lotl-font"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="wheel" size="1.25lh" />
           Wheel
         </NuxtLink>
         <NuxtLink
           to="/account"
           class="nav-link lotl-font"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="profile" size="1.25lh" />
           Account
         </NuxtLink>
         <NuxtLink
           to="#"
           class="nav-link lotl-font disabled"
-          exact-active-class="active"
-        >
+          exact-active-class="active">
           <Icon icon="lore" size="1.25lh" />
           Blog
         </NuxtLink>
@@ -106,8 +95,7 @@
         type="button"
         class="nav-link mobile-theme-toggle"
         @click="toggleTheme"
-        aria-label="Toggle theme"
-      >
+        aria-label="Toggle theme">
         <Icon :icon="theme ? 'sun' : 'moon'" size="1.25lh" />
         <span class="lotl-font" style="text-box-trim: trim-end">Theme</span>
       </button>

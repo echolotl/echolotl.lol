@@ -48,29 +48,40 @@ export default defineNuxtConfig({
               allImages.push({
                 loc: `https://echolotl.lol${artImage.image_url}`,
                 caption: artCaption,
-                title: art.title + (artImage.title ? ` (${artImage.title})` : ""),
-                license: "CC BY-NC-SA 4.0 International"
+                title:
+                  art.title + (artImage.title ? ` (${artImage.title})` : ""),
+                license: "CC BY-NC-SA 4.0 International",
               });
 
-              if (artImage.variants && artImage.variants.length && artImage.variants.length > 0) {
+              if (
+                artImage.variants &&
+                artImage.variants.length &&
+                artImage.variants.length > 0
+              ) {
                 for (const variant of artImage.variants) {
                   allImages.push({
                     loc: `https://echolotl.lol${variant.image_url}`,
                     caption: variant.alt ? variant.alt : artCaption,
-                    title: variant.label ? `${art.title} (${variant.label})` : art.title
-                  })
+                    title: variant.label
+                      ? `${art.title} (${variant.label})`
+                      : art.title,
+                  });
                 }
               }
             }
 
             return allImages;
-          }
-        )(),
-        })
+          })(),
+        });
       }
-      Logger.noLogBypass(() => Logger.success('Sitemap art entries have been generated! ' + Logger.fmtDim(`(${urls.length} pages)`)))
+      Logger.noLogBypass(() =>
+        Logger.success(
+          "Sitemap art entries have been generated! " +
+            Logger.fmtDim(`(${urls.length} pages)`),
+        ),
+      );
       return urls;
-    }
+    },
   },
   devtools: { enabled: true },
   modules: [

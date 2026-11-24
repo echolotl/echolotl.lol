@@ -8,8 +8,7 @@
       :aria-label="`${mode.charAt(0).toUpperCase()}${mode.slice(1)} mode`"
       :aria-pressed="grid?.inputMode === mode"
       @click="grid?.setInputMode(mode)"
-      class="round"
-    >
+      class="round">
       <Icon :icon="definition.icon" size="20px" />
     </button>
   </div>
@@ -18,16 +17,14 @@
       :disabled="!grid?.canUndo"
       @click="grid?.undo()"
       class="round"
-      aria-label="Undo"
-    >
+      aria-label="Undo">
       <Icon icon="undo" size="20px" />
     </button>
     <button
       :disabled="!grid?.canRedo"
       @click="grid?.redo()"
       class="round"
-      aria-label="Redo"
-    >
+      aria-label="Redo">
       <Icon icon="redo" size="20px" />
     </button>
   </div>
@@ -45,9 +42,7 @@ const props = defineProps<{
   addModes?: InputMode[];
 }>();
 
-const modes = computed(() =>
-  getInputModes(props.removeModes, props.addModes),
-);
+const modes = computed(() => getInputModes(props.removeModes, props.addModes));
 </script>
 
 <style scoped>

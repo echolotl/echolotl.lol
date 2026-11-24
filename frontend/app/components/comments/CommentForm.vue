@@ -10,14 +10,12 @@
         :disabled="!isLoggedIn"
         :aria-invalid="Boolean(error)"
         aria-describedby="comment-help comment-error"
-        placeholder="Write a comment..."
-      ></textarea>
+        placeholder="Write a comment..."></textarea>
       <div v-if="isLoggedIn" class="comment-actions">
         <button
           type="submit"
           :disabled="submitting || !(commentText.length > 0)"
-          class="filled round"
-        >
+          class="filled round">
           Post Comment</button
         ><Icon v-if="submitting" icon="loading" size="40px" />
         <span
@@ -36,16 +34,14 @@
         v-if="error"
         id="comment-error"
         class="comment-form-error"
-        role="alert"
-      >
+        role="alert">
         {{ error }}
       </div>
       <button
         v-if="!isLoggedIn"
         type="button"
         class="discord-login round"
-        @click="login"
-      >
+        @click="login">
         Login with
         <DiscordIcon :size="24" style="margin-left: 6px" />
       </button>

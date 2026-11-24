@@ -6,8 +6,7 @@
     icon="warning"
     icon-color="var(--orange)"
     :close-button="false"
-    @close="emit('deny')"
-  >
+    @close="emit('deny')">
     <div class="age-gate">
       <h2 class="title lotl-font">Hang on...</h2>
       <p class="text">

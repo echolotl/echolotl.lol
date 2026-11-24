@@ -31,13 +31,11 @@
             tagInput.trim() !== '' ||
             filters.tags.length > 0 ||
             excludedMetadataFilters.length > 0,
-        }"
-      >
+        }">
         <Icon
           :icon="
             filters.title && activeFilters.length === 1 ? 'search' : 'filter'
-          "
-        />
+          " />
         {{ filtersToText || "Filters" }}
       </button>
       <div id="filter-popover" popover="auto" anchor="filter-button">
@@ -49,8 +47,7 @@
                 <input
                   type="checkbox"
                   :checked="filters.generalArt"
-                  @click.prevent="toggleArtworkTypeFilter('generalArt')"
-                />
+                  @click.prevent="toggleArtworkTypeFilter('generalArt')" />
                 General
                 <Icon icon="art" />
               </label>
@@ -58,8 +55,7 @@
                 <input
                   type="checkbox"
                   :checked="filters.characterArt"
-                  @click.prevent="toggleArtworkTypeFilter('characterArt')"
-                />
+                  @click.prevent="toggleArtworkTypeFilter('characterArt')" />
                 Character
                 <Icon icon="character" />
               </label>
@@ -71,14 +67,12 @@
                 :class="{
                   selected: filters.sketches,
                   'anti-filter': isMetadataFilterExcluded('sketches'),
-                }"
-              >
+                }">
                 <input
                   type="checkbox"
                   :checked="filters.sketches"
                   :indeterminate="isMetadataFilterExcluded('sketches')"
-                  @click.prevent="cycleMetadataFilter('sketches')"
-                />
+                  @click.prevent="cycleMetadataFilter('sketches')" />
                 Sketches
                 <Icon icon="sketch" />
               </label>
@@ -86,14 +80,12 @@
                 :class="{
                   selected: filters.gallery,
                   'anti-filter': isMetadataFilterExcluded('gallery'),
-                }"
-              >
+                }">
                 <input
                   type="checkbox"
                   :checked="filters.gallery"
                   :indeterminate="isMetadataFilterExcluded('gallery')"
-                  @click.prevent="cycleMetadataFilter('gallery')"
-                />
+                  @click.prevent="cycleMetadataFilter('gallery')" />
                 Has Gallery
                 <Icon icon="images" />
               </label>
@@ -101,14 +93,12 @@
                 :class="{
                   selected: filters.variants,
                   'anti-filter': isMetadataFilterExcluded('variants'),
-                }"
-              >
+                }">
                 <input
                   type="checkbox"
                   :checked="filters.variants"
                   :indeterminate="isMetadataFilterExcluded('variants')"
-                  @click.prevent="cycleMetadataFilter('variants')"
-                />
+                  @click.prevent="cycleMetadataFilter('variants')" />
                 Has Variants
                 <Icon icon="layers" />
               </label>
@@ -127,8 +117,7 @@
                     type="text"
                     v-model="filters.title"
                     placeholder="Search by name..."
-                    autocomplete="off"
-                  />
+                    autocomplete="off" />
                   <Icon icon="search" style="margin-right: 0.5rem" />
                 </div>
                 <div class="tag-combobox">
@@ -154,8 +143,7 @@
                       @input="onTagInput"
                       @blur="onTagInputBlur"
                       @keydown="onTagKeydown"
-                      autocomplete="off"
-                    />
+                      autocomplete="off" />
                     <Icon icon="tag" style="margin-right: 0.5rem" />
                   </div>
                   <ul
@@ -163,8 +151,7 @@
                     id="art-tag-suggestions"
                     class="tag-suggestions"
                     role="listbox"
-                    aria-label="Tag suggestions"
-                  >
+                    aria-label="Tag suggestions">
                     <li
                       v-for="(tag, index) in tagSuggestions"
                       :id="`art-tag-option-${index}`"
@@ -174,15 +161,13 @@
                       :class="{ active: index === activeTagIndex }"
                       @mousedown.prevent
                       @click="addTag(tag)"
-                      @mousemove="activeTagIndex = index"
-                    >
+                      @mousemove="activeTagIndex = index">
                       {{ tag }}
                     </li>
                   </ul>
                   <div
                     v-else-if="tagDropdownOpen && tagInput.trim() !== ''"
-                    class="tag-suggestions empty"
-                  >
+                    class="tag-suggestions empty">
                     No matching tags found.
                   </div>
                 </div>
@@ -192,8 +177,7 @@
                     :key="tag"
                     clickable
                     :aria-label="`Remove tag ${tag}`"
-                    @click="removeTag(tag)"
-                  >
+                    @click="removeTag(tag)">
                     {{ tag }}
                     <Icon icon="close" size="1em" style="margin-left: 0.1rem" />
                   </Tag>
@@ -207,8 +191,7 @@
                 <input
                   type="checkbox"
                   :checked="filters.nsfw"
-                  @change="onNsfwToggle"
-                />
+                  @change="onNsfwToggle" />
                 Show NSFW
                 <Icon icon="r18" />
               </label>

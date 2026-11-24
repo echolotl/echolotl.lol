@@ -5,8 +5,7 @@
         class="nautilus"
         ref="nautilusEl"
         aria-hidden="true"
-        @click="playChipSound()"
-      />
+        @click="playChipSound()" />
       <h2 class="title lotl-font">
         How to Picross
         <span class="text-secondary">with Nautilus</span>
@@ -32,8 +31,7 @@
             v-for="(state, i) in exampleRow"
             :key="i"
             class="example-tile"
-            :class="state"
-          />
+            :class="state" />
         </div>
       </div>
       <p class="text text-secondary">
@@ -46,8 +44,8 @@
           Try to start with rows or columns that have the largest numbers!
         </li>
         <li>
-          Remember to mark (<Icon icon="close" size="18px" />)
-          what you think are empty pixels.
+          Remember to mark (<Icon icon="close" size="18px" />) what you think
+          are empty pixels.
         </li>
         <li>
           See if pixels HAVE to be filled based on every possible configuration

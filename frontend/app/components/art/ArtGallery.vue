@@ -14,8 +14,7 @@
             :data-variant="currentVariantIndex ?? 'base'"
             @error="
               imageLoadError = 'Could not load the selected artwork image.'
-            "
-          />
+            " />
           <div v-else class="placeholder">
             <Icon icon="loading" size="3rem" />Loading...
           </div>
@@ -26,8 +25,7 @@
     <!-- Variant selector for current base image -->
     <div
       v-if="currentImage?.variants && currentImage.variants.length"
-      class="variants"
-    >
+      class="variants">
       <div class="list">
         <Icon icon="layers" />
         <button
@@ -35,8 +33,7 @@
           class="chip"
           :class="{ active: currentVariantIndex === null }"
           :aria-pressed="currentVariantIndex === null"
-          @click="currentVariantIndex = null"
-        >
+          @click="currentVariantIndex = null">
           Original
         </button>
         <button
@@ -46,8 +43,7 @@
           class="chip"
           :class="{ active: currentVariantIndex === vIndex }"
           :aria-pressed="currentVariantIndex === vIndex"
-          @click="selectVariant(vIndex)"
-        >
+          @click="selectVariant(vIndex)">
           {{ variant.label || "Alt " + (vIndex + 1) }}
         </button>
       </div>
@@ -64,8 +60,7 @@
           :class="{ active: currentImageIndex === index }"
           :aria-label="`Show image ${index + 1} of ${art.images.length}`"
           :aria-pressed="currentImageIndex === index"
-          @click="selectImage(index)"
-        ></button>
+          @click="selectImage(index)"></button>
       </div>
       <div class="label">
         <button
@@ -73,8 +68,7 @@
           class="nav prev"
           @click="prevImage"
           aria-label="Previous image"
-          style="border-radius: 100%"
-        >
+          style="border-radius: 100%">
           <Icon icon="small-arrow" style="transform: rotate(180deg)" />
         </button>
         <Icon icon="images" /> {{ currentImageIndex + 1 }} /
@@ -84,8 +78,7 @@
           class="nav next"
           @click="nextImage"
           aria-label="Next image"
-          style="border-radius: 100%"
-        >
+          style="border-radius: 100%">
           <Icon icon="small-arrow" />
         </button>
       </div>
@@ -100,8 +93,7 @@
       "
       :href="activeSource?.image_url"
       target="_blank"
-      rel="noopener noreferrer"
-    >
+      rel="noopener noreferrer">
       {{ activeSource?.image_url.split("/").pop() || "Untitled Image" }}
       <Icon icon="open-in-new" />
     </a>

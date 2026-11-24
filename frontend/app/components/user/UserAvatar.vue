@@ -7,8 +7,7 @@
       height: `${size}px`,
       filter: filterUrl,
     }"
-    :alt="`${displayName || 'User'} Avatar`"
-  />
+    :alt="`${displayName || 'User'} Avatar`" />
 </template>
 
 <script setup lang="ts">

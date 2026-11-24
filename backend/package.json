@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "@echolotl/backend",
   "version": "1.0.50",
   "module": "src/index.js",
   "scripts": {

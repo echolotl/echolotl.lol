@@ -6,28 +6,24 @@
       :aria-label="ariaLabel"
       @click.self="closeOnBackdrop && close()"
       @cancel="onCancel"
-      @close="onDialogClose"
-    >
+      @close="onDialogClose">
       <div
         class="modal"
         :class="{ icon: props.icon }"
-        :style="{ '--filter-url': filterUrl, maxWidth }"
-      >
+        :style="{ '--filter-url': filterUrl, maxWidth }">
         <Icon
           v-if="props.icon"
           :icon="props.icon"
           class="modal-icon"
           :color="props.iconColor"
           size="48px"
-          aria-hidden="true"
-        />
+          aria-hidden="true" />
         <button
           v-if="props.closeButton"
           type="button"
           class="close"
           aria-label="Close dialog"
-          @click="close()"
-        >
+          @click="close()">
           <Icon icon="close" size="28px" />
         </button>
         <div class="content">

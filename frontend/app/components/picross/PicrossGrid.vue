@@ -5,21 +5,18 @@
       ref="columnHintsCanvas"
       class="column-hints lotl-font"
       role="img"
-      :aria-label="`Column hints: ${game.hints.columns.map((h) => h.join(' ')).join(', ')}`"
-    ></canvas>
+      :aria-label="`Column hints: ${game.hints.columns.map((h) => h.join(' ')).join(', ')}`"></canvas>
     <canvas
       v-if="!locked"
       ref="rowHintsCanvas"
       class="row-hints lotl-font"
       role="img"
-      :aria-label="`Row hints: ${game.hints.rows.map((h) => h.join(' ')).join(', ')}`"
-    ></canvas>
+      :aria-label="`Row hints: ${game.hints.rows.map((h) => h.join(' ')).join(', ')}`"></canvas>
     <div class="game-board">
       <div
         class="board-backdrop"
         aria-hidden="true"
-        :style="{ '--filter-url': filterUrl }"
-      ></div>
+        :style="{ '--filter-url': filterUrl }"></div>
       <div
         v-if="hoveredTile && !game.isCompleted && !locked"
         class="hover-tile"
@@ -29,8 +26,7 @@
           width: `${TILE_SIZE}px`,
           height: `${TILE_SIZE}px`,
           transform: `translate(${hoveredTile.x * TILE_SIZE}px, ${hoveredTile.y * TILE_SIZE}px)`,
-        }"
-      ></div>
+        }"></div>
       <canvas
         ref="gameBoard"
         width="300"
@@ -43,8 +39,7 @@
         @pointermove="handlePointerMove"
         @pointerleave="handlePointerLeave"
         @keydown="handleBoardKeydown"
-        @contextmenu.prevent
-      ></canvas>
+        @contextmenu.prevent></canvas>
     </div>
     <p id="picross-board-help" class="sr-only">
       Use the arrow keys to select a tile. Press Space or Enter to apply the
@@ -820,12 +815,7 @@ function applyAction(x: number, y: number) {
  */
 function resolveTile(current: PicrossTile, button: number): PicrossTileChange {
   const mode = INPUT_MODES[inputMode.value as keyof typeof INPUT_MODES];
-  return mode.resolve(
-    current,
-    button,
-    props.editable,
-    props.paintIndex,
-  );
+  return mode.resolve(current, button, props.editable, props.paintIndex);
 }
 
 /**

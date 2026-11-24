@@ -7,8 +7,7 @@
       <h4
         v-if="title"
         class="title lotl-font"
-        style="color: var(--callout-color)"
-      >
+        style="color: var(--callout-color)">
         {{ title }}
       </h4>
       <div class="body">

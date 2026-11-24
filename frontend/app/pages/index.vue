@@ -22,7 +22,8 @@ import StatusSection from "~/components/home/StatusSection.vue";
 
 useSeoMeta({
   title: "echolotl.lol",
-  description: "echolotl's personal website, containing their art, characters, and more.",
+  description:
+    "echolotl's personal website, containing their art, characters, and more.",
 });
 </script>
 

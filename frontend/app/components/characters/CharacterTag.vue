@@ -2,8 +2,7 @@
   <Tag
     variant="character"
     :to="`/characters/${slug}`"
-    :custom-color="themeColor"
-  >
+    :custom-color="themeColor">
     <span v-if="character?.name" class="name lotl-font">
       {{ character.name }}
     </span>

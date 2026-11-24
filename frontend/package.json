@@ -1,8 +1,7 @@
 {
-  "name": "echolotlweb",
+  "name": "@echolotl/frontend",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.9.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -10,8 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "oxlint .",
-    "format": "oxfmt --write .",
-    "art": "tsx scripts/artcli",
+    "format": "bun fmt --write .",
+    "art": "bun run scripts/artcli",
     "start": "serve .output/public -l $PORT"
   },
   "dependencies": {
@@ -41,14 +40,12 @@
     "serve": "^14.2.6",
     "sharp": "^0.35.5",
     "slot-text": "^0.3.4",
-    "tsx": "^4.23.15",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
     "vue": "^3.5.44",
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
-    "oxfmt": "^0.72.0",
     "oxlint": "^1.89.0"
   }
 }

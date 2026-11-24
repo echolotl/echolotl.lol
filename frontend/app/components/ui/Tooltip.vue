@@ -10,8 +10,7 @@
     ]"
     :style="{ anchorName }"
     @mouseenter="onEnter"
-    @mouseleave="onLeave"
-  >
+    @mouseleave="onLeave">
     <slot></slot>
     <span class="tooltiptext" :style="{ positionAnchor: anchorName }">
       <slot name="text"></slot>

@@ -1,21 +1,26 @@
 {
   "name": "echolotl-lol",
   "private": true,
-  "packageManager": "pnpm@12.9.0",
+  "packageManager": "bun@1.4.5",
   "workspaces": [
     "backend",
     "frontend",
     "packages/types",
     "packages/picross"
   ],
+  "trustedDependencies": [
+    "@parcel/watcher",
+    "better-sqlite3",
+    "esbuild"
+  ],
   "scripts": {
-    "dev": "pnpm --parallel --filter ./frontend --filter ./backend dev",
-    "dev:frontend": "pnpm --filter ./frontend dev",
-    "dev:backend": "pnpm --filter ./backend dev",
-    "build": "pnpm --recursive --if-present run build",
-    "build:frontend": "pnpm --filter ./frontend build",
-    "build:backend": "pnpm --filter ./backend build",
-    "lint": "pnpm --filter ./frontend --filter ./backend lint",
-    "format": "pnpm --filter ./frontend --filter ./backend format"
+    "dev": "bun run --bun --filter @echolotl/frontend --filter @echolotl/backend --parallel dev",
+    "dev:frontend": "bun run --bun --filter @echolotl/frontend dev",
+    "dev:backend": "bun run --bun --filter @echolotl/backend dev",
+    "build": "bun run --bun --filter @echolotl/frontend --filter @echolotl/backend build",
+    "build:frontend": "bun run --bun --filter @echolotl/frontend build",
+    "build:backend": "bun run --bun --filter @echolotl/backend build",
+    "lint": "bun run --bun --filter @echolotl/frontend --filter @echolotl/backend lint",
+    "format": "bun run --bun --filter @echolotl/frontend --filter @echolotl/backend format"
   }
 }
