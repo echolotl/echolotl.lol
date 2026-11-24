@@ -7,6 +7,7 @@ import type {
   RenderedPath,
   SelectionPreview,
   GuestbookInputMode,
+  GuestbookPointerMode,
   OtherCursor,
   OtherStroke,
   PendingMove,
@@ -34,8 +35,7 @@ interface RenderState {
   inputMode: GuestbookInputMode;
   eyedropperActive: boolean;
   activePointer: {
-    mode: "draw" | "pan" | "move" | "marquee" | "fill";
-    inputMode: GuestbookInputMode;
+    mode: GuestbookPointerMode;
     color: string;
     moveOffset: Point;
     lastWorldPosition: Point | null;
@@ -170,9 +170,7 @@ export class GuestbookRenderer {
         ...pendingStrokes.values(),
       ].filter((stroke) => stroke.layer === layer);
       const erasing =
-        (layer === activeLayer &&
-          activePointer?.mode === "draw" &&
-          activePointer.inputMode === "erase") ||
+        (layer === activeLayer && activePointer?.mode === "erase") ||
         otherLayerStrokes.some((stroke) => stroke.color === null);
       let layerContext = context;
       if (erasing) {
@@ -246,10 +244,13 @@ export class GuestbookRenderer {
         }
         layerContext.restore();
       };
-      if (layer === activeLayer && activePointer?.mode === "draw") {
+      if (
+        layer === activeLayer &&
+        (activePointer?.mode === "draw" || activePointer?.mode === "erase")
+      ) {
         drawSegments(
           pathDraft,
-          activePointer.inputMode === "erase" ? null : activePointer.color,
+          activePointer.mode === "erase" ? null : activePointer.color,
         );
       }
       for (const stroke of otherLayerStrokes) {
@@ -357,9 +358,8 @@ export class GuestbookRenderer {
     if (
       brushPosition &&
       !eyedropperActive &&
-      ((activePointer?.inputMode ?? inputMode) === "draw" ||
-        (activePointer?.inputMode ?? inputMode) === "erase") &&
-      activePointer?.mode !== "pan"
+      ((activePointer?.mode ?? inputMode) === "draw" ||
+        (activePointer?.mode ?? inputMode) === "erase")
     ) {
       context.strokeStyle = CANVAS_COLORS.gray;
       context.lineWidth = 1 / camera.zoom;
@@ -367,7 +367,7 @@ export class GuestbookRenderer {
       context.arc(
         brushPosition.x,
         brushPosition.y,
-        (activePointer?.mode === "draw"
+        (activePointer?.mode === "draw" || activePointer?.mode === "erase"
           ? (pathDraft.at(-1)?.size ?? brushSize)
           : brushSize) / 2,
         0,

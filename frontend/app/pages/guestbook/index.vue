@@ -1,6 +1,6 @@
 <template>
   <div class="guestbook-container">
-    <div class="guestbook-notices">
+    <div class="guestbook-notices" :style="{ filter: filterUrl }">
       <div v-if="status === 'loading' || connecting" class="guestbook-status">
         <Icon icon="loading" size="20px" /> Connecting...
       </div>
@@ -384,8 +384,8 @@
     gap: 8px;
     color: var(--text-secondary);
     background: var(--surface);
-    border-radius: 4px;
-    padding: 6px 8px;
+    border-radius: 8px;
+    padding: 2px 4px;
     &:empty {
       display: none;
     }
@@ -542,18 +542,17 @@ import { type Camera } from "~/utils/canvas";
 import {
   getGuestbookInputModeForKey,
   type GuestbookInputMode,
+  type GuestbookPointerMode,
   type OtherCursor,
   type OtherStroke,
   type PendingMove,
   type RenderedPath,
   type SelectionPreview,
 } from "~/utils/guestbook";
-import {
-  measureGesture,
-  screenToWorld,
-  worldToScreen,
-} from "~/utils/canvas/camera";
+import { screenToWorld, worldToScreen } from "~/utils/canvas/camera";
+import { CanvasPointer } from "~/utils/canvas/pointer";
 import { GuestbookCamera } from "~/utils/guestbook/camera";
+import { GuestbookPointer } from "~/utils/guestbook/pointer";
 import { GuestbookSocket } from "~/utils/guestbook/socket";
 import { GuestbookSelection } from "~/utils/guestbook/selection";
 import { GuestbookRenderer } from "~/utils/guestbook/renderer";
@@ -565,6 +564,8 @@ import ColorPicker from "~/components/ui/ColorPicker.vue";
  * Reference to the guestbook canvas element.
  */
 const guestbookCanvas: Ref<HTMLCanvasElement | null> = ref(null);
+const canvasPointer = new CanvasPointer(() => guestbookCanvas.value);
+const guestbookPointer = new GuestbookPointer(canvasPointer);
 /**
  * Reference to the 2D rendering context of the guestbook canvas.
  */
@@ -602,14 +603,7 @@ const pointer = reactive<{
   active: Pointer | null;
 }>({ position: null, active: null });
 
-/**
- * The map of active touch points, keyed by their identifier.
- */
-const touches = new Map<number, Point>();
-/**
- * Indicates whether a touch gesture is currently in progress.
- */
-const touchGesture = ref(false);
+const touchGesture = guestbookPointer.touchGesture;
 /**
  * Indicates whether any interaction (pointer or touch gesture) is currently active.
  */
@@ -750,6 +744,7 @@ const usePenPressure = ref(false);
 const { theme } = useTheme();
 const { isLoggedIn, user, status, getPublicUser, login } = useAuth();
 const { backendUrl, backendEnabled } = useRuntimeConfig().public;
+const { url: filterUrl } = useSketchFilter({ color: "var(--surface)" });
 const toastMessage = ref<Toast | null>(null);
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 let toastRequest = 0;
@@ -786,8 +781,7 @@ interface Pointer {
   lastX: number;
   lastY: number;
   lastWorldPosition: Point | null;
-  mode: "draw" | "pan" | "move" | "marquee" | "fill";
-  inputMode: GuestbookInputMode;
+  mode: GuestbookPointerMode;
   color: string;
   moveOffset: Point;
   marqueeEnd: Point | null;
@@ -827,6 +821,7 @@ const canToggleGrouping = computed(
  * @returns An object containing CSS properties for the canvas element.
  */
 const canvasStyle = computed(() => {
+  const mode = pointer.active?.mode ?? inputMode.value;
   switch (pointer.active?.mode) {
     case "pan":
     case "move":
@@ -838,11 +833,11 @@ const canvasStyle = computed(() => {
       return {
         cursor: eyedropperActive.value
           ? "crosshair"
-          : (pointer.active?.inputMode ?? inputMode.value) === "fill"
+          : mode === "fill"
             ? "crosshair"
-            : (pointer.active?.inputMode ?? inputMode.value) === "select"
+            : mode === "select" || mode === "marquee"
               ? "default"
-              : (pointer.active?.inputMode ?? inputMode.value) === "pan"
+              : mode === "pan"
                 ? "grab"
                 : "none",
       };
@@ -885,7 +880,6 @@ const {
   getWorldPosition,
   panCamera,
   handleWheel,
-  getCameraAnchor,
   zoomFromWheel,
   zoom,
   rotateCamera,
@@ -994,6 +988,7 @@ onMounted(async () => {
 onUnmounted(() => {
   dismissToast();
   guestbookSocket.close();
+  guestbookPointer.clear();
   activeStroke = null;
   otherStrokes.clear();
   otherSelections.clear();
@@ -1020,13 +1015,12 @@ watch(isLoggedIn, () => renderer.schedule());
 function handlePointerDown(event: PointerEvent) {
   sendCursorPosition(event);
   if (event.pointerType === "touch") {
-    if (pointer.active && !touches.has(pointer.active.id)) return;
-    const canvas = guestbookCanvas.value;
-    if (!canvas) return;
-    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    canvas.setPointerCapture(event.pointerId);
-    if (touches.size >= 2) {
-      touchGesture.value = true;
+    const touch = guestbookPointer.startTouch(
+      event,
+      pointer.active?.id ?? null,
+    );
+    if (touch === "ignore") return;
+    if (touch === "gesture") {
       if (activeStroke && guestbookSocket.clientId) {
         guestbookSocket.sendEdit({
           type: "stroke:commit",
@@ -1042,7 +1036,6 @@ function handlePointerDown(event: PointerEvent) {
       renderer.schedule();
       return;
     }
-    if (touchGesture.value) return;
   } else if (touchGesture.value) {
     return;
   }
@@ -1086,7 +1079,7 @@ function handlePointerDown(event: PointerEvent) {
     case "draw":
     case "erase":
       if (selectedPathIds.value.length) clearSelection();
-      mode = "draw";
+      mode = pointerInputMode;
       break;
     case "fill":
       if (selectedPathIds.value.length) clearSelection();
@@ -1159,7 +1152,6 @@ function handlePointerDown(event: PointerEvent) {
     lastY: event.clientY,
     lastWorldPosition: position,
     mode,
-    inputMode: activeInputMode,
     color: brushColor.value,
     moveOffset: { x: 0, y: 0 },
     marqueeEnd: position,
@@ -1171,9 +1163,9 @@ function handlePointerDown(event: PointerEvent) {
       : event.button === 1
         ? 4
         : 2;
-  canvas.setPointerCapture(event.pointerId);
+  canvasPointer.capture(event.pointerId);
   updateBrushCursor(event);
-  if (position && pointer.active.mode === "draw") {
+  if (position && (mode === "draw" || mode === "erase")) {
     const path = new Path2D();
     path.moveTo(position.x, position.y);
     path.lineTo(position.x, position.y);
@@ -1184,8 +1176,7 @@ function handlePointerDown(event: PointerEvent) {
       size: getSegmentSize(event),
     };
     pathDraft = [firstSegment];
-    const color =
-      pointer.active.inputMode === "draw" ? pointer.active.color : null;
+    const color = mode === "draw" ? pointer.active.color : null;
     activeStroke = {
       strokeId: crypto.randomUUID(),
       color,
@@ -1364,11 +1355,11 @@ function sendCursorPosition(event: PointerEvent) {
   const point = getWorldPosition(event);
   if (!point || !guestbookSocket.clientId) return;
   const active = pointer.active;
+  const pointerMode = active?.mode ?? inputMode.value;
   const mode =
     !isLoggedIn.value || active?.mode === "pan" || active?.mode === "move"
       ? "pointer"
-      : (active?.inputMode ?? inputMode.value) === "draw" ||
-          (active?.inputMode ?? inputMode.value) === "erase"
+      : pointerMode === "draw" || pointerMode === "erase"
         ? "brush"
         : "pointer";
   guestbookSocket.send({
@@ -1377,7 +1368,7 @@ function sendCursorPosition(event: PointerEvent) {
     point,
     mode,
     brushSize:
-      active?.mode === "draw"
+      active?.mode === "draw" || active?.mode === "erase"
         ? (pathDraft.at(-1)?.size ?? brushSize.value)
         : brushSize.value,
   });
@@ -1392,44 +1383,22 @@ function handlePointerEnter(event: PointerEvent) {
 
 function handlePointerMove(event: PointerEvent) {
   sendCursorPosition(event);
-  if (event.pointerType === "touch" && touches.has(event.pointerId)) {
-    const previous = Array.from(touches.values());
-    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (touchGesture.value) {
-      const current = Array.from(touches.values());
-      if (previous.length >= 2 && current.length >= 2) {
-        const previousA = getCameraAnchor(previous[0]);
-        const previousB = getCameraAnchor(previous[1]);
-        const currentA = getCameraAnchor(current[0]);
-        const currentB = getCameraAnchor(current[1]);
-        if (previousA && previousB && currentA && currentB) {
-          const change = measureGesture(
-            [previousA, previousB],
-            [currentA, currentB],
-          );
-          const center = {
-            x: (current[0]!.x + current[1]!.x) / 2,
-            y: (current[0]!.y + current[1]!.y) / 2,
-          };
-          panCamera(-change.pan.x, -change.pan.y);
-          zoom(camera.zoom * (change.scale - 1), center);
-          rotateCamera(change.rotation, center);
-        }
-      }
-      return;
-    }
+  const gesture = guestbookPointer.moveTouch(event);
+  if (gesture) {
+    panCamera(-gesture.pan.x, -gesture.pan.y);
+    zoom(camera.zoom * (gesture.scale - 1), gesture.center);
+    rotateCamera(gesture.rotation, gesture.center);
   }
   if (touchGesture.value) return;
   if (pointer.active === null || pointer.active.id === event.pointerId) {
     updateBrushCursor(event);
   }
   if (pointer.active?.id !== event.pointerId) return;
-  if (!(event.buttons & heldButton)) {
+  if (!canvasPointer.isPressed(event, heldButton)) {
     endPointer(event);
     return;
   }
-  const coalescedEvents = event.getCoalescedEvents?.();
-  for (const sample of coalescedEvents?.length ? coalescedEvents : [event]) {
+  for (const sample of canvasPointer.samples(event)) {
     updatePointer(sample);
   }
 }
@@ -1442,7 +1411,7 @@ function handlePointerMove(event: PointerEvent) {
  * @param event The pointer event to handle.
  */
 function updatePointer(event: PointerEvent) {
-  if (pointer.active?.mode === "draw") {
+  if (pointer.active?.mode === "draw" || pointer.active?.mode === "erase") {
     const rawPosition = getWorldPosition(event);
     const previousPosition = pointer.active.lastWorldPosition;
     if (rawPosition && previousPosition) {
@@ -1535,14 +1504,12 @@ function findPathAt(position: Point): RenderedPath | null {
  * @returns The width of the segment.
  */
 function getSegmentSize(event: PointerEvent) {
-  if (event.type === "pointerup") {
-    return pathDraft.at(-1)?.size ?? brushSize.value;
-  }
-  return event.pointerType === "pen" &&
-    (event.buttons & 33) !== 0 &&
-    usePenPressure.value
-    ? brushSize.value * Math.max(event.pressure, 0.01)
-    : brushSize.value;
+  return guestbookPointer.segmentSize(
+    event,
+    brushSize.value,
+    usePenPressure.value,
+    pathDraft.at(-1)?.size,
+  );
 }
 
 /**
@@ -1561,14 +1528,9 @@ function updateBrushCursor(event: PointerEvent) {
     renderer.schedule();
     return;
   }
-  const rect = canvas.getBoundingClientRect();
-  pointer.position =
-    event.clientX >= rect.left &&
-    event.clientX < rect.right &&
-    event.clientY >= rect.top &&
-    event.clientY < rect.bottom
-      ? { clientX: event.clientX, clientY: event.clientY }
-      : null;
+  pointer.position = canvasPointer.contains(event)
+    ? { clientX: event.clientX, clientY: event.clientY }
+    : null;
   renderer.schedule();
 }
 
@@ -1585,33 +1547,14 @@ function hideBrushCursor(event: PointerEvent) {
 }
 
 function endPointer(event: PointerEvent) {
-  if (event.pointerType === "touch" && touches.delete(event.pointerId)) {
-    if (touchGesture.value) {
-      if (touches.size === 0) touchGesture.value = false;
-      const canvas = guestbookCanvas.value;
-      if (canvas?.hasPointerCapture(event.pointerId)) {
-        canvas.releasePointerCapture(event.pointerId);
-      }
-      return;
-    }
-    if (pointer.active?.id !== event.pointerId) {
-      const canvas = guestbookCanvas.value;
-      if (canvas?.hasPointerCapture(event.pointerId)) {
-        canvas.releasePointerCapture(event.pointerId);
-      }
-      return;
-    }
-  }
+  if (guestbookPointer.endTouch(event, pointer.active?.id ?? null)) return;
   if (pointer.active?.id === event.pointerId) {
     const active = pointer.active;
     pointer.active = null;
     if (event.type === "pointercancel" || event.pointerType === "touch") {
       pointer.position = null;
     }
-    const canvas = guestbookCanvas.value;
-    if (canvas?.hasPointerCapture(event.pointerId)) {
-      canvas.releasePointerCapture(event.pointerId);
-    }
+    canvasPointer.release(event.pointerId);
     if (pathDraft.length) {
       const completedStroke = activeStroke;
       if (completedStroke && guestbookSocket.clientId) {

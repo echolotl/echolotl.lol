@@ -8,6 +8,12 @@ import type { BaseInputModeDefinition, Rect } from "../canvas";
  */
 export type GuestbookInputMode = keyof typeof GUESTBOOK_INPUT_MODES;
 
+/** The action captured by an active pointer. */
+export type GuestbookPointerMode =
+  | Exclude<GuestbookInputMode, "select">
+  | "move"
+  | "marquee";
+
 /** The shared display and keyboard fields for a guestbook input mode. */
 export type GuestbookInputModeDefinition = BaseInputModeDefinition;
 

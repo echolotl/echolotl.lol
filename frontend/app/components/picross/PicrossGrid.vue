@@ -74,6 +74,7 @@
 <script setup lang="ts">
 import { useTheme } from "~/composables/useTheme";
 import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
+import { CanvasPointer } from "~/utils/canvas/pointer";
 import {
   BOARD_COLORS,
   COLUMN_HINTS_PADDING,
@@ -506,6 +507,7 @@ function drawHints() {
  * The main game board canvas element.
  */
 const gameBoard = shallowRef<HTMLCanvasElement | null>(null);
+const canvasPointer = new CanvasPointer(() => gameBoard.value);
 /**
  * The 2D rendering context for the main game board canvas.
  */
@@ -699,10 +701,6 @@ function getRevealAlpha() {
   const progress = (time - REVEAL_PAUSE_MS) / REVEAL_PULSE_MS;
   return 0.5 + 0.5 * Math.cos(progress * 2 * Math.PI);
 }
-/**
- * The pointer ID of the currently held pointer, or null if none.
- */
-let heldPointer: number | null = null;
 /** The current action being applied to the board, or null if none. */
 let action: PicrossTileChange | null = null;
 
@@ -732,14 +730,10 @@ function checkIfCompleted() {
  * @returns The tile coordinates { x, y } if a tile exists at the event location, otherwise null.
  */
 function getTileAt(event: PointerEvent): { x: number; y: number } | null {
-  if (!gameBoard.value) return null;
-  const rect = gameBoard.value.getBoundingClientRect();
-  const x = Math.floor(
-    ((event.clientX - rect.left) / rect.width) * props.game.size.width,
-  );
-  const y = Math.floor(
-    ((event.clientY - rect.top) / rect.height) * props.game.size.height,
-  );
+  const position = canvasPointer.normalizedPosition(event);
+  if (!position) return null;
+  const x = Math.floor(position.x * props.game.size.width);
+  const y = Math.floor(position.y * props.game.size.height);
   return props.game.board[y]?.[x] ? { x, y } : null;
 }
 /**
@@ -830,9 +824,10 @@ function handlePointerDown(event: PointerEvent) {
   if (!tile) return;
   selectedTile.value = tile;
   event.preventDefault();
-  heldPointer = event.pointerId;
   stroke = [];
-  gameBoard.value?.setPointerCapture(event.pointerId);
+  canvasPointer.capture(event.pointerId);
+  canvasPointer.clear();
+  canvasPointer.track(event);
   action = resolveTile(getTile(tile.x, tile.y), event.button);
   applyAction(tile.x, tile.y);
 }
@@ -845,7 +840,8 @@ function handlePointerMove(event: PointerEvent) {
   if (props.game.isCompleted || props.locked) return;
   const tile = getTileAt(event);
   setHoveredTile(event.pointerType === "touch" ? null : tile);
-  if (!tile || heldPointer !== event.pointerId || !action) return;
+  if (!tile || !canvasPointer.has(event.pointerId) || !action) return;
+  canvasPointer.track(event);
   applyAction(tile.x, tile.y);
 }
 
@@ -939,7 +935,11 @@ function handleKeys(event: KeyboardEvent) {
  * @returns True if history can be edited, false otherwise.
  */
 function canEditHistory() {
-  return !props.game.isCompleted && !props.locked && heldPointer === null;
+  return (
+    !props.game.isCompleted &&
+    !props.locked &&
+    canvasPointer.tracked().length === 0
+  );
 }
 
 /**
@@ -980,7 +980,7 @@ function setHoveredTile(tile: { x: number; y: number } | null) {
 }
 
 function stopHold() {
-  heldPointer = null;
+  canvasPointer.clear();
   action = null;
   commitStroke();
 }
