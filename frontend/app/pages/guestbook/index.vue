@@ -1,24 +1,5 @@
 <template>
   <div class="guestbook-container">
-    <div class="guestbook-notices" :style="{ filter: filterUrl }">
-      <div v-if="status === 'loading' || connecting" class="guestbook-status">
-        <Icon icon="loading" size="20px" /> Connecting...
-      </div>
-      <div v-if="toastMessage" class="guestbook-status" role="alert">
-        <Icon
-          :icon="toastMessage?.type === 'error' ? 'error' : 'info'"
-          size="20px"
-        />
-        {{ toastMessage?.message }}
-      </div>
-      <div v-if="!isLoggedIn" class="guestbook-status">
-        <Icon icon="view" size="20px" />
-        <span
-          ><button class="link" @click="login">Login</button> to draw or
-          edit.</span
-        >
-      </div>
-    </div>
     <canvas
       ref="guestbookCanvas"
       :style="canvasStyle"
@@ -104,6 +85,25 @@
       </button>
     </div>
     <div class="ui-layer">
+      <div class="guestbook-notices" :style="{ filter: filterUrl }">
+        <div v-if="status === 'loading' || connecting" class="guestbook-status">
+          <Icon icon="loading" size="20px" /> Connecting...
+        </div>
+        <div v-if="toastMessage" class="guestbook-status" role="alert">
+          <Icon
+            :icon="toastMessage?.type === 'error' ? 'error' : 'info'"
+            size="20px"
+          />
+          {{ toastMessage?.message }}
+        </div>
+        <div v-if="!isLoggedIn" class="guestbook-status">
+          <Icon icon="view" size="20px" />
+          <span
+            ><button class="link" @click="login">Login</button> to draw or
+            edit.</span
+          >
+        </div>
+      </div>
       <div v-if="isLoggedIn" class="side-panels">
         <div class="vertical-actions-row">
           <div
@@ -363,75 +363,64 @@
         </div>
       </div>
     </div>
+    <div class="ui-layer mobile">
+      <div class="actions top">
+        <div v-if="isLoggedIn" class="input-modes">
+          <button
+            type="button"
+            class="round"
+            aria-label="Undo"
+            :disabled="!canUndo || interactionActive"
+            @click="undo"
+          >
+            <Icon icon="undo" size="28px" />
+          </button>
+          <button
+            type="button"
+            class="round"
+            aria-label="Redo"
+            :disabled="!canRedo || interactionActive"
+            @click="redo"
+          >
+            <Icon icon="redo" size="28px" />
+          </button>
+        </div>
+        <div class="coordinates lotl-font">
+          ({{ viewportCenter.x.toFixed(2) }}, {{ viewportCenter.y.toFixed(2) }})
+        </div>
+      </div>
+      <div class="actions bottom">
+        <button class="mobile-action-button tool-selector">
+          <Icon :icon="GUESTBOOK_INPUT_MODES[inputMode].icon" size="28px" />
+        </button>
+        <button class="mobile-action-button color-selector">
+          <div class="color-preview"></div>
+        </button>
+        <button class="mobile-action-button layer-selector">
+          <Icon
+            :icon="`layer-${activeLayer}`"
+            size="28px"
+            @click="activeLayer = (activeLayer % 3) + 1"
+          />
+        </button>
+        <button class="mobile-action-button settings-selector">
+          <Icon icon="gear" size="28px" />
+        </button>
+        <button class="mobile-action-button hide-ui-selector">
+          <Icon icon="view" size="28px" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .guestbook-container {
+  container-type: size;
   position: relative;
   width: 100%;
   height: 100vh;
   overflow: hidden;
-
-  .guestbook-notices {
-    position: absolute;
-    top: 64px;
-    left: 8px;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .guestbook-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-secondary);
-    background: var(--surface);
-    border-radius: 8px;
-    padding: 2px 4px;
-    &:empty {
-      display: none;
-    }
-  }
-
-  .debug {
-    position: absolute;
-    bottom: 4px;
-    right: 4px;
-    background: var(--background);
-    padding: 4px 8px;
-    font-size: 12px;
-    pointer-events: none;
-  }
-
-  .toolbar {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    pointer-events: none;
-  }
-
-  .side-panels {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: min(250px, calc(100% - 16px));
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-    pointer-events: none;
-  }
-
-  .vertical-actions {
-    flex-direction: column;
-  }
 
   .selection-actions {
     position: absolute;
@@ -439,74 +428,193 @@
     z-index: 1;
   }
 
-  .tool-properties {
-    box-sizing: border-box;
-    width: 100%;
-    background: var(--surface);
-    border-radius: 4px;
-    padding: 6px 8px;
-    pointer-events: auto;
-    > details summary {
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      font-size: var(--small-text);
-      text-box-trim: trim-end;
+  .ui-layer {
+    &.mobile {
+      display: none;
+
+      .actions {
+        > .input-modes button {
+          padding: 6px;
+        }
+        &.top {
+          position: absolute;
+          top: 64px;
+          left: 8px;
+          display: flex;
+          flex-direction: row;
+          gap: 6px;
+          pointer-events: none;
+          justify-content: space-between;
+          width: calc(100% - 16px);
+        }
+
+        &.bottom {
+          position: absolute;
+          left: 0;
+          width: 100vw;
+          height: fit-content;
+          bottom: 0;
+          background: var(--surface);
+          justify-content: space-around;
+          display: flex;
+
+          .mobile-action-button {
+            padding: 8px;
+            border: none;
+            line-height: 0;
+            border-radius: 12px;
+            margin: 4px 0;
+
+            &.color-selector .color-preview {
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              background: var(--primary);
+              border: 2px solid var(--distant);
+              box-sizing: border-box;
+            }
+          }
+        }
+      }
+    }
+    .guestbook-notices {
+      position: absolute;
+      top: 64px;
+      left: 8px;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
     }
 
-    > details[open] summary {
-      margin-bottom: 4px;
-    }
-
-    label {
-      flex: 1;
-      text-transform: uppercase;
-      font-weight: bold;
-      color: var(--text-secondary);
-    }
-
-    .property {
+    .guestbook-status {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 8px;
+      color: var(--text-secondary);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 2px 4px;
+      &:empty {
+        display: none;
+      }
+    }
 
-      .property-label {
-        margin-top: 8px;
+    .debug {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      background: var(--background);
+      padding: 4px 8px;
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .toolbar {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .side-panels {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: min(250px, calc(100% - 16px));
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .vertical-actions {
+      flex-direction: column;
+    }
+
+    .tool-properties {
+      box-sizing: border-box;
+      width: 100%;
+      background: var(--surface);
+      border-radius: 4px;
+      padding: 6px 8px;
+      pointer-events: auto;
+      > details summary {
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-size: var(--small-text);
+        text-box-trim: trim-end;
       }
 
-      input[type="range"] {
+      > details[open] summary {
+        margin-bottom: 4px;
+      }
+
+      label {
         flex: 1;
-        padding: 0;
-        margin: 0;
-        box-sizing: border-box;
+        text-transform: uppercase;
+        font-weight: bold;
+        color: var(--text-secondary);
       }
-      output {
-        width: 3ch;
-      }
-      output.stabilization-value {
-        width: 4ch;
+
+      .property {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+
+        .property-label {
+          margin-top: 8px;
+        }
+
+        input[type="range"] {
+          flex: 1;
+          padding: 0;
+          margin: 0;
+          box-sizing: border-box;
+        }
+        output {
+          width: 3ch;
+        }
+        output.stabilization-value {
+          width: 4ch;
+        }
       }
     }
   }
 
-  .input-modes {
-    display: flex;
-    gap: 6px;
-    padding: 4px;
-    background: var(--surface);
-    border-radius: 8px;
-    align-items: center;
-    pointer-events: auto;
+  @container (width < 792px) {
+    .ui-layer:not(.mobile) {
+      display: none;
+    }
+    .ui-layer.mobile {
+      display: block;
+    }
+  }
+}
 
-    button {
-      background: none;
-      border: none;
-      padding: 2px;
-      border-radius: 4px;
+.input-modes {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--surface);
+  border-radius: 8px;
+  align-items: center;
+  pointer-events: auto;
 
-      &.active {
-        background: var(--foreground);
-      }
+  button {
+    background: none;
+    border: none;
+    padding: 2px;
+    border-radius: 4px;
+
+    &.active {
+      background: var(--foreground);
     }
   }
 }
