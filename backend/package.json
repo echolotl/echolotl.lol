@@ -12,6 +12,7 @@
   "dependencies": {
     "@echolotl/picross": "workspace:*",
     "@echolotl/types": "workspace:*",
+    "@echolotl/utils": "workspace:*",
     "@elysiajs/cors": "^1.4.2",
     "elysia": "latest",
     "elysia-rate-limit": "^4.6.2",

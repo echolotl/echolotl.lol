@@ -1,4 +1,4 @@
-import { clamp } from "~/utils";
+import { clamp } from "@echolotl/utils";
 import { MIN_BOARD_SIZE, MAX_BOARD_SIZE } from "~/utils/constants";
 
 /** The state of a single Picross tile. */

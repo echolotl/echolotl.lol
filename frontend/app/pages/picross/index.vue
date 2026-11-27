@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import { randomColor, rgbToHex } from "@echolotl/utils/color";
 import {
   createPicrossGame,
   clearBoard,

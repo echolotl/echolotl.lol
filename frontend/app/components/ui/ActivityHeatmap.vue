@@ -9,7 +9,8 @@
               v-for="month in monthHeaders"
               :key="month.key"
               :colspan="month.span"
-              scope="colgroup">
+              scope="colgroup"
+            >
               <span class="month-label">{{ month.label }}</span>
             </th>
           </tr>
@@ -17,26 +18,29 @@
         <tbody>
           <tr v-for="row in ROWS" :key="row">
             <th scope="row" class="day-label">
-              {{ [1, 3, 5].includes(row - 1) ? DAY_LABELS[row - 1] : "" }}
+              {{ [1, 3, 5].includes(row - 1) ? WEEKDAY_LABELS[row - 1] : "" }}
             </th>
             <td v-for="weekStart in weekStarts" :key="weekStart.getTime()">
               <Tooltip direction="top" display-only>
                 <div
-                  v-if="cellDate(weekStart, row - 1) <= today"
+                  v-if="addUtcDays(weekStart, row - 1) <= today"
                   class="activity-cell"
-                  :class="`lvl-${getRelativeActivity(dateKey(cellDate(weekStart, row - 1)))}`"
+                  :class="`lvl-${getRelativeActivity(getDateKey(addUtcDays(weekStart, row - 1)))}`"
                   :style="
-                    getActivityStyle(dateKey(cellDate(weekStart, row - 1)))
+                    getActivityStyle(getDateKey(addUtcDays(weekStart, row - 1)))
                   "
-                  :title="dateKey(cellDate(weekStart, row - 1))"></div>
+                  :title="getDateKey(addUtcDays(weekStart, row - 1))"
+                ></div>
                 <template #text>
                   <div style="display: flex; align-items: center">
                     <span class="text-secondary tooltip-text"
                       >{{
-                        describeActivity(dateKey(cellDate(weekStart, row - 1)))
+                        describeActivity(
+                          getDateKey(addUtcDays(weekStart, row - 1)),
+                        )
                       }}
                       on
-                      {{ formatDate(cellDate(weekStart, row - 1)) }}</span
+                      {{ formatDate(addUtcDays(weekStart, row - 1)) }}</span
                     >
                   </div>
                 </template>
@@ -50,10 +54,12 @@
           <span
             v-for="(count, unit) in numberOfItemsPerTypeWithinRange"
             :key="unit"
-            class="activity-type-legend-item">
+            class="activity-type-legend-item"
+          >
             <span
               class="activity-type-legend-color"
-              :style="{ backgroundColor: getActivityColor(unit) }"></span>
+              :style="{ backgroundColor: getActivityColor(unit) }"
+            ></span>
             {{ pluralize(count, unit) }} in the past
             {{ formatTimeSpan(oldestDate) }}
           </span>
@@ -73,7 +79,12 @@
 </template>
 
 <script setup lang="ts">
-import { formatTimeSpan } from "~/utils";
+import { formatDate, formatTimeSpan, pluralize } from "@echolotl/utils";
+import {
+  addUtcDays,
+  getDateKey,
+  WEEKDAY_LABELS,
+} from "@echolotl/utils/calendar";
 import Tooltip from "~/components/ui/Tooltip.vue";
 
 // Multiple activities (e.g. art, blog posts, etc) can be tracked per date
@@ -109,7 +120,6 @@ const COLUMNS = computed(() =>
   Math.min(props.weeks, fittingWeeks.value ?? props.weeks),
 );
 const ROWS = 7;
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function updateFittingWeeks() {
   const el = root.value;
@@ -144,20 +154,6 @@ const oldestDate = computed(
     ),
 );
 
-function dateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function cellDate(weekStart: Date, dayOffset: number) {
-  return new Date(
-    Date.UTC(
-      weekStart.getUTCFullYear(),
-      weekStart.getUTCMonth(),
-      weekStart.getUTCDate() + dayOffset,
-    ),
-  );
-}
-
 // Sunday of each week column, oldest first, ending with the current week
 const weekStarts = computed(() => {
   const currentWeekStart = new Date(
@@ -168,7 +164,7 @@ const weekStarts = computed(() => {
     ),
   );
   return Array.from({ length: COLUMNS.value }, (_, i) =>
-    cellDate(currentWeekStart, -(COLUMNS.value - 1 - i) * 7),
+    addUtcDays(currentWeekStart, -(COLUMNS.value - 1 - i) * 7),
   );
 });
 
@@ -244,8 +240,8 @@ function getActivityStyle(date: string): Record<string, string> {
 const maxActivity = computed(() => {
   const first = weekStarts.value[0];
   if (!first) return 0;
-  const start = dateKey(first);
-  const end = dateKey(today);
+  const start = getDateKey(first);
+  const end = getDateKey(today);
   let max = 0;
   for (const [date, count] of Object.entries(histogram.value)) {
     if (date >= start && date <= end && count > max) max = count;
@@ -256,8 +252,8 @@ const maxActivity = computed(() => {
 const numberOfItemsPerTypeWithinRange = computed(() => {
   const first = weekStarts.value[0];
   if (!first) return {};
-  const start = dateKey(first);
-  const end = dateKey(today);
+  const start = getDateKey(first);
+  const end = getDateKey(today);
   const counts: { [unit: string]: number } = {};
   for (const [date, activities] of Object.entries(
     props.data.activitiesByDate,
@@ -269,10 +265,6 @@ const numberOfItemsPerTypeWithinRange = computed(() => {
   }
   return counts;
 });
-
-function pluralize(count: number, unit: string) {
-  return `${count} ${unit}${count > 1 ? "s" : ""}`;
-}
 
 // e.g. "2 arts, 1 post", summing counts that share a unit
 function describeActivity(date: string) {

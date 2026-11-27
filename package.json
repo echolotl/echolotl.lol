@@ -6,7 +6,8 @@
     "backend",
     "frontend",
     "packages/types",
-    "packages/picross"
+    "packages/picross",
+    "packages/utils"
   ],
   "trustedDependencies": [
     "@parcel/watcher",

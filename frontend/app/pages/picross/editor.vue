@@ -174,6 +174,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatWithZeros } from "@echolotl/utils";
+import { rgbToHex } from "@echolotl/utils/color";
 import PicrossGrid from "~/components/picross/PicrossGrid.vue";
 import Icon from "~/components/ui/Icon.vue";
 import PicrossPage from "~/components/picross/PicrossPage.vue";

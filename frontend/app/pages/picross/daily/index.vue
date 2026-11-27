@@ -95,38 +95,28 @@ import {
   isValidBoard,
 } from "~/utils/picross";
 import {
+  createPicrossSave,
+  loadPicrossSave,
+  persistPicrossSave,
+} from "~/utils/picross/save";
+import {
   getSecondsUntilNextDay,
-  daysBetweenDateKeys,
-  getDateKey,
+  DAILY_TIME_ZONE,
   FIRST_GAME_DATE,
 } from "@echolotl/picross/daily";
+import { daysBetweenDateKeys, getDateKey } from "@echolotl/utils/calendar";
+import { formatTime } from "@echolotl/utils";
 import { loadPicrossPuzzle } from "@echolotl/picross/file";
 import Icon from "~/components/ui/Icon.vue";
 
 const { theme } = useTheme();
 const config = useRuntimeConfig();
+const route = useRoute();
 
 definePageMeta({
   pageTransition: false,
   viewTransition: true,
 });
-
-type PicrossGameStats = Omit<PicrossGame, "palette" | "solution"> & {
-  gaveUp?: boolean;
-  puzzleId: string;
-};
-
-type PicrossSave = {
-  version: 2;
-  history: Record<string, PicrossGameStats>; // Keyed by date
-  totalMoves: number;
-  totalHintsUsed: number;
-  totalWins: number;
-  lastPlayed: string | null; // date
-};
-
-const LOCAL_STORAGE_KEY = "picross:stats:v2";
-const LEGACY_STORAGE_KEY = "picross:stats:v1";
 
 const game = ref<PicrossGame | null>(null);
 const dateKey = ref("");
@@ -136,18 +126,9 @@ const loadError = ref("");
 const gaveUp = ref(false);
 const started = ref(false);
 const grid = ref<InstanceType<typeof PicrossGrid> | null>(null);
-const save = ref<PicrossSave>({
-  version: 2,
-  history: {},
-  totalMoves: 0,
-  totalHintsUsed: 0,
-  totalWins: 0,
-  lastPlayed: null,
-});
+const save = ref(createPicrossSave());
 let timer: ReturnType<typeof setInterval> | undefined;
-let countedMoves = 0;
-let countedHints = 0;
-let countedWin = false;
+let counted = { moves: 0, hints: 0, win: false };
 let requestId = 0;
 let controller: AbortController | undefined;
 let clockOffset = 0;
@@ -170,65 +151,17 @@ const subtitle = computed(() =>
   puzzleNumber.value !== null ? `Puzzle #${puzzleNumber.value}` : null,
 );
 
-// #region SAVE DATA
-function loadSave() {
-  try {
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as Partial<PicrossSave>;
-    if (parsed.version !== 2) throw new Error("Unsupported save version");
-    save.value = {
-      version: 2,
-      history: parsed.history ?? {},
-      totalMoves: parsed.totalMoves ?? 0,
-      totalHintsUsed: parsed.totalHintsUsed ?? 0,
-      totalWins: parsed.totalWins ?? 0,
-      lastPlayed: parsed.lastPlayed ?? null,
-    };
-  } catch (e) {
-    console.error("Failed to load save data:", e);
-  }
-}
-
-function writeSave() {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(save.value));
-  } catch (e) {
-    console.error("Failed to write save data:", e);
-  }
-}
-
 function persist() {
-  const current = game.value;
-  if (!current || !started.value) return;
-
-  // Totals are only credited with progress made since the last persist
-  save.value.totalMoves += current.moves - countedMoves;
-  countedMoves = current.moves;
-  save.value.totalHintsUsed += current.hintsUsed - countedHints;
-  countedHints = current.hintsUsed;
-  if (current.isCompleted && !gaveUp.value && !countedWin) {
-    save.value.totalWins++;
-    countedWin = true;
-  }
-
-  save.value.lastPlayed = dateKey.value;
-  save.value.history[dateKey.value] = {
-    puzzleId: puzzleId.value,
-    board: current.board,
-    hints: current.hints,
-    size: current.size,
-    isCompleted: current.isCompleted,
-    moves: current.moves,
-    hintsUsed: current.hintsUsed,
-    secondsElapsed: current.secondsElapsed,
-    gaveUp: gaveUp.value,
-  };
-
-  writeSave();
+  if (!game.value || !started.value) return;
+  persistPicrossSave(
+    save.value,
+    game.value,
+    dateKey.value,
+    puzzleId.value,
+    gaveUp.value,
+    counted,
+  );
 }
-// #endregion SAVE DATA
 
 // #region GAME INIT
 async function startDailyGame() {
@@ -240,18 +173,21 @@ async function startDailyGame() {
   game.value = null;
   gaveUp.value = false;
   started.value = false;
-  countedMoves = 0;
-  countedHints = 0;
-  countedWin = false;
+  counted = { moves: 0, hints: 0, win: false };
 
   try {
     if (!config.public.backendEnabled || !config.public.backendUrl) {
       throw new Error("The puzzle server is not configured.");
     }
-    const response = await fetch(`${config.public.backendUrl}/picross/today`, {
+    const requestedDate =
+      typeof route.query.date === "string" ? route.query.date : "today";
+    const response = await fetch(
+      `${config.public.backendUrl}/picross/${encodeURIComponent(requestedDate)}`,
+      {
       signal: controller.signal,
       cache: "no-store",
-    });
+      },
+    );
     if (!response.ok)
       throw new Error(`Puzzle server returned ${response.status}.`);
     const key = response.headers.get("X-Picross-Date");
@@ -285,9 +221,11 @@ async function startDailyGame() {
       created.isCompleted = saved.isCompleted ?? false;
       gaveUp.value = saved.gaveUp ?? false;
       started.value = true;
-      countedMoves = created.moves;
-      countedHints = created.hintsUsed;
-      countedWin = created.isCompleted;
+      counted = {
+        moves: created.moves,
+        hints: created.hintsUsed,
+        win: created.isCompleted,
+      };
     }
     game.value = created;
     game.value.isCompleted = isBoardSolved(game.value);
@@ -332,14 +270,17 @@ function copyWin() {
 }
 
 onMounted(() => {
-  loadSave();
-  observedDay = getDateKey();
+  save.value = loadPicrossSave() ?? save.value;
+  observedDay = getDateKey(new Date(), DAILY_TIME_ZONE);
   startDailyGame();
   timer = setInterval(() => {
     now.value = new Date(Date.now() + clockOffset);
     // Start the new puzzle if the page stayed open past midnight
-    if (getDateKey(now.value) !== observedDay) {
-      observedDay = getDateKey(now.value);
+    if (
+      typeof route.query.date !== "string" &&
+      getDateKey(now.value, DAILY_TIME_ZONE) !== observedDay
+    ) {
+      observedDay = getDateKey(now.value, DAILY_TIME_ZONE);
       startDailyGame();
       return;
     }
@@ -361,6 +302,10 @@ onBeforeUnmount(() => {
 });
 
 watch(game, persist, { deep: true });
+watch(
+  () => route.query.date,
+  () => startDailyGame(),
+);
 
 useSeoMeta({
   title: "echolotl - Nautilus' Picross",

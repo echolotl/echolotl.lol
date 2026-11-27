@@ -1,6 +1,6 @@
 # echolotl.lol
 
-This repository contains echolotl.lol's source as a Bun workspace. You could build it but idk why you would... 
+This repository contains echolotl.lol's source as a Bun workspace. You could build it but idk why you would...
 
 The backend is written using Elysia and runs on Bun.
 

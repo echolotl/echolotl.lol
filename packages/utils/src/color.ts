@@ -1,3 +1,5 @@
+import { clamp } from "./index";
+
 export type RGBColor = { r: number; g: number; b: number };
 export type OKLCHColor = { l: number; c: number; h: number };
 export type HSLColor = { h: number; s: number; l: number };

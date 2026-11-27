@@ -2,6 +2,9 @@
   "name": "@echolotl/picross",
   "private": true,
   "type": "module",
+  "dependencies": {
+    "@echolotl/utils": "workspace:*"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./solver": "./src/solver.ts",

@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
-import { FIRST_GAME_DATE, getDateKey } from "@echolotl/picross/daily";
+import { DAILY_TIME_ZONE, FIRST_GAME_DATE } from "@echolotl/picross/daily";
+import { getDateKey } from "@echolotl/utils/calendar";
 import { getDailyPuzzle } from "./service";
 import { Logger } from "../util/logger";
 
@@ -16,7 +17,7 @@ export const picrossRouter = new Elysia({ prefix: "/picross" })
   .use(rateLimit({ duration: 60_000, max: 100, scoping: "scoped" }))
   .get("/:date", async ({ params }) => {
     const now = new Date();
-    const today = getDateKey(now);
+    const today = getDateKey(now, DAILY_TIME_ZONE);
     const date = params.date === "today" ? today : params.date;
     if (!validDate(date)) {
       return new Response("Invalid puzzle date", {

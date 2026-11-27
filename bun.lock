@@ -11,6 +11,7 @@
       "dependencies": {
         "@echolotl/picross": "workspace:*",
         "@echolotl/types": "workspace:*",
+        "@echolotl/utils": "workspace:*",
         "@elysiajs/cors": "^1.4.2",
         "elysia": "latest",
         "elysia-rate-limit": "^4.6.2",
@@ -28,6 +29,7 @@
       "dependencies": {
         "@echolotl/picross": "workspace:*",
         "@echolotl/types": "workspace:*",
+        "@echolotl/utils": "workspace:*",
         "@nuxt/content": "^3.16.2",
         "@nuxtjs/mdc": "^0.22.2",
         "@nuxtjs/robots": "^6.2.4",
@@ -63,9 +65,15 @@
     },
     "packages/picross": {
       "name": "@echolotl/picross",
+      "dependencies": {
+        "@echolotl/utils": "workspace:*",
+      },
     },
     "packages/types": {
       "name": "@echolotl/types",
+    },
+    "packages/utils": {
+      "name": "@echolotl/utils",
     },
   },
   "trustedDependencies": [
@@ -153,6 +161,8 @@
     "@echolotl/picross": ["@echolotl/picross@workspace:packages/picross"],
 
     "@echolotl/types": ["@echolotl/types@workspace:packages/types"],
+
+    "@echolotl/utils": ["@echolotl/utils@workspace:packages/utils"],
 
     "@elysiajs/cors": ["@elysiajs/cors@1.4.3", "", { "peerDependencies": { "elysia": ">= 1.4.0" } }, "sha512-UgsFfmR50A46QBa4WumJuLNA5yTTrNTyfegpI1BjA+i/PlrkWd15QWqeOzlvqD2P4AZdIty9zUTuRDSSs0XJNA=="],
 

@@ -303,7 +303,7 @@ import { type Character } from "~~/types";
 import ColorPicker from "~/components/ui/ColorPicker.vue";
 import Icon from "~/components/ui/Icon.vue";
 import Tooltip from "~/components/ui/Tooltip.vue";
-import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
+import { createSoundPlayer, type SoundPlayer } from "@echolotl/utils/audio";
 // Types
 type Slice = {
   title: string;

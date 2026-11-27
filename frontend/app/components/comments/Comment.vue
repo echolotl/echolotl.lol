@@ -29,7 +29,8 @@
           v-if="isLoggedIn"
           type="button"
           class="comment-reply-button"
-          @click="toggleReplyForm">
+          @click="toggleReplyForm"
+        >
           Reply <Icon icon="comment" size="18px" />
         </button>
         <template v-if="props.comment.author?.userId == user?.userId">
@@ -38,7 +39,8 @@
             class="comment-action-button"
             aria-label="Edit comment"
             :disabled="deleting"
-            @click="startEditing">
+            @click="startEditing"
+          >
             <Icon icon="pencil" size="18px" />
           </button>
           <button
@@ -46,7 +48,8 @@
             class="comment-action-button"
             aria-label="Delete comment"
             :disabled="deleting"
-            @click="handleDelete">
+            @click="handleDelete"
+          >
             <Icon v-if="deleting" icon="loading" size="18px" />
             <Icon v-else icon="trash" size="18px" />
           </button>
@@ -66,12 +69,14 @@
       <textarea
         :id="`edit-comment-${props.comment.id}`"
         class="textarea"
-        v-model="editText"></textarea>
+        v-model="editText"
+      ></textarea>
       <div class="comment-edit-actions">
         <button
           type="button"
           :disabled="saving || !(editText.length > 0)"
-          @click="saveEdit">
+          @click="saveEdit"
+        >
           Save
         </button>
         <button type="button" :disabled="saving" @click="cancelEdit">
@@ -82,11 +87,13 @@
     </div>
     <div
       v-if="!props.comment.deletedAt && !isEditing && replyCount > 0"
-      class="comment-footer">
+      class="comment-footer"
+    >
       <button
         type="button"
         class="comment-replies-toggle"
-        @click="toggleReplies">
+        @click="toggleReplies"
+      >
         {{
           repliesVisible
             ? "Hide replies"
@@ -104,13 +111,15 @@
       <textarea
         :id="`reply-comment-${props.comment.id}`"
         class="textarea"
-        v-model="replyText"></textarea>
+        v-model="replyText"
+      ></textarea>
       <div class="comment-edit-actions">
         <button
           type="button"
           :disabled="submittingReply || !(replyText.length > 0)"
           @click="submitReply"
-          class="filled round">
+          class="filled round"
+        >
           Post Reply
         </button>
         <button type="button" :disabled="submittingReply" @click="cancelReply">
@@ -122,7 +131,8 @@
     <div v-if="repliesVisible" class="comment-replies">
       <div
         v-if="repliesLoading && replies.length === 0"
-        class="comment-replies-loading">
+        class="comment-replies-loading"
+      >
         Loading replies...
       </div>
       <Comment v-for="reply in replies" :key="reply.id" :comment="reply" />
@@ -131,13 +141,15 @@
         type="button"
         class="load-more-replies"
         :disabled="repliesLoading"
-        @click="loadMoreReplies">
+        @click="loadMoreReplies"
+      >
         {{ repliesLoading ? "Loading..." : "Load more replies" }}
       </button>
     </div>
   </div>
 </template>
 <script setup lang="ts">
+import { formatDateTime } from "@echolotl/utils";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
@@ -148,11 +160,8 @@ import UserAvatar from "~/components/user/UserAvatar.vue";
 import Icon from "~/components/ui/Icon.vue";
 import { useAuth } from "~/composables/useAuth";
 const { user, isLoggedIn, login, getDisplayName } = useAuth();
-import {
-  type CommentNode,
-  useComments,
-  useReplies,
-} from "~/composables/useComments";
+import { useComments, useReplies } from "~/composables/useComments";
+import type { CommentNode } from "@echolotl/types";
 interface Props {
   comment: CommentNode;
 }

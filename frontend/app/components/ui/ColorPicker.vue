@@ -79,7 +79,7 @@ import {
   rgbToHsv,
   hexToRgb,
   type HSVColor,
-} from "~/utils/color";
+} from "@echolotl/utils/color";
 import { onMounted, ref, watch } from "vue";
 
 const colorWheel = ref<HTMLCanvasElement | null>(null);

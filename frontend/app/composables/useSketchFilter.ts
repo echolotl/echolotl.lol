@@ -1,5 +1,5 @@
-import { normalizeHex } from "~/utils/color";
-import { hashString } from "~/utils/index";
+import { normalizeHex } from "@echolotl/utils/color";
+import { hashString } from "@echolotl/utils";
 
 export interface SketchFilterOptions {
   color?: string;

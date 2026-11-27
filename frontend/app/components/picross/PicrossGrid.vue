@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 import { useTheme } from "~/composables/useTheme";
-import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
+import { createSoundPlayer, type SoundPlayer } from "@echolotl/utils/audio";
 import {
   BOARD_COLORS,
   COLUMN_HINTS_PADDING,
@@ -90,7 +90,8 @@ import {
   TILE_SIZE,
   UNDO_HISTORY_LIMIT,
 } from "~/utils/constants";
-import { prefersReducedMotion, toSafeHTTPUrl } from "~/utils/index";
+import { toSafeHTTPUrl } from "@echolotl/utils";
+import { prefersReducedMotion } from "~/utils";
 import {
   applyTileChange,
   getHints,

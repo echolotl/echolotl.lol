@@ -75,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate } from "@echolotl/utils";
 import { ref } from "vue";
 import { useAuth } from "~/composables/useAuth";
 import UserAvatar from "~/components/user/UserAvatar.vue";

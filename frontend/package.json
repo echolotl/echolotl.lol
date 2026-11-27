@@ -16,6 +16,7 @@
   "dependencies": {
     "@echolotl/picross": "workspace:*",
     "@echolotl/types": "workspace:*",
+    "@echolotl/utils": "workspace:*",
     "@nuxt/content": "^3.16.2",
     "@nuxtjs/mdc": "^0.22.2",
     "@nuxtjs/robots": "^6.2.4",

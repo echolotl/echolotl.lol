@@ -60,7 +60,7 @@
 <script lang="ts" setup>
 import Modal from "~/components/ui/Modal.vue";
 import Icon from "~/components/ui/Icon.vue";
-import { createSoundPlayer, type SoundPlayer } from "~/utils/audio";
+import { createSoundPlayer, type SoundPlayer } from "@echolotl/utils/audio";
 
 const open = defineModel<boolean>({ required: true });
 const nautilusEl = ref<HTMLElement | null>(null);

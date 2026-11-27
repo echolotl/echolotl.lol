@@ -187,6 +187,8 @@
 </template>
 
 <script setup lang="ts">
+import { feetStringToCm, formatDate } from "@echolotl/utils";
+import { passesContrast } from "@echolotl/utils/color";
 import Icon from "~/components/ui/Icon.vue";
 import type { Character } from "~~/types";
 
