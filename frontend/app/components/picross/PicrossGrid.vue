@@ -1,5 +1,5 @@
 <template>
-  <div class="picross-layout" :style="{ marginTop: `${columnHintsHeight}px` }">
+  <div class="picross-layout" :style="{ marginTop: locked ? '0px' : `${columnHintsHeight}px` }">
     <canvas
       v-if="!locked"
       ref="columnHintsCanvas"
@@ -40,6 +40,7 @@
         @pointerleave="handlePointerLeave"
         @keydown="handleBoardKeydown"
         @contextmenu.prevent></canvas>
+      <slot name="board-overlay" />
     </div>
     <p id="picross-board-help" class="sr-only">
       Use the arrow keys to select a tile. Press Space or Enter to apply the

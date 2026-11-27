@@ -1,11 +1,12 @@
 <template>
   <PicrossPage :subtitle="subtitle" :accent="theme ? '#26a4ad' : '#38d9e4'">
-    <div v-if="game" class="grid-wrapper">
-      <PicrossGrid ref="grid" :game="game" :locked="!started" />
-      <div v-if="!started" class="start-overlay">
-        <button @click="beginGame" class="round filled">Start</button>
-      </div>
-    </div>
+    <PicrossGrid v-if="game" ref="grid" :game="game" :locked="!started">
+      <template #board-overlay>
+        <div v-if="!started" class="start-overlay">
+          <button @click="beginGame" class="round filled">Start</button>
+        </div>
+      </template>
+    </PicrossGrid>
     <p v-else-if="loading" class="lotl-font loading" role="status">
       <Icon icon="loading" size="20px" />
       Loading puzzle...
@@ -321,18 +322,12 @@ useSeoMeta({
 </script>
 
 <style scoped>
-.grid-wrapper {
-  position: relative;
-  display: flex;
-  justify-content: center;
-}
-
 .start-overlay {
   position: absolute;
-  inset: 4rem;
+  inset: 0;
   z-index: 2;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
 
   > button {

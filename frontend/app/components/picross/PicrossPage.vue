@@ -5,29 +5,55 @@
     </div>
     <span v-if="subtitle" class="header-games lotl-font">{{ subtitle }}</span>
 
-    <div class="header-links">
-      <NuxtLink to="/picross" class="link" exact-active-class="active">
+    <div
+      class="tabs"
+      :style="{
+        '--active-anchor': anchorName,
+      }"
+    >
+      <NuxtLink
+        to="/picross"
+        class="link"
+        style="anchor-name: --picross"
+        exact-active-class="active"
+      >
         <Icon icon="picross" size="20px" /> Free Play
       </NuxtLink>
-      •
-      <NuxtLink to="/picross/daily" class="link" exact-active-class="active">
+      <NuxtLink
+        to="/picross/daily"
+        class="link"
+        style="anchor-name: --picross-daily"
+        exact-active-class="active"
+      >
         <Icon icon="date" size="20px" /> Daily
       </NuxtLink>
-      •
-      <NuxtLink to="/picross/editor" class="link" exact-active-class="active">
+      <NuxtLink
+        to="/picross/editor"
+        class="link"
+        style="anchor-name: --picross-editor"
+        exact-active-class="active"
+      >
         <Icon icon="art" size="20px" /> Editor
       </NuxtLink>
-      •
-      <button
-        type="button"
-        class="link how-to-play"
-        @click="showHowToPlay = true">
-        <Icon icon="help" size="20px" />How To Play
-      </button>
     </div>
 
     <div class="game">
       <slot />
+    </div>
+    <div class="bottom-buttons">
+      <button @click="showHowToPlay = true" class="bottom-button">
+        <Icon icon="help" size="20px" /> How to Play
+      </button>
+      <template v-if="route.name === 'picross-daily'">
+        <div>&bull;</div>
+
+        <button
+          @click="navigateTo('/picross/daily/history')"
+          class="bottom-button"
+        >
+          <Icon icon="redo" size="20px" /> Past Puzzles
+        </button>
+      </template>
     </div>
 
     <HowToPlayModal v-model="showHowToPlay" />
@@ -39,6 +65,11 @@ import HowToPlayModal from "~/components/picross/HowToPlayModal.vue";
 import Icon from "~/components/ui/Icon.vue";
 
 const { url: filterUrl } = useSketchFilter({ color: "var(--background)" });
+const route = useRoute();
+const anchorName = computed(() => {
+  const routePath = route.path.split("/").slice(1, 3);
+  return `--${routePath.join("-")}`;
+});
 
 withDefaults(
   defineProps<{
@@ -107,33 +138,44 @@ const showHowToPlay = ref(false);
   view-transition-name: picross-subtitle;
 }
 
-.header-links {
-  text-transform: uppercase;
+.tabs {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 2px;
+  margin: 8px 0;
   z-index: 1;
-  view-transition-name: picross-navigation;
 
-  .link {
+  &::after {
+    content: "";
+    display: block;
+    height: 4px;
+    width: 32px;
+    border-radius: 2px;
+    background: var(--picross-accent);
+    margin-top: 2px;
+    position: absolute;
+    position-anchor: var(--active-anchor);
+    top: calc(anchor(bottom) - 1px);
+    left: calc(anchor(center) - 15px);
+    view-transition-name: picross-active-indicator;
+    transition:
+      top 0.3s ease,
+      left 0.3s ease;
+  }
+
+  > .link {
     display: flex;
     align-items: center;
     gap: 4px;
-    color: var(--picross-accent);
-    cursor: pointer;
-  }
+    color: var(--text);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 8px;
 
-  .link.active {
-    font-weight: bold;
-  }
-
-  .how-to-play {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    font: inherit;
+    &:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
   }
 }
 
@@ -165,6 +207,28 @@ const showHowToPlay = ref(false);
     gap: 4px;
     padding: 4px 8px;
   }
+}
+
+.bottom-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bottom-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 4px 8px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  z-index: 1000;
 }
 
 .game :deep(.loading) {
