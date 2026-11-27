@@ -2,7 +2,7 @@ slug: looks-like-the-reddit-snoo
 created_at: "2022-05-07T00:00:00.000Z"
 modified_at: "2026-09-07T02:59:07.041Z"
 character: chomb
-title: '"Looks like the Reddit Snoo"'
+title: "\"Looks like the Reddit Snoo\""
 description: "[reddit snoo in question](https://www.reddit.com/media?url=https%3A%2F%2Fpreview.redd.it%2Foriginal-snoo-v0-4s6apuzkqyza1.jpeg%3Fwidth%3D1284%26format%3Dpjpg%26auto%3Dwebp%26s%3Dc37e684cb88a261845a5c0ea887211095055814e)"
 pinned: false
 nsfw: false
@@ -10,5 +10,5 @@ images:
   - image_url: /art/characters/chomb/lookslikeredditsnoo.png
     thumbnail_url: /art/characters/chomb/thumbnails/lookslikeredditsnoo.webp
     thumbnail_anchor: center
-    alt: '"Looks like the Reddit Snoo"'
+    alt: "\"Looks like the Reddit Snoo\""
 sketch: false
