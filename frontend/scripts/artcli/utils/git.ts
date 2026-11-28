@@ -7,6 +7,7 @@ export interface GitResult {
   success: boolean;
   output: string;
   stdout: string;
+  status: number | null;
 }
 
 /**
@@ -36,13 +37,19 @@ function getBotIdentityArgs(): string[] {
  * @param args Array of git command arguments
  * @returns Result of the git command execution, including success status and output
  */
-export function runGit(args: string[]): GitResult {
+export function runGit(args: string[], input?: string): GitResult {
   const result = spawnSync("git", [...getBotIdentityArgs(), ...args], {
     encoding: "utf-8",
+    input,
   });
   const stdout = result.stdout || "";
-  const output = stdout + (result.stderr || "");
-  return { success: result.status === 0, output, stdout };
+  const output = stdout + (result.stderr || "") + (result.error?.message || "");
+  return {
+    success: result.status === 0,
+    output,
+    stdout,
+    status: result.status,
+  };
 }
 
 /**
@@ -52,7 +59,13 @@ export function runGit(args: string[]): GitResult {
  */
 export function filterIgnored(files: string[]): string[] {
   if (files.length === 0) return files;
-  const result = runGit(["check-ignore", "-z", "--", ...files]);
+  const result = runGit(
+    ["check-ignore", "-z", "--stdin"],
+    files.join("\0") + "\0",
+  );
+  if (result.status !== 0 && result.status !== 1) {
+    throw new Error(`git check-ignore failed:\n${result.output}`);
+  }
   const ignored = new Set(result.stdout.split("\0").filter(Boolean));
   return files.filter((file) => !ignored.has(file));
 }
@@ -98,7 +111,12 @@ export async function pushToRemote(
   Logger.nl();
   Logger.info("Staging changes...");
 
-  const addResult = runGit(["add", "--", ...filterIgnored(files)]);
+  const filesToStage = filterIgnored(files);
+  if (filesToStage.length === 0) {
+    Logger.warning("No non-ignored files to stage; skipping commit.");
+    return;
+  }
+  const addResult = runGit(["add", "--", ...filesToStage]);
   if (!addResult.success) {
     Logger.error(`git add failed:\n${addResult.output}`);
     exit(1);
