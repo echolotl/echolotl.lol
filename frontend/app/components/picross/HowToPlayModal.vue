@@ -57,7 +57,7 @@
       </ul>
       <p class="text" style="display: flex; align-items: center; gap: 0.5ch">
         <Icon icon="candy" size="24px" style="color: var(--orange)" /> Nautilus
-        eats the puzzles after you're complete it.
+        eats the puzzles after you complete it.
       </p>
     </div>
   </Modal>
