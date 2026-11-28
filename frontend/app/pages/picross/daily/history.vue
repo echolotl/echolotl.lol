@@ -265,4 +265,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearInterval(clockTimer);
 });
+
+useSeoMeta({
+  title: "echolotl - Nautilus' Picross (Past Puzzles)",
+  description: "Play Nautilus' past daily picross puzzles.",
+  ogDescription: "Play Nautilus' past daily picross puzzles.",
+  ogTitle: "Nautilus' Picross (Past Puzzles)",
+  ogUrl: "https://echolotl.lol/picross/daily",
+  ogImage: "https://echolotl.lol/images/picross/og.webp",
+  twitterCard: "summary_large_image",
+});
 </script>
