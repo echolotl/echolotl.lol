@@ -5,27 +5,6 @@
         <div class="small-username"></div>
         <SocialIcons style="image-rendering: pixelated" />
         <div>© 2026 echolotl</div>
-        <div v-if="user" class="user-info">
-          <UserAvatar :user="user" />
-          <div class="user-details">
-            <div>
-              Logged in as
-              <span class="lotl-font">{{ getDisplayName(user) }}</span>
-            </div>
-            <div class="actions">
-              <nuxt-link to="/account" class="link">Manage</nuxt-link>•
-              <button type="button" class="link footer-action" @click="logout">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-        <div v-else class="user-info logged-out">
-          Not logged in.
-          <button type="button" class="link footer-action" @click="login">
-            Login
-          </button>
-        </div>
         <div class="license">
           <div class="license-image">
             <Icon icon="creative-commons" />
@@ -66,7 +45,8 @@
       <img
         class="under-construction-text"
         src="/images/underconstructiontxt.png"
-        alt="Under Construction" />
+        alt="Under Construction"
+      />
     </div>
   </footer>
 </template>

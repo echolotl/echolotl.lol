@@ -3,11 +3,12 @@
     class="user-avatar"
     :src="src"
     :style="{
-      width: `${size}px`,
-      height: `${size}px`,
+      width: `${size}`,
+      height: `${size}`,
       filter: filterUrl,
     }"
-    :alt="`${displayName || 'User'} Avatar`" />
+    :alt="`${displayName || 'User'} Avatar`"
+  />
 </template>
 
 <script setup lang="ts">
@@ -17,13 +18,13 @@ import type { PublicUser } from "@echolotl/types";
 
 const props = withDefaults(
   defineProps<{
-    size?: number;
+    size?: string;
     user?: PublicUser | null;
     ignoreAnonymous?: boolean;
     default?: boolean;
   }>(),
   {
-    size: 48,
+    size: "48px",
     ignoreAnonymous: false,
     default: false,
   },

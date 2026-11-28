@@ -9,14 +9,16 @@
         <NuxtLink
           to="/art"
           class="nav-link primary-nav-link lotl-font"
-          exact-active-class="active">
+          exact-active-class="active"
+        >
           <Icon icon="art_brush" size="1.25lh" />
           Artchive
         </NuxtLink>
         <NuxtLink
           to="/characters"
           class="nav-link primary-nav-link lotl-font"
-          exact-active-class="active">
+          exact-active-class="active"
+        >
           <Icon icon="character" size="1.25lh" />
           Characters
         </NuxtLink>
@@ -26,15 +28,34 @@
           popovertarget="navigation-menu"
           aria-controls="navigation-menu"
           aria-label="Open navigation menu"
-          :aria-expanded="popoverOpen">
+          :aria-expanded="popoverOpen"
+        >
           <Icon :icon="popoverOpen ? 'close' : 'hamburger'" size="1.25lh" />
         </button>
+
         <button
           type="button"
           class="nav-link theme-toggle lotl-font"
           @click="toggleTheme"
-          aria-label="Toggle theme">
+          aria-label="Toggle theme"
+        >
           <Icon :icon="theme ? 'sun' : 'moon'" size="1.25lh" />
+        </button>
+        <button
+          type="button"
+          class="nav-link account lotl-font"
+          popovertarget="account-menu"
+          aria-controls="account-menu"
+          aria-label="Open account menu"
+          :aria-expanded="accountPopoverOpen"
+        >
+          <Icon v-if="!isLoggedIn" icon="profile" size="1.25lh" />
+          <UserAvatar
+            v-else
+            :user="publicUser"
+            ignore-anonymous
+            size="1.25lh"
+          />
         </button>
       </div>
     </nav>
@@ -42,19 +63,22 @@
       id="navigation-menu"
       class="menu"
       popover="auto"
-      :style="`filter: ${filterUrl}`">
+      :style="`filter: ${filterUrl}`"
+    >
       <div class="link-grid mobile-menu-links">
         <NuxtLink
           to="/art"
           class="nav-link lotl-font"
-          exact-active-class="active">
+          exact-active-class="active"
+        >
           <Icon icon="art_brush" size="1.25lh" />
           Artchive
         </NuxtLink>
         <NuxtLink
           to="/characters"
           class="nav-link lotl-font"
-          exact-active-class="active">
+          exact-active-class="active"
+        >
           <Icon icon="character" size="1.25lh" />
           Characters
         </NuxtLink>
@@ -64,28 +88,24 @@
         <NuxtLink
           to="/picross"
           class="nav-link lotl-font"
-          exact-active-class="active">
+          exact-active-class="active"
+        >
           <Icon icon="picross" size="1.25lh" />
           Picross
         </NuxtLink>
         <NuxtLink
           to="/wheel"
           class="nav-link lotl-font"
-          exact-active-class="active">
+          exact-active-class="active"
+        >
           <Icon icon="wheel" size="1.25lh" />
           Wheel
         </NuxtLink>
         <NuxtLink
-          to="/account"
-          class="nav-link lotl-font"
-          exact-active-class="active">
-          <Icon icon="profile" size="1.25lh" />
-          Account
-        </NuxtLink>
-        <NuxtLink
           to="#"
           class="nav-link lotl-font disabled"
-          exact-active-class="active">
+          exact-active-class="active"
+        >
           <Icon icon="lore" size="1.25lh" />
           Blog
         </NuxtLink>
@@ -95,25 +115,84 @@
         type="button"
         class="nav-link mobile-theme-toggle"
         @click="toggleTheme"
-        aria-label="Toggle theme">
+        aria-label="Toggle theme"
+      >
         <Icon :icon="theme ? 'sun' : 'moon'" size="1.25lh" />
         <span class="lotl-font" style="text-box-trim: trim-end">Theme</span>
       </button>
+    </div>
+    <div
+      id="account-menu"
+      ref="accountMenu"
+      class="menu account-menu"
+      popover="auto"
+      :style="`filter: ${filterUrl}`"
+      @toggle="
+        accountPopoverOpen = ($event.target as HTMLElement).matches(
+          ':popover-open',
+        )
+      "
+    >
+      <template v-if="isLoggedIn && user">
+        <div class="account-name">
+          Logged in as <DiscordIcon :size="16" /> {{ getDisplayName(user) }}
+        </div>
+        <NuxtLink
+          to="/account"
+          class="nav-link lotl-font"
+          exact-active-class="active"
+          @click="closeAccountMenu"
+        >
+          <Icon icon="profile" size="1.25lh" />
+          Manage
+        </NuxtLink>
+        <button
+          type="button"
+          class="nav-link account-action lotl-font"
+          popovertarget="account-menu"
+          popovertargetaction="hide"
+          @click="logout"
+        >
+          <Icon icon="logout" size="24px" />
+          Log Out
+        </button>
+      </template>
+      <template v-else>
+        <div class="account-name">Not logged in.</div>
+        <button
+          type="button"
+          class="nav-link account-action lotl-font"
+          popovertarget="account-menu"
+          popovertargetaction="hide"
+          @click="login"
+        >
+          <Icon icon="socials/discord" size="1.25lh" />
+          Login with Discord
+        </button>
+      </template>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
 import Icon from "../ui/Icon.vue";
+import UserAvatar from "../user/UserAvatar.vue";
+import DiscordIcon from "../ui/DiscordIcon.vue";
 const { url: filterUrl } = useSketchFilter(() => ({
   color: "var(--distant)",
 }));
 
 const { theme, toggleTheme } = useTheme();
-
-const route = useRoute();
+const { isLoggedIn, publicUser, user, getDisplayName, login, logout } =
+  useAuth();
 
 const popoverOpen = ref(false);
+const accountPopoverOpen = ref(false);
+const accountMenu = ref<HTMLElement | null>(null);
+
+function closeAccountMenu() {
+  accountMenu.value?.hidePopover();
+}
 
 onMounted(() => {
   const menu = document.getElementById("navigation-menu");
@@ -208,6 +287,14 @@ onMounted(() => {
   padding: 0;
 }
 
+.account {
+  anchor-name: --account-menu;
+  border: 0;
+  background: none;
+  font: inherit;
+  padding: 0;
+}
+
 .theme-toggle {
   border: 0;
   background: none;
@@ -258,6 +345,29 @@ onMounted(() => {
     width: calc(100% - 16px);
     gap: 8px;
   }
+}
+
+.account-menu {
+  position-anchor: --account-menu;
+  gap: 8px;
+  width: fit-content;
+}
+
+.account-name {
+  color: var(--text-secondary);
+  font-size: var(--small-text);
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.account-action {
+  border: 0;
+  background: none;
+  font: Lotl;
+  padding: 0;
+  width: 100%;
 }
 
 .mobile-theme-toggle {
