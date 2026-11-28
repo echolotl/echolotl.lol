@@ -51,7 +51,7 @@
           @click="navigateTo('/picross/daily/history')"
           class="bottom-button"
         >
-          <Icon icon="redo" size="20px" /> Past Puzzles
+          <Icon icon="redo" size="20px" /> Past Puzzles & Stats
         </button>
       </template>
     </div>
@@ -143,7 +143,8 @@ const showHowToPlay = ref(false);
   flex-wrap: wrap;
   justify-content: center;
   gap: 2px;
-  margin: 8px 0;
+  margin-top: 8px;
+  margin-bottom: 16px;
   z-index: 1;
 
   &::after {

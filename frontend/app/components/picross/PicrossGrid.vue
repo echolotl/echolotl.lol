@@ -1,5 +1,7 @@
 <template>
-  <div class="picross-layout" :style="{ marginTop: locked ? '0px' : `${columnHintsHeight}px` }">
+  <div
+    class="picross-layout"
+    :style="{ marginTop: locked ? '0px' : `${columnHintsHeight}px` }">
     <canvas
       v-if="!locked"
       ref="columnHintsCanvas"

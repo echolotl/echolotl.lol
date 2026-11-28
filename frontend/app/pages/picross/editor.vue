@@ -6,19 +6,22 @@
       :game="game"
       :editable="true"
       :paint-index="selectedIndex"
-      :style="{ '--paint-color': selectedColor ?? 'var(--text)' }" />
+      :style="{ '--paint-color': selectedColor ?? 'var(--text)' }"
+    />
     <div class="game-actions">
       <PicrossInputControls
         :grid="grid"
         :remove-modes="['mark']"
-        :add-modes="['paint']" />
+        :add-modes="['paint']"
+      />
       <button @click="handleClear" class="round">
         <Icon icon="trash" size="20px" />
         Clear
       </button>
       <PicrossSizeInput
         :model-value="sizeInput"
-        @update:model-value="applySizeInput" />
+        @update:model-value="applySizeInput"
+      />
     </div>
     <template v-if="grid?.inputMode === 'paint'">
       <div class="palette">
@@ -28,7 +31,8 @@
             <button
               type="button"
               aria-label="Load colors from image"
-              @click="loadColorsFromImage">
+              @click="loadColorsFromImage"
+            >
               <Icon icon="upload" size="24px" />
             </button>
           </div>
@@ -39,7 +43,8 @@
                 type="button"
                 class="add-color-swatch"
                 :style="{ '--paint-color': newColor }"
-                aria-label="Choose new color"></button>
+                aria-label="Choose new color"
+              ></button>
               <template #text>
                 <div class="tooltip">
                   <ColorPicker v-model="newColor" />
@@ -49,7 +54,8 @@
             <button
               class="add-button"
               @click="addColor()"
-              aria-label="Add color to palette">
+              aria-label="Add color to palette"
+            >
               <Icon icon="small-arrow" size="20px" />
             </button>
           </div>
@@ -62,7 +68,8 @@
             title="Default color"
             aria-label="Default color"
             :aria-pressed="selectedIndex === null"
-            @click="selectedIndex = null"></button>
+            @click="selectedIndex = null"
+          ></button>
           <Tooltip v-for="(color, index) in palette" :key="index">
             <button
               type="button"
@@ -71,7 +78,8 @@
               :style="{ '--paint-color': color }"
               :aria-label="`Select palette color ${index + 1}`"
               :aria-pressed="selectedIndex === index"
-              @click="selectedIndex = index"></button>
+              @click="selectedIndex = index"
+            ></button>
             <template #text
               ><div class="swatch-tooltip">
                 <div class="tooltip-header">
@@ -79,7 +87,8 @@
                   ><button
                     type="button"
                     :aria-label="`Delete palette color ${index + 1}`"
-                    @click="deleteColor(index)">
+                    @click="deleteColor(index)"
+                  >
                     <Icon icon="trash" size="20px" />
                   </button>
                 </div>
@@ -95,25 +104,29 @@
       <div class="solve-result-header text-secondary lotl-font">
         SOLVABILITY
       </div>
+
       <div v-if="solving" style="color: var(--text-secondary)">
-        <Icon icon="loading" size="24px" /> Checking...
+        <Icon icon="loading-alt" size="24px" />
+        {{
+          takingLong
+            ? "This is taking a while... it may be too large or complex."
+            : "Checking..."
+        }}
       </div>
       <div v-else-if="!solveResult" style="color: var(--text-secondary)">
         Waiting to check...
       </div>
-      <div v-else-if="solveResult.timedOut" style="color: var(--orange)">
-        <Icon icon="warning" size="20px" />
-        Too slow to determine solvability
-      </div>
       <div
         v-else-if="solveResult.solutionCount === 1"
-        style="color: var(--green)">
+        style="color: var(--green)"
+      >
         <Icon icon="check" size="20px" />
         Solvable
       </div>
       <div
         v-else-if="solveResult.solutionCount > 1"
-        style="color: var(--orange)">
+        style="color: var(--orange)"
+      >
         <Icon icon="warning" size="20px" />
         Multiple solutions
       </div>
@@ -131,7 +144,8 @@
             v-model="metadata.title"
             placeholder="Untitled"
             type="text"
-            maxlength="100" />
+            maxlength="100"
+          />
         </label>
         <div class="row">
           <label>
@@ -140,7 +154,8 @@
               v-model="metadata.author.name"
               placeholder="echolotl"
               type="text"
-              maxlength="100" />
+              maxlength="100"
+            />
           </label>
           <label>
             Source
@@ -148,7 +163,8 @@
               v-model="metadata.source.name"
               placeholder="Some picross game"
               type="text"
-              maxlength="100" />
+              maxlength="100"
+            />
           </label>
         </div>
         <div class="file-actions">
@@ -165,7 +181,8 @@
             type="file"
             :accept="`.${FILE_EXTENSION}`"
             hidden
-            @change="handleLoad" />
+            @change="handleLoad"
+          />
         </div>
       </fieldset>
       <p v-if="fileError" class="file-error" role="alert">{{ fileError }}</p>
@@ -249,7 +266,7 @@ function deleteColor(index: number) {
   }
 }
 
-const { result: solveResult, solving, solve } = usePicrossSolver();
+const { result: solveResult, solving, takingLong, solve } = usePicrossSolver();
 
 // Builds a game of the given size, keeping any tiles that still fit
 function buildGame(
@@ -481,6 +498,7 @@ useSeoMeta({
   align-items: start;
   justify-content: start;
   width: 100%;
+  max-width: 800px;
   gap: 1rem;
 
   fieldset {

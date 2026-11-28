@@ -5,30 +5,22 @@ import type {
 import type { SolverWorkerRequest } from "~/utils/picross/solver.worker";
 
 const DEBOUNCE_MS = 150;
-const SEARCH_BUDGET_MS = 10000;
-// Line logic isn't covered by the search deadline, so a stuck worker gets killed
-const HARD_TIMEOUT_MS = 15000;
-
-const TIMED_OUT: PicrossSolveResult = {
-  solutionCount: 0,
-  logicSolvable: false,
-  solution: null,
-  unknownCount: 0,
-  timedOut: true,
-};
+const LONG_RUNNING_MS = 30000;
 
 // This exists so that we can use a worker to solve Picross puzzles off the main thread.
 // As a bonus, it also comes with a loading state and stuff
 export function usePicrossSolver() {
   const result = ref<PicrossSolveResult | null>(null);
   const solving = ref(false);
+  const takingLong = ref(false);
 
   let worker: Worker | null = null;
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  let killTimer: ReturnType<typeof setTimeout> | undefined;
+  let longRunningTimer: ReturnType<typeof setTimeout> | undefined;
 
   function stopWorker() {
-    clearTimeout(killTimer);
+    clearTimeout(longRunningTimer);
+    takingLong.value = false;
     worker?.terminate();
     worker = null;
   }
@@ -41,6 +33,10 @@ export function usePicrossSolver() {
     );
     worker = current;
     solving.value = true;
+    takingLong.value = false;
+    longRunningTimer = setTimeout(() => {
+      takingLong.value = true;
+    }, LONG_RUNNING_MS);
 
     current.onmessage = (event: MessageEvent<PicrossSolveResult>) => {
       stopWorker();
@@ -49,14 +45,14 @@ export function usePicrossSolver() {
     };
     current.onerror = () => {
       stopWorker();
-      result.value = TIMED_OUT;
+      result.value = {
+        solutionCount: 0,
+        logicSolvable: false,
+        solution: null,
+        unknownCount: 0,
+      };
       solving.value = false;
     };
-    killTimer = setTimeout(() => {
-      stopWorker();
-      result.value = TIMED_OUT;
-      solving.value = false;
-    }, HARD_TIMEOUT_MS);
 
     current.postMessage(request);
   }
@@ -67,7 +63,6 @@ export function usePicrossSolver() {
     const request: SolverWorkerRequest = {
       hints: JSON.parse(JSON.stringify(hints)),
       size: { width: size.width, height: size.height },
-      timeoutMs: SEARCH_BUDGET_MS,
     };
     solving.value = true;
     debounceTimer = setTimeout(() => run(request), DEBOUNCE_MS);
@@ -81,5 +76,5 @@ export function usePicrossSolver() {
 
   if (getCurrentScope()) onScopeDispose(cancel);
 
-  return { result, solving, solve, cancel };
+  return { result, solving, takingLong, solve, cancel };
 }

@@ -2,8 +2,16 @@
   <PicrossPage :subtitle="subtitle" :accent="theme ? '#26a4ad' : '#38d9e4'">
     <PicrossGrid v-if="game" ref="grid" :game="game" :locked="!started">
       <template #board-overlay>
-        <div v-if="!started" class="start-overlay">
-          <button @click="beginGame" class="round filled">Start</button>
+        <div
+          v-if="!started"
+          class="start-overlay lotl-font"
+          role="button"
+          tabindex="0"
+          @click="beginGame"
+          @keydown.enter.prevent="beginGame"
+          @keydown.space.prevent="beginGame"
+        >
+          click to start!
         </div>
       </template>
     </PicrossGrid>
@@ -21,12 +29,14 @@
     <p
       v-if="game"
       class="daily-info text-secondary lotl-font"
-      :style="{ color: game.isCompleted ? 'var(--primary)' : undefined }">
+      :style="{ color: game.isCompleted ? 'var(--primary)' : undefined }"
+    >
       <span v-if="game.isCompleted && !gaveUp">
         <Icon
           icon="crown"
           size="16px"
-          :style="{ color: 'var(--orange)' }"></Icon>
+          :style="{ color: 'var(--orange)' }"
+        ></Icon>
       </span>
       <span>
         <Icon icon="time" size="16px" />
@@ -36,13 +46,15 @@
         <Icon icon="moves" size="16px" />
         <SlotText
           :text="String(game?.moves ?? 0)"
-          :options="{ skipUnchanged: true }" />
+          :options="{ skipUnchanged: true }"
+        />
       </span>
       <span>
         <Icon icon="tip" size="16px" />
         <SlotText
           :text="String(game?.hintsUsed ?? 0)"
-          :options="{ skipUnchanged: true }" />
+          :options="{ skipUnchanged: true }"
+        />
       </span>
       <span>
         <Icon icon="size" size="16px" />
@@ -55,18 +67,40 @@
         Copy Result
       </button>
     </div>
+    <div v-if="game?.isCompleted" class="completion-stats">
+      <div class="completion-stat">
+        <div class="completion-stat-value lotl-font">
+          <Icon icon="streak" size="24px" />
+          <span>{{ completionStreak }}</span>
+        </div>
+        <span
+          class="completion-stat-label"
+          :style="completionStreak > 7 ? 'color: var(--yellow)' : undefined"
+          >Streak</span
+        >
+      </div>
+      <div class="completion-stat">
+        <div class="completion-stat-value lotl-font">
+          <Icon icon="candy" size="24px" />
+          <span>{{ save.totalWins }}</span>
+        </div>
+        <span class="completion-stat-label">Candies</span>
+      </div>
+    </div>
     <p v-if="game?.isCompleted" class="time-till-next-game text-secondary">
       Next game in:
       <b>
         <SlotText
           :text="`${timeTillNextGameDisplay}`"
-          :options="{ skipUnchanged: true }" />
+          :options="{ skipUnchanged: true }"
+        />
       </b>
     </p>
     <div v-if="game && started && !game.isCompleted" class="game-actions">
       <PicrossInputControls
         :grid="grid"
-        :disabled="!game || game.isCompleted" />
+        :disabled="!game || game.isCompleted"
+      />
       <button @click="clearDailyBoard" class="round">
         <Icon icon="trash" size="20px" />
         Clear
@@ -97,6 +131,7 @@ import {
 } from "~/utils/picross";
 import {
   createPicrossSave,
+  getPicrossStreak,
   loadPicrossSave,
   persistPicrossSave,
 } from "~/utils/picross/save";
@@ -152,6 +187,11 @@ const subtitle = computed(() =>
   puzzleNumber.value !== null ? `Puzzle #${puzzleNumber.value}` : null,
 );
 
+const completionStreak = computed(() => {
+  if (!dateKey.value || !game.value?.isCompleted || gaveUp.value) return 0;
+  return getPicrossStreak(save.value, dateKey.value);
+});
+
 function persist() {
   if (!game.value || !started.value) return;
   persistPicrossSave(
@@ -185,8 +225,8 @@ async function startDailyGame() {
     const response = await fetch(
       `${config.public.backendUrl}/picross/${encodeURIComponent(requestedDate)}`,
       {
-      signal: controller.signal,
-      cache: "no-store",
+        signal: controller.signal,
+        cache: "no-store",
       },
     );
     if (!response.ok)
@@ -321,7 +361,9 @@ useSeoMeta({
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use "~/assets/styles/util" as *;
+
 .start-overlay {
   position: absolute;
   inset: 0;
@@ -329,12 +371,15 @@ useSeoMeta({
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  color: var(--primary);
+  font-size: 1.5rem;
+  @include color-text-stroke(var(--surface), 6px);
 
-  > button {
-    padding: 8px 12px;
-    text-transform: uppercase;
-    font-weight: bold;
-    box-shadow: 0 0 0 4px var(--surface);
+  &:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
   }
 }
 
@@ -358,6 +403,36 @@ useSeoMeta({
     display: inline-flex;
     align-items: center;
     gap: 2px;
+  }
+}
+.completion-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+
+  .completion-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+
+    .completion-stat-value {
+      display: flex;
+      align-items: center;
+      line-height: 1;
+      gap: 0.25rem;
+
+      span {
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    .completion-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
   }
 }
 </style>

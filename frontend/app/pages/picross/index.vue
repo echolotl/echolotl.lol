@@ -6,7 +6,7 @@
       Loading puzzle...
     </p>
     <p v-if="game?.isCompleted" class="solved-message" role="status">
-      <Icon icon="crown" size="20px" />
+      <Icon icon="candy" size="20px" />
       {{
         WIN_SPLASH_TEXTS[Math.floor(Math.random() * WIN_SPLASH_TEXTS.length)]
       }}
@@ -20,13 +20,15 @@
       <button
         :disabled="game?.isCompleted"
         @click="solveGame(game!)"
-        class="round filled">
+        class="round filled"
+      >
         Solve
       </button>
       <button
         :disabled="game?.isCompleted"
         @click="() => fillRandomTile(game!)"
-        class="round">
+        class="round"
+      >
         <Icon icon="tip" size="20px" />
         Hint
       </button>
@@ -43,7 +45,8 @@
         type="file"
         :accept="`.${FILE_EXTENSION}`"
         hidden
-        @change="handleLoad" />
+        @change="handleLoad"
+      />
     </div>
     <p v-if="fileError" class="file-error" role="alert">{{ fileError }}</p>
   </PicrossPage>

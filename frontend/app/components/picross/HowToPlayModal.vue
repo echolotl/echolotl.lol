@@ -5,7 +5,8 @@
         class="nautilus"
         ref="nautilusEl"
         aria-hidden="true"
-        @click="playChipSound()" />
+        @click="playChipSound()"
+      />
       <h2 class="title lotl-font">
         How to Picross
         <span class="text-secondary">with Nautilus</span>
@@ -31,7 +32,8 @@
             v-for="(state, i) in exampleRow"
             :key="i"
             class="example-tile"
-            :class="state" />
+            :class="state"
+          />
         </div>
       </div>
       <p class="text text-secondary">
@@ -53,6 +55,10 @@
         </li>
         <li class="text-secondary">hi mimi</li>
       </ul>
+      <p class="text" style="display: flex; align-items: center; gap: 0.5ch">
+        <Icon icon="candy" size="24px" style="color: var(--orange)" /> Nautilus
+        eats the puzzles after you're complete it.
+      </p>
     </div>
   </Modal>
 </template>

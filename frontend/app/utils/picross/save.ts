@@ -1,4 +1,6 @@
 import type { PicrossGame } from "./index";
+import { DAILY_TIME_ZONE, FIRST_GAME_DATE } from "@echolotl/picross/daily";
+import { addUtcDays, getDateKey } from "@echolotl/utils/calendar";
 
 export type PicrossGameStats = Omit<PicrossGame, "palette" | "solution"> & {
   gaveUp?: boolean;
@@ -32,6 +34,39 @@ export function createPicrossSave(): PicrossSave {
     totalWins: 0,
     lastPlayed: null,
   };
+}
+
+export function getPicrossStreak(
+  save: PicrossSave | null | undefined,
+  dateKey = getDateKey(new Date(), DAILY_TIME_ZONE),
+): number {
+  if (!save) return 0;
+
+  const [year = 0, month = 1, day = 1] = dateKey.split("-").map(Number);
+  let cursor = new Date(Date.UTC(year, month - 1, day));
+  const endStats = save.history[dateKey];
+
+  if (!endStats) {
+    cursor = addUtcDays(cursor, -1);
+  } else if (endStats.gaveUp) {
+    return 0;
+  } else if (!endStats.isCompleted) {
+    cursor = addUtcDays(cursor, -1);
+  }
+
+  let count = 0;
+  while (true) {
+    const key = getDateKey(cursor, "UTC");
+    if (key < FIRST_GAME_DATE) break;
+
+    const stats = save.history[key];
+    if (!stats?.isCompleted || stats.gaveUp) break;
+
+    count++;
+    cursor = addUtcDays(cursor, -1);
+  }
+
+  return count;
 }
 
 export function loadPicrossSave(): PicrossSave | undefined {
