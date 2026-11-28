@@ -1,18 +1,18 @@
 slug: mmmgmm-kitty
 created_at: "2026-11-19T06:08:39.942Z"
 modified_at: "2026-11-28T05:57:24.299Z"
+character: king
 title: mmmgmm kitty
+description: hi
 pinned: false
-sketch: false
 nsfw: true
 images:
-  - id: clothed
+  - image_url: /art/characters/king/clothed.webp
+    thumbnail_url: /art/characters/king/thumbnails/clothed.webp
+    id: clothed
     title: Clothed
-    image_url: /art/characters/king/clothed.webp
     variants:
       - image_url: /art/characters/king/clothed__no-clothes.png
-        label: No Clothes
         thumbnail_url: /art/characters/king/thumbnails/clothed__no-clothes.webp
-    thumbnail_url: /art/characters/king/thumbnails/clothed.webp
-description: hi
-character: king
+        label: No Clothes
+sketch: false

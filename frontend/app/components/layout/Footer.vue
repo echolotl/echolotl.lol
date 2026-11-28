@@ -5,6 +5,11 @@
         <div class="small-username"></div>
         <SocialIcons style="image-rendering: pixelated" />
         <div>© 2026 echolotl</div>
+        <div class="legal-links">
+          <NuxtLink to="/privacy-policy" class="link">Privacy Policy</NuxtLink>
+          &bull;
+          <NuxtLink to="/tos" class="link">Terms of Service</NuxtLink>
+        </div>
         <div class="license">
           <div class="license-image">
             <Icon icon="creative-commons" />
@@ -53,12 +58,9 @@
 
 <script setup lang="ts">
 import Icon from "~/components/ui/Icon.vue";
-import { useAuth } from "~/composables/useAuth";
 import SocialIcons from "./SocialIcons.vue";
-import UserAvatar from "~/components/user/UserAvatar.vue";
 
 const rtc = useRuntimeConfig();
-const { logout, login, user, getDisplayName } = useAuth();
 </script>
 
 <style scoped lang="scss">
@@ -122,6 +124,11 @@ footer {
       }
     }
   }
+}
+
+.legal-links {
+  display: flex;
+  gap: 0.25rem;
 }
 
 .footer-content {
